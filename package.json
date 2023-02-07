@@ -1,0 +1,11 @@
+{
+  "name": "buttonswap-core",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/buttonwood-protocol/buttonswap-core.git",
+  "author": "PRL",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "uFragments": "https://github.com/ampleforth/ampleforth-contracts"
+  }
+}
