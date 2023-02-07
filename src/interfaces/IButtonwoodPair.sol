@@ -20,11 +20,7 @@ interface IButtonwoodPair {
 
     function transfer(address to, uint256 value) external returns (bool);
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external returns (bool);
+    function transferFrom(address from, address to, uint256 value) external returns (bool);
 
     function DOMAIN_SEPARATOR() external view returns (bytes32);
 
@@ -32,15 +28,8 @@ interface IButtonwoodPair {
 
     function nonces(address owner) external view returns (uint256);
 
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external;
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external;
 
     event Mint(address indexed sender, uint256 amountA, uint256 amountB);
     event Burn(address indexed sender, uint256 amountA, uint256 amountB, address indexed to);
@@ -62,14 +51,7 @@ interface IButtonwoodPair {
 
     function token1() external view returns (address);
 
-    function getPools()
-        external
-        view
-        returns (
-            uint112 poolA,
-            uint112 poolB,
-            uint32 blockTimestampLast
-        );
+    function getPools() external view returns (uint112 poolA, uint112 poolB, uint32 blockTimestampLast);
 
     function getReservoirs() external view returns (uint112 reservoirA, uint112 reservoirB);
 
@@ -87,12 +69,7 @@ interface IButtonwoodPair {
 
     function burnFromReservoir(address to) external returns (uint256 amountA, uint256 amountB);
 
-    function swap(
-        uint256 amountAOut,
-        uint256 amountBOut,
-        address to,
-        bytes calldata data
-    ) external;
+    function swap(uint256 amountAOut, uint256 amountBOut, address to, bytes calldata data) external;
 
     function sync() external;
 

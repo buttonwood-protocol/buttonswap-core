@@ -1,7 +1,7 @@
 pragma solidity =0.5.16;
 
-import './interfaces/IButtonwoodFactory.sol';
-import './ButtonwoodPair.sol';
+import "./interfaces/IButtonwoodFactory.sol";
+import "./ButtonwoodPair.sol";
 
 contract ButtonwoodFactory is IButtonwoodFactory {
     address public feeTo;
@@ -21,10 +21,10 @@ contract ButtonwoodFactory is IButtonwoodFactory {
     }
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
-        require(tokenA != tokenB, 'Buttonwood: IDENTICAL_ADDRESSES');
+        require(tokenA != tokenB, "Buttonwood: IDENTICAL_ADDRESSES");
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'Buttonwood: ZERO_ADDRESS');
-        require(getPair[token0][token1] == address(0), 'Buttonwood: PAIR_EXISTS'); // single check is sufficient
+        require(token0 != address(0), "Buttonwood: ZERO_ADDRESS");
+        require(getPair[token0][token1] == address(0), "Buttonwood: PAIR_EXISTS"); // single check is sufficient
         bytes memory bytecode = type(ButtonwoodPair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {
@@ -38,12 +38,12 @@ contract ButtonwoodFactory is IButtonwoodFactory {
     }
 
     function setFeeTo(address _feeTo) external {
-        require(msg.sender == feeToSetter, 'Buttonwood: FORBIDDEN');
+        require(msg.sender == feeToSetter, "Buttonwood: FORBIDDEN");
         feeTo = _feeTo;
     }
 
     function setFeeToSetter(address _feeToSetter) external {
-        require(msg.sender == feeToSetter, 'Buttonwood: FORBIDDEN');
+        require(msg.sender == feeToSetter, "Buttonwood: FORBIDDEN");
         feeToSetter = _feeToSetter;
     }
 }

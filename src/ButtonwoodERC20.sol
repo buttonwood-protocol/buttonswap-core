@@ -1,13 +1,13 @@
 pragma solidity =0.5.16;
 
-import './interfaces/IButtonwoodERC20.sol';
-import './libraries/SafeMath.sol';
+import "./interfaces/IButtonwoodERC20.sol";
+import "./libraries/SafeMath.sol";
 
 contract ButtonwoodERC20 is IButtonwoodERC20 {
     using SafeMath for uint256;
 
-    string public constant name = 'Buttonwood';
-    string public constant symbol = 'BTNWD';
+    string public constant name = "Buttonwood";
+    string public constant symbol = "BTNWD";
     uint8 public constant decimals = 18;
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
@@ -28,9 +28,9 @@ contract ButtonwoodERC20 is IButtonwoodERC20 {
         }
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
-                keccak256('EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)'),
+                keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
                 keccak256(bytes(name)),
-                keccak256(bytes('1')),
+                keccak256(bytes("1")),
                 chainId,
                 address(this)
             )
@@ -49,20 +49,12 @@ contract ButtonwoodERC20 is IButtonwoodERC20 {
         emit Transfer(from, address(0), value);
     }
 
-    function _approve(
-        address owner,
-        address spender,
-        uint256 value
-    ) private {
+    function _approve(address owner, address spender, uint256 value) private {
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
     }
 
-    function _transfer(
-        address from,
-        address to,
-        uint256 value
-    ) private {
+    function _transfer(address from, address to, uint256 value) private {
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
         emit Transfer(from, to, value);
@@ -78,11 +70,7 @@ contract ButtonwoodERC20 is IButtonwoodERC20 {
         return true;
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 value
-    ) external returns (bool) {
+    function transferFrom(address from, address to, uint256 value) external returns (bool) {
         if (allowance[from][msg.sender] != uint256(-1)) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }
@@ -90,25 +78,19 @@ contract ButtonwoodERC20 is IButtonwoodERC20 {
         return true;
     }
 
-    function permit(
-        address owner,
-        address spender,
-        uint256 value,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
-    ) external {
-        require(deadline >= block.timestamp, 'Buttonwood: EXPIRED');
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external
+    {
+        require(deadline >= block.timestamp, "Buttonwood: EXPIRED");
         bytes32 digest = keccak256(
             abi.encodePacked(
-                '\x19\x01',
+                "\x19\x01",
                 DOMAIN_SEPARATOR,
                 keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonces[owner]++, deadline))
             )
         );
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, 'Buttonwood: INVALID_SIGNATURE');
+        require(recoveredAddress != address(0) && recoveredAddress == owner, "Buttonwood: INVALID_SIGNATURE");
         _approve(owner, spender, value);
     }
 }
