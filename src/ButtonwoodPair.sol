@@ -1,4 +1,5 @@
-pragma solidity =0.5.16;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity =0.8.10;
 
 import "./interfaces/IButtonwoodPair.sol";
 import "./ButtonwoodERC20.sol";
@@ -54,20 +55,7 @@ contract ButtonwoodPair is IButtonwoodPair, ButtonwoodERC20 {
         require(success && (data.length == 0 || abi.decode(data, (bool))), "Buttonwood: TRANSFER_FAILED");
     }
 
-    event Mint(address indexed sender, uint256 amount0, uint256 amount1);
-    event Burn(address indexed sender, uint256 amount0, uint256 amount1, address indexed to);
-    event Swap(
-        address indexed sender,
-        uint256 amount0In,
-        uint256 amount1In,
-        uint256 amount0Out,
-        uint256 amount1Out,
-        address indexed to
-    );
-    event Sync(uint112 pool0, uint112 pool1);
-    event SyncReservoir(uint112 reservoir0, uint112 reservoir1);
-
-    constructor() public {
+    constructor() {
         factory = msg.sender;
     }
 
@@ -80,7 +68,7 @@ contract ButtonwoodPair is IButtonwoodPair, ButtonwoodERC20 {
 
     // update pools and, on the first call per block, price accumulators
     function _update(uint256 balance0, uint256 balance1, uint112 _pool0, uint112 _pool1) private {
-        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "Buttonwood: OVERFLOW");
+        require(balance0 <= type(uint112).max && balance1 <= type(uint112).max, "Buttonwood: OVERFLOW");
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0 && _pool0 != 0 && _pool1 != 0) {
@@ -104,8 +92,8 @@ contract ButtonwoodPair is IButtonwoodPair, ButtonwoodERC20 {
         uint256 newReservoir1
     ) private {
         require(
-            newPool0 <= uint112(-1) && newPool1 <= uint112(-1) && newReservoir0 <= uint112(-1)
-                && newReservoir1 <= uint112(-1),
+            newPool0 <= type(uint112).max && newPool1 <= type(uint112).max && newReservoir0 <= type(uint112).max
+                && newReservoir1 <= type(uint112).max,
             "Buttonwood: OVERFLOW"
         );
 

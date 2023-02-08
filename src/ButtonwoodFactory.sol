@@ -1,4 +1,5 @@
-pragma solidity =0.5.16;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity =0.8.10;
 
 import "./interfaces/IButtonwoodFactory.sol";
 import "./ButtonwoodPair.sol";
@@ -10,9 +11,7 @@ contract ButtonwoodFactory is IButtonwoodFactory {
     mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
 
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
-
-    constructor(address _feeToSetter) public {
+    constructor(address _feeToSetter) {
         feeToSetter = _feeToSetter;
     }
 

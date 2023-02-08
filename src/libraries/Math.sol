@@ -1,4 +1,5 @@
-pragma solidity =0.5.16;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity =0.8.10;
 
 // a library for performing various math operations
 
