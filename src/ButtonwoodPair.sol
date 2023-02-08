@@ -81,7 +81,7 @@ contract ButtonwoodPair is IButtonwoodPair, ButtonwoodERC20 {
 
     // update pools and, on the first call per block, price accumulators
     function _update(uint256 balance0, uint256 balance1, uint112 _pool0, uint112 _pool1) private {
-        require(balance0 <= uint112(-1) && balance1 <= uint112(-1), "Buttonwood: OVERFLOW");
+        require(balance0 <= type(uint112).max && balance1 <= type(uint112).max, "Buttonwood: OVERFLOW");
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
         uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
         if (timeElapsed > 0 && _pool0 != 0 && _pool1 != 0) {
@@ -105,8 +105,8 @@ contract ButtonwoodPair is IButtonwoodPair, ButtonwoodERC20 {
         uint256 newReservoir1
     ) private {
         require(
-            newPool0 <= uint112(-1) && newPool1 <= uint112(-1) && newReservoir0 <= uint112(-1)
-                && newReservoir1 <= uint112(-1),
+            newPool0 <= type(uint112).max && newPool1 <= type(uint112).max && newReservoir0 <= type(uint112).max
+                && newReservoir1 <= type(uint112).max,
             "Buttonwood: OVERFLOW"
         );
 

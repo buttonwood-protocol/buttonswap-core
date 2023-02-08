@@ -72,7 +72,7 @@ contract ButtonwoodERC20 is IButtonwoodERC20 {
     }
 
     function transferFrom(address from, address to, uint256 value) external returns (bool) {
-        if (allowance[from][msg.sender] != uint256(-1)) {
+        if (allowance[from][msg.sender] != type(uint256).max) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }
         _transfer(from, to, value);
