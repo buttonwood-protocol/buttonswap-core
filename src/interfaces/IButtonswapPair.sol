@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.10;
 
-import "./IButtonwoodERC20.sol";
+import "./IButtonswapERC20.sol";
 
-interface IButtonwoodPair is IButtonwoodERC20 {
+interface IButtonswapPair is IButtonswapERC20 {
     event Mint(address indexed sender, uint256 amount0, uint256 amount1);
     event Burn(address indexed sender, uint256 amount0, uint256 amount1, address indexed to);
     event Swap(
