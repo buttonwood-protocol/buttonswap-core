@@ -55,19 +55,6 @@ contract ButtonwoodPair is IButtonwoodPair, ButtonwoodERC20 {
         require(success && (data.length == 0 || abi.decode(data, (bool))), "Buttonwood: TRANSFER_FAILED");
     }
 
-    event Mint(address indexed sender, uint256 amount0, uint256 amount1);
-    event Burn(address indexed sender, uint256 amount0, uint256 amount1, address indexed to);
-    event Swap(
-        address indexed sender,
-        uint256 amount0In,
-        uint256 amount1In,
-        uint256 amount0Out,
-        uint256 amount1Out,
-        address indexed to
-    );
-    event Sync(uint112 pool0, uint112 pool1);
-    event SyncReservoir(uint112 reservoir0, uint112 reservoir1);
-
     constructor() {
         factory = msg.sender;
     }
