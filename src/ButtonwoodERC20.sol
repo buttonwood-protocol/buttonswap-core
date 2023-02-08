@@ -22,7 +22,7 @@ contract ButtonwoodERC20 is IButtonwoodERC20 {
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
 
-    constructor() public {
+    constructor() {
         uint256 chainId;
         assembly {
             chainId := chainid

@@ -68,7 +68,7 @@ contract ButtonwoodPair is IButtonwoodPair, ButtonwoodERC20 {
     event Sync(uint112 pool0, uint112 pool1);
     event SyncReservoir(uint112 reservoir0, uint112 reservoir1);
 
-    constructor() public {
+    constructor() {
         factory = msg.sender;
     }
 
