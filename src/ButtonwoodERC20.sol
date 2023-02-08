@@ -25,7 +25,7 @@ contract ButtonwoodERC20 is IButtonwoodERC20 {
     constructor() {
         uint256 chainId;
         assembly {
-            chainId := chainid
+            chainId := chainid()
         }
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
