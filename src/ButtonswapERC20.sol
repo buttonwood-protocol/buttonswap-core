@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.10;
 
-import "./interfaces/IButtonwoodERC20.sol";
+import "./interfaces/IButtonswapERC20.sol";
 import "./libraries/SafeMath.sol";
 
-contract ButtonwoodERC20 is IButtonwoodERC20 {
+contract ButtonswapERC20 is IButtonswapERC20 {
     using SafeMath for uint256;
 
-    string public constant name = "Buttonwood";
-    string public constant symbol = "BTNWD";
+    string public constant name = "Buttonswap";
+    string public constant symbol = "BTNSWP";
     uint8 public constant decimals = 18;
     uint256 public totalSupply;
     mapping(address => uint256) public balanceOf;
@@ -79,7 +79,7 @@ contract ButtonwoodERC20 is IButtonwoodERC20 {
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external
     {
-        require(deadline >= block.timestamp, "Buttonwood: EXPIRED");
+        require(deadline >= block.timestamp, "Buttonswap: EXPIRED");
         bytes32 digest = keccak256(
             abi.encodePacked(
                 "\x19\x01",
@@ -88,7 +88,7 @@ contract ButtonwoodERC20 is IButtonwoodERC20 {
             )
         );
         address recoveredAddress = ecrecover(digest, v, r, s);
-        require(recoveredAddress != address(0) && recoveredAddress == owner, "Buttonwood: INVALID_SIGNATURE");
+        require(recoveredAddress != address(0) && recoveredAddress == owner, "Buttonswap: INVALID_SIGNATURE");
         _approve(owner, spender, value);
     }
 }
