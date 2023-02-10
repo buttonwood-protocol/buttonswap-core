@@ -2,6 +2,12 @@
 pragma solidity =0.8.10;
 
 interface IButtonswapERC20 {
+    /// @notice Permit deadline was exceeded
+    error PermitExpired();
+
+    /// @notice Permit signature invalid
+    error PermitInvalidSignature();
+
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Transfer(address indexed from, address indexed to, uint256 value);
 
