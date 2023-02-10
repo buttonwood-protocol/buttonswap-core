@@ -20,10 +20,17 @@ contract ButtonswapFactory is IButtonswapFactory {
     }
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
-        require(tokenA != tokenB, "Buttonswap: IDENTICAL_ADDRESSES");
+        if (tokenA == tokenB) {
+            revert TokenIdenticalAddress();
+        }
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), "Buttonswap: ZERO_ADDRESS");
-        require(getPair[token0][token1] == address(0), "Buttonswap: PAIR_EXISTS"); // single check is sufficient
+        if (token0 == address(0)) {
+            revert TokenZeroAddress();
+        }
+        // single check is sufficient
+        if (getPair[token0][token1] != address(0)) {
+            revert PairExists();
+        }
         bytes memory bytecode = type(ButtonswapPair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {
@@ -37,12 +44,16 @@ contract ButtonswapFactory is IButtonswapFactory {
     }
 
     function setFeeTo(address _feeTo) external {
-        require(msg.sender == feeToSetter, "Buttonswap: FORBIDDEN");
+        if (msg.sender != feeToSetter) {
+            revert Forbidden();
+        }
         feeTo = _feeTo;
     }
 
     function setFeeToSetter(address _feeToSetter) external {
-        require(msg.sender == feeToSetter, "Buttonswap: FORBIDDEN");
+        if (msg.sender != feeToSetter) {
+            revert Forbidden();
+        }
         feeToSetter = _feeToSetter;
     }
 }
