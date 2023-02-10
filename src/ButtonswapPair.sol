@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.10;
 
-import "./interfaces/IButtonswapPair.sol";
+import "./interfaces/IButtonswapPair/IButtonswapPair.sol";
 import "./ButtonswapERC20.sol";
 import "./libraries/Math.sol";
 import "./libraries/UQ112x112.sol";
-import "./interfaces/IERC20.sol";
-import "./interfaces/IButtonswapFactory.sol";
+import "./interfaces/IERC20/IERC20.sol";
+import "./interfaces/IButtonswapFactory/IButtonswapFactory.sol";
 import "./interfaces/IButtonswapCallee.sol";
 
 contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {

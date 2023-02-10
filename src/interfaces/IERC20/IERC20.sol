@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.10;
 
-interface IERC20 {
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-    event Transfer(address indexed from, address indexed to, uint256 value);
+import "./IERC20Events.sol";
 
+interface IERC20 is IERC20Events {
     function name() external view returns (string memory);
 
     function symbol() external view returns (string memory);
