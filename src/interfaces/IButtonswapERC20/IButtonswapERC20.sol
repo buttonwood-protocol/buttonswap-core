@@ -1,16 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.10;
 
-interface IButtonswapERC20 {
-    /// @notice Permit deadline was exceeded
-    error PermitExpired();
+import "./IButtonswapERC20Errors.sol";
+import "./IButtonswapERC20Events.sol";
 
-    /// @notice Permit signature invalid
-    error PermitInvalidSignature();
-
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-    event Transfer(address indexed from, address indexed to, uint256 value);
-
+interface IButtonswapERC20 is IButtonswapERC20Errors, IButtonswapERC20Events {
     function name() external pure returns (string memory);
 
     function symbol() external pure returns (string memory);

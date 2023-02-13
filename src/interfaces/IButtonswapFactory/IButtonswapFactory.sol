@@ -1,21 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity =0.8.10;
 
-interface IButtonswapFactory {
-    /// @notice The given token addresses are the same
-    error TokenIdenticalAddress();
+import "./IButtonswapFactoryErrors.sol";
+import "./IButtonswapFactoryEvents.sol";
 
-    /// @notice The given token address is the zero address
-    error TokenZeroAddress();
-
-    /// @notice The give tokens already have a ButtonswapPair instance
-    error PairExists();
-
-    /// @notice User does not have permission for the attempted operation
-    error Forbidden();
-
-    event PairCreated(address indexed token0, address indexed token1, address pair, uint256);
-
+interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEvents {
     function feeTo() external view returns (address);
 
     function feeToSetter() external view returns (address);
