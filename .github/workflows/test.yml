@@ -1,6 +1,6 @@
 name: test
 
-on: workflow_dispatch
+on: [push, pull_request]
 
 env:
   FOUNDRY_PROFILE: ci
@@ -32,3 +32,8 @@ jobs:
         run: |
           forge test -vvv
         id: test
+
+      - name: Run Forge Coverage
+        run: |
+          forge coverage
+        id: coverage
