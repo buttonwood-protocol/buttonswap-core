@@ -1,7 +1,5 @@
 name: test
 on:
-  push:
-    branches: [main]
   pull_request:
     branches: [main]
 
@@ -13,7 +11,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Foundry project
+    name: Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -38,5 +36,11 @@ jobs:
 
       - name: Run Forge Coverage
         run: |
-          forge coverage
+          forge coverage > /coverage-report.md
         id: coverage
+
+      - name: Report Coverage in PR
+        uses: thollander/actions-comment-pull-request@v2.3.1
+        with:
+          filePath: /coverage-report.md
+          comment_tag: coverage-report
