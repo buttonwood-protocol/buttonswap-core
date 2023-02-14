@@ -73,26 +73,26 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.balanceOf(userB), amount2);
     }
 
-//    function testBurn(uint256 amount1, uint256 amount2) public {
-//        vm.assume(amount1 <= (type(uint256).max / 2));
-//        vm.assume(amount2 < (type(uint256).max / 2));
-//
-//        mockButtonswapERC20.mockMint(userA, amount1);
-//        mockButtonswapERC20.mockMint(userB, amount2);
-//        assertEq(mockButtonswapERC20.totalSupply(), amount1 + amount2);
-//        assertEq(mockButtonswapERC20.balanceOf(userA), amount1);
-//        assertEq(mockButtonswapERC20.balanceOf(userB), amount2);
-//
-//        mockButtonswapERC20.mockBurn(userA, amount1);
-//        assertEq(mockButtonswapERC20.totalSupply(), amount2);
-//        assertEq(mockButtonswapERC20.balanceOf(userA), 0);
-//        assertEq(mockButtonswapERC20.balanceOf(userB), amount2);
-//
-//        mockButtonswapERC20.mockBurn(userB, amount2);
-//        assertEq(mockButtonswapERC20.totalSupply(), 0);
-//        assertEq(mockButtonswapERC20.balanceOf(userA), 0);
-//        assertEq(mockButtonswapERC20.balanceOf(userB), 0);
-//    }
+    function testBurn(uint256 amount1, uint256 amount2) public {
+        vm.assume(amount1 <= (type(uint256).max / 2));
+        vm.assume(amount2 < (type(uint256).max / 2));
+
+        mockButtonswapERC20.mockMint(userA, amount1);
+        mockButtonswapERC20.mockMint(userB, amount2);
+        assertEq(mockButtonswapERC20.totalSupply(), amount1 + amount2);
+        assertEq(mockButtonswapERC20.balanceOf(userA), amount1);
+        assertEq(mockButtonswapERC20.balanceOf(userB), amount2);
+
+        mockButtonswapERC20.mockBurn(userA, amount1);
+        assertEq(mockButtonswapERC20.totalSupply(), amount2);
+        assertEq(mockButtonswapERC20.balanceOf(userA), 0);
+        assertEq(mockButtonswapERC20.balanceOf(userB), amount2);
+
+        mockButtonswapERC20.mockBurn(userB, amount2);
+        assertEq(mockButtonswapERC20.totalSupply(), 0);
+        assertEq(mockButtonswapERC20.balanceOf(userA), 0);
+        assertEq(mockButtonswapERC20.balanceOf(userB), 0);
+    }
 
     function testApprove(uint256 amount) public {
         address owner = userA;
