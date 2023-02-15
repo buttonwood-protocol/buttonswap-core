@@ -2,9 +2,10 @@
 pragma solidity =0.8.10;
 
 import "forge-std/Test.sol";
-import "../src/ButtonswapERC20.sol";
-import "./mocks/MockButtonswapERC20.sol";
-import "./utils/Utils.sol";
+import {IButtonswapERC20Events, IButtonswapERC20Errors} from "../src/interfaces/IButtonswapERC20/IButtonswapERC20.sol";
+import {ButtonswapERC20} from "../src/ButtonswapERC20.sol";
+import {MockButtonswapERC20} from "./mocks/MockButtonswapERC20.sol";
+import {Utils} from "./utils/Utils.sol";
 
 contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Errors {
     ButtonswapERC20 public buttonswapERC20;
@@ -352,7 +353,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         vm.warp(deadline + 1 seconds);
         vm.expectRevert(PermitInvalidSignature.selector);
         // Try to call with a deadline value that exceeds current time but doesn't match signature deadline
-        mockButtonswapERC20.permit(owner, spender, amount, deadline+ 2 seconds, v, r, s);
+        mockButtonswapERC20.permit(owner, spender, amount, deadline + 2 seconds, v, r, s);
 
         assertEq(mockButtonswapERC20.nonces(owner), 0);
         assertEq(mockButtonswapERC20.allowance(owner, spender), 0);
