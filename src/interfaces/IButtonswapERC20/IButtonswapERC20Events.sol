@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.10;
+pragma solidity ^0.8.13;
 
 interface IButtonswapERC20Events {
     event Approval(address indexed owner, address indexed spender, uint256 value);
