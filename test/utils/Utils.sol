@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity =0.8.10;
+pragma solidity ^0.8.13;
 
 library Utils {
     function isValidPrivateKey(uint256 privateKey) internal pure returns (bool) {
