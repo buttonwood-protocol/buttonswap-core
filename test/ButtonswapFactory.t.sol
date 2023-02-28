@@ -28,7 +28,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         return tokens;
     }
 
-    function testCreatePair(
+    function test_createPair(
         address initialFeeToSetter,
         address token0A,
         address token0B,
@@ -214,7 +214,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         assertEq(buttonswapFactory2.getPair(tokens2.B, tokens2.A), pair22);
     }
 
-    function testCannotCreatePairWithIdenticalTokens(address initialFeeToSetter, address token) public {
+    function test_createPair_CannotCreatePairWithIdenticalTokens(address initialFeeToSetter, address token) public {
         vm.assume(initialFeeToSetter != address(this));
         ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
 
@@ -233,7 +233,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         assertEq(buttonswapFactory.getPair(token, token), address(0));
     }
 
-    function testCannotCreatePairWithZeroAddressTokens(address initialFeeToSetter, address token) public {
+    function test_createPair_CannotCreatePairWithZeroAddressTokens(address initialFeeToSetter, address token) public {
         vm.assume(initialFeeToSetter != address(this));
         // Ensure fuzzed address is non-zero
         vm.assume(token != address(0));
@@ -264,7 +264,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         assertEq(buttonswapFactory.getPair(token, address(0)), address(0));
     }
 
-    function testCannotCreatePairThatWasAlreadyCreated(address initialFeeToSetter, address tokenA, address tokenB)
+    function test_createPair_CannotCreatePairThatWasAlreadyCreated(address initialFeeToSetter, address tokenA, address tokenB)
         public
     {
         vm.assume(initialFeeToSetter != address(this));
@@ -313,7 +313,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         buttonswapFactory.allPairs(1);
     }
 
-    function testSetFeeTo(address initialFeeToSetter, address feeTo) public {
+    function test_setFeeTo(address initialFeeToSetter, address feeTo) public {
         vm.assume(initialFeeToSetter != address(this));
         ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
         assertEq(buttonswapFactory.feeTo(), address(0));
@@ -323,7 +323,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         assertEq(buttonswapFactory.feeTo(), feeTo);
     }
 
-    function testCannotSetFeeToWhenNotFeeSetter(address initialFeeToSetter, address feeTo) public {
+    function test_setFeeTo_CannotCallWhenNotFeeSetter(address initialFeeToSetter, address feeTo) public {
         vm.assume(initialFeeToSetter != address(this));
         ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
         assertEq(buttonswapFactory.feeTo(), address(0));
@@ -333,7 +333,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         assertEq(buttonswapFactory.feeTo(), address(0));
     }
 
-    function testSetFeeToSetter(address initialFeeToSetter, address newFeeToSetter) public {
+    function test_setFeeToSetter(address initialFeeToSetter, address newFeeToSetter) public {
         vm.assume(initialFeeToSetter != address(this));
         ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
         assertEq(buttonswapFactory.feeToSetter(), initialFeeToSetter);
@@ -343,7 +343,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         assertEq(buttonswapFactory.feeToSetter(), newFeeToSetter);
     }
 
-    function testCannotSetFeeToSetterWhenNotFeeSetter(address initialFeeToSetter, address newFeeToSetter) public {
+    function test_setFeeToSetter_CannotCallWhenNotFeeSetter(address initialFeeToSetter, address newFeeToSetter) public {
         vm.assume(initialFeeToSetter != address(this));
         ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
         assertEq(buttonswapFactory.feeToSetter(), initialFeeToSetter);
