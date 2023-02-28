@@ -127,8 +127,8 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
 
     function test_mint_FirstMint(uint256 amount0, uint256 amount1) public {
         // Make sure the amounts aren't liable to overflow 2**112
-        vm.assume(amount0 < (2 ** 56) / 4);
-        vm.assume(amount1 < (2 ** 56) / 4);
+        vm.assume(amount0 < (2 ** 112));
+        vm.assume(amount1 < (2 ** 112));
         // Amounts must be non-zero
         // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
         vm.assume(Math.sqrt(amount0 * amount1) > 1000);
@@ -171,8 +171,9 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
 
     function test_mint_NonRebasingSecondMint(uint256 amount00, uint256 amount01) public {
         // Make sure the amounts aren't liable to overflow 2**112
-        vm.assume(amount00 < (2 ** 56) / 4);
-        vm.assume(amount01 < (2 ** 56) / 4);
+        // Divide by 4 to make room for the second mint
+        vm.assume(amount00 < (2 ** 112) / 4);
+        vm.assume(amount01 < (2 ** 112) / 4);
         // Amounts must be non-zero
         // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
         vm.assume(Math.sqrt(amount00 * amount01) > 1000);
@@ -234,10 +235,11 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         uint256 amount11
     ) public {
         // Make sure the amounts aren't liable to overflow 2**112
-        vm.assume(amount00 < (2 ** 56) / 2);
-        vm.assume(amount01 < (2 ** 56) / 2);
-        vm.assume(amount10 < (2 ** 56) / 2);
-        vm.assume(amount11 < (2 ** 56) / 2);
+        // Divide by two to make room for second mint
+        vm.assume(amount00 < (2 ** 112) / 2);
+        vm.assume(amount01 < (2 ** 112) / 2);
+        vm.assume(amount10 < (2 ** 112) / 2);
+        vm.assume(amount11 < (2 ** 112) / 2);
         // Amounts must be non-zero
         vm.assume(amount10 > 0);
         vm.assume(amount11 > 0);
@@ -278,8 +280,8 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
 
     function test_mint_CannotFirstMintWithInsufficientLiquidity(uint256 amount0, uint256 amount1) public {
         // Make sure the amounts aren't liable to overflow 2**112
-        vm.assume(amount0 < (2 ** 56));
-        vm.assume(amount1 < (2 ** 56));
+        vm.assume(amount0 < (2 ** 112));
+        vm.assume(amount1 < (2 ** 112));
         // Amounts must be non-zero
         vm.assume(amount0 > 0);
         vm.assume(amount1 > 0);
@@ -314,8 +316,8 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
 
     function test_mint_CannotFirstMintWithBelowMinimumLiquidity(uint256 amount0, uint256 amount1) public {
         // Make sure the amounts aren't liable to overflow 2**112
-        vm.assume(amount0 < (2 ** 56));
-        vm.assume(amount1 < (2 ** 56));
+        vm.assume(amount0 < (2 ** 112));
+        vm.assume(amount1 < (2 ** 112));
         // Amounts must be non-zero
         vm.assume(amount0 > 0);
         vm.assume(amount1 > 0);
@@ -345,8 +347,9 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
 
     function test_mint_CannotSecondMintWithInsufficientLiquidity(uint256 amount00, uint256 amount01) public {
         // Make sure the amounts aren't liable to overflow 2**112
-        vm.assume(amount00 < (2 ** 111));
-        vm.assume(amount01 < (2 ** 111));
+        // Divide by two to make room for second mint
+        vm.assume(amount00 < (2 ** 112)/2);
+        vm.assume(amount01 < (2 ** 112)/2);
         // Amounts must be non-zero, and must exceed minimum liquidity
         vm.assume(amount00 > 1000);
         vm.assume(amount01 > 1000);
