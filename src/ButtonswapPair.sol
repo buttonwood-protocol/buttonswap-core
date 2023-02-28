@@ -79,11 +79,16 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             revert Overflow();
         }
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
-        uint32 timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+        uint32 timeElapsed;
+        unchecked {
+            timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+        }
         if (timeElapsed > 0 && _pool0 != 0 && _pool1 != 0) {
             // * never overflows, and + overflow is desired
-            price0CumulativeLast += uint256(UQ112x112.encode(_pool1).uqdiv(_pool0)) * timeElapsed;
-            price1CumulativeLast += uint256(UQ112x112.encode(_pool0).uqdiv(_pool1)) * timeElapsed;
+            unchecked {
+                price0CumulativeLast += uint256(UQ112x112.encode(_pool1).uqdiv(_pool0)) * timeElapsed;
+                price1CumulativeLast += uint256(UQ112x112.encode(_pool0).uqdiv(_pool1)) * timeElapsed;
+            }
         }
         pool0 = uint112(balance0);
         pool1 = uint112(balance1);
