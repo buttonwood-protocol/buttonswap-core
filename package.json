@@ -4,8 +4,5 @@
   "main": "index.js",
   "repository": "https://github.com/buttonwood-protocol/buttonswap-core.git",
   "author": "PRL",
-  "license": "GPL-3.0-or-later",
-  "dependencies": {
-    "uFragments": "https://github.com/ampleforth/ampleforth-contracts"
-  }
+  "license": "GPL-3.0-or-later"
 }
