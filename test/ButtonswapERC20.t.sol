@@ -20,28 +20,28 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         mockButtonswapERC20 = new MockButtonswapERC20();
     }
 
-    function testName() public {
+    function test_name() public {
         assertEq(buttonswapERC20.name(), "Buttonswap");
     }
 
-    function testSymbol() public {
+    function test_symbol() public {
         assertEq(buttonswapERC20.symbol(), "BTNSWP");
     }
 
-    function testDecimals() public {
+    function test_decimals() public {
         assertEq(buttonswapERC20.decimals(), 18);
     }
 
-    function testTotalSupply() public {
+    function test_totalSupply() public {
         assertEq(buttonswapERC20.totalSupply(), 0);
     }
 
-    function testBalanceOf() public {
+    function test_balanceOf() public {
         address owner;
         assertEq(buttonswapERC20.balanceOf(owner), 0);
     }
 
-    function testDOMAIN_SEPARATOR() public {
+    function test_DOMAIN_SEPARATOR() public {
         uint256 chainId;
         assembly {
             chainId := chainid()
@@ -61,7 +61,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         );
     }
 
-    function testMint(uint256 amount1, uint256 amount2) public {
+    function test_mint(uint256 amount1, uint256 amount2) public {
         vm.assume(amount1 <= (type(uint256).max / 2));
         vm.assume(amount2 < (type(uint256).max / 2));
 
@@ -74,7 +74,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.balanceOf(userB), amount2);
     }
 
-    function testBurn(uint256 amount1, uint256 amount2) public {
+    function test_burn(uint256 amount1, uint256 amount2) public {
         vm.assume(amount1 <= (type(uint256).max / 2));
         vm.assume(amount2 < (type(uint256).max / 2));
 
@@ -95,7 +95,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.balanceOf(userB), 0);
     }
 
-    function testApprove(uint256 amount) public {
+    function test_approve(uint256 amount) public {
         address owner = userA;
         address spender = userB;
 
@@ -108,7 +108,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.allowance(owner, spender), amount);
     }
 
-    function testTransfer(uint256 initialBalance, uint256 amount) public {
+    function test_transfer(uint256 initialBalance, uint256 amount) public {
         vm.assume(amount <= initialBalance);
         address sender = userA;
         address recipient = userB;
@@ -127,7 +127,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.balanceOf(recipient), amount);
     }
 
-    function testCannotTransferMoreThanBalance(uint256 initialBalance, uint256 amount) public {
+    function test_transfer_CannotTransferMoreThanBalance(uint256 initialBalance, uint256 amount) public {
         vm.assume(amount > initialBalance);
         address sender = userA;
         address recipient = userB;
@@ -145,7 +145,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.balanceOf(recipient), 0);
     }
 
-    function testTransferFrom(uint256 initialBalance, uint256 amount) public {
+    function test_transferFrom(uint256 initialBalance, uint256 amount) public {
         vm.assume(amount <= initialBalance);
         // max allowance is a special case which we test elsewhere
         vm.assume(amount != type(uint256).max);
@@ -175,7 +175,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.allowance(sender, spender), 0);
     }
 
-    function testMaxAllowanceTransferFrom(uint256 initialBalance, uint256 amount1, uint256 amount2) public {
+    function test_transferFrom_MaxAllowance(uint256 initialBalance, uint256 amount1, uint256 amount2) public {
         vm.assume(amount1 <= (type(uint256).max / 2));
         vm.assume(amount2 < (type(uint256).max / 2));
         vm.assume((amount1 + amount2) <= initialBalance);
@@ -220,7 +220,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.allowance(sender, spender), type(uint256).max);
     }
 
-    function testCannotTransferFromMoreThanBalance(uint256 initialBalance, uint256 amount) public {
+    function test_transferFrom_CannotTransferMoreThanBalance(uint256 initialBalance, uint256 amount) public {
         vm.assume(amount > initialBalance);
         address sender = userA;
         address spender = userB;
@@ -247,7 +247,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.allowance(sender, spender), amount);
     }
 
-    function testPermit(uint256 privateKey, uint256 amount) public {
+    function test_permit(uint256 privateKey, uint256 amount) public {
         vm.assume(Utils.isValidPrivateKey(privateKey));
 
         address owner = vm.addr(privateKey);
@@ -282,7 +282,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.allowance(owner, spender), amount);
     }
 
-    function testCannotCallPermitWhenDeadlineInvalid(uint256 privateKey, uint256 amount) public {
+    function test_permit_CannotCallWhenDeadlineInvalid(uint256 privateKey, uint256 amount) public {
         // This test matches permit call deadline param to what was used to create the signature, but
         //   warps time beyond the value such that it has expired.
         vm.assume(Utils.isValidPrivateKey(privateKey));
@@ -320,7 +320,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.allowance(owner, spender), 0);
     }
 
-    function testCannotCallPermitWhenDeadlineMismatch(uint256 privateKey, uint256 amount) public {
+    function test_permit_CannotCallWhenDeadlineMismatch(uint256 privateKey, uint256 amount) public {
         // This test simulates attempting to call permit with a deadline that is later than the current time, but
         //   which differs from the value used in signature (which has expired)
         vm.assume(Utils.isValidPrivateKey(privateKey));
@@ -359,7 +359,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.allowance(owner, spender), 0);
     }
 
-    function testCannotCallPermitWhenSpenderMismatch(uint256 privateKey, uint256 amount) public {
+    function test_permit_CannotCallWhenSpenderMismatch(uint256 privateKey, uint256 amount) public {
         // This test simulates attempting to call permit with a deadline that is later than the current time, but
         //   which differs from the value used in signature (which has expired)
         vm.assume(Utils.isValidPrivateKey(privateKey));

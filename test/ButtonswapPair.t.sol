@@ -63,7 +63,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         rebasingTokenB = ICommonMockRebasingERC20(address(new MockUFragments()));
     }
 
-    function testInitialize(address factory, address token0, address token1) public {
+    function test_initialize(address factory, address token0, address token1) public {
         vm.assume(factory != address(this));
 
         vm.prank(factory);
@@ -88,7 +88,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         assertEq(reservoir1, 0);
     }
 
-    function testCannotInitializeWhenNotCreator(address factory, address token0, address token1) public {
+    function test_initialize_CannotCallWhenNotCreator(address factory, address token0, address token1) public {
         vm.assume(factory != address(this));
 
         vm.prank(factory);
@@ -102,7 +102,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         pair.initialize(token0, token1);
     }
 
-    function testCreateViaFactory(address token0, address token1) public {
+    function test_initialize_CreateViaFactory(address token0, address token1) public {
         TestVariables memory vars;
         vars.feeToSetter = userA;
         vars.feeTo = userB;
