@@ -57,8 +57,8 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
     function setUp() public {
         tokenA = new MockERC20("TokenA", "TKNA");
         tokenB = new MockERC20("TokenB", "TKNB");
-        // rebasingTokenA = new MockRebasingERC20("TokenA", "TKNA", 18);
-        // rebasingTokenB = new MockRebasingERC20("TokenB", "TKNB", 18);
+        // rebasingTokenA = ICommonMockRebasingERC20(address(MockRebasingERC20("TokenA", "TKNA", 18)));
+        // rebasingTokenB = ICommonMockRebasingERC20(address(new MockRebasingERC20("TokenB", "TKNB", 18)));
         rebasingTokenA = ICommonMockRebasingERC20(address(new MockUFragments()));
         rebasingTokenB = ICommonMockRebasingERC20(address(new MockUFragments()));
     }
@@ -123,5 +123,273 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         assertEq(pool1, 0);
         assertEq(reservoir0, 0);
         assertEq(reservoir1, 0);
+    }
+
+    function test_mint_FirstMint(uint256 amount0, uint256 amount1) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(amount0 < (2 ** 56) / 4);
+        vm.assume(amount1 < (2 ** 56) / 4);
+        // Amounts must be non-zero
+        // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
+        vm.assume(Math.sqrt(amount0 * amount1) > 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, amount0);
+        vars.token1.mint(vars.minter1, amount1);
+
+        vm.startPrank(vars.minter1);
+        vars.token0.transfer(address(vars.pair), amount0);
+        vars.token1.transfer(address(vars.pair), amount1);
+        vm.expectEmit(true, true, true, true);
+        emit Mint(vars.minter1, amount0, amount1);
+        uint256 liquidity1 = vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        // 1000 liquidity was minted to zero address instead of minter1
+        assertEq(vars.pair.totalSupply(), liquidity1 + 1000);
+        assertEq(vars.pair.balanceOf(vars.zeroAddress), 1000);
+        assertEq(vars.pair.balanceOf(vars.feeToSetter), 0);
+        assertEq(vars.pair.balanceOf(vars.feeTo), 0);
+        assertEq(vars.pair.balanceOf(vars.minter1), liquidity1);
+        (uint256 pool0, uint256 pool1,) = vars.pair.getPools();
+        (uint256 reservoir0, uint256 reservoir1) = vars.pair.getReservoirs();
+        assertEq(pool0, amount0);
+        assertEq(pool1, amount1);
+        assertEq(reservoir0, 0);
+        assertEq(reservoir1, 0);
+        assertEq(liquidity1, Math.sqrt(amount0 * amount1) - 1000);
+    }
+
+    function test_mint_NonRebasingSecondMint(uint256 amount00, uint256 amount01) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(amount00 < (2 ** 56) / 4);
+        vm.assume(amount01 < (2 ** 56) / 4);
+        // Amounts must be non-zero
+        // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
+        vm.assume(Math.sqrt(amount00 * amount01) > 1000);
+        // Second mint needs to match same ratio as first mint
+        uint256 amount10 = amount00 * 3;
+        uint256 amount11 = amount01 * 3;
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.minter2 = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, amount00);
+        vars.token1.mint(vars.minter1, amount01);
+        vars.token0.mint(vars.minter2, amount10);
+        vars.token1.mint(vars.minter2, amount11);
+
+        vm.startPrank(vars.minter1);
+        vars.token0.transfer(address(vars.pair), amount00);
+        vars.token1.transfer(address(vars.pair), amount01);
+        uint256 liquidity1 = vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        vm.startPrank(vars.minter2);
+        vars.token0.transfer(address(vars.pair), amount10);
+        vars.token1.transfer(address(vars.pair), amount11);
+        vm.expectEmit(true, true, true, true);
+        emit Mint(vars.minter2, amount10, amount11);
+        uint256 liquidity2 = vars.pair.mint(vars.minter2);
+        vm.stopPrank();
+
+        // 1000 liquidity was minted to zero address instead of minter1
+        assertEq(vars.pair.totalSupply(), liquidity1 + liquidity2 + 1000);
+        assertEq(vars.pair.balanceOf(vars.zeroAddress), 1000);
+        assertEq(vars.pair.balanceOf(vars.feeToSetter), 0);
+        assertEq(vars.pair.balanceOf(vars.feeTo), 0);
+        assertEq(vars.pair.balanceOf(vars.minter1), liquidity1);
+        assertEq(vars.pair.balanceOf(vars.minter2), liquidity2);
+        (uint256 pool0, uint256 pool1,) = vars.pair.getPools();
+        (uint256 reservoir0, uint256 reservoir1) = vars.pair.getReservoirs();
+        assertEq(pool0, amount00 + amount10);
+        assertEq(pool1, amount01 + amount11);
+        assertEq(reservoir0, 0);
+        assertEq(reservoir1, 0);
+        // After first mint subsequent liquidity is calculated based on ratio of value added to value already in pair
+        assertEq(liquidity2, vars.pair.totalSupply() * (amount10 * 2) / (pool0 * 2));
+    }
+
+    function test_mint_CannotMintWithUnequalAmounts(
+        uint256 amount00,
+        uint256 amount01,
+        uint256 amount10,
+        uint256 amount11
+    ) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(amount00 < (2 ** 56) / 2);
+        vm.assume(amount01 < (2 ** 56) / 2);
+        vm.assume(amount10 < (2 ** 56) / 2);
+        vm.assume(amount11 < (2 ** 56) / 2);
+        // Amounts must be non-zero
+        vm.assume(amount10 > 0);
+        vm.assume(amount11 > 0);
+        // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
+        vm.assume(Math.sqrt(amount00 * amount01) > 1000);
+        // Second mint must not match price ratio
+        vm.assume(amount11 != ((amount10 * amount01) / amount00));
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.minter2 = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, amount00);
+        vars.token1.mint(vars.minter1, amount01);
+        vars.token0.mint(vars.minter2, amount10);
+        vars.token1.mint(vars.minter2, amount11);
+
+        vm.startPrank(vars.minter1);
+        vars.token0.transfer(address(vars.pair), amount00);
+        vars.token1.transfer(address(vars.pair), amount01);
+        vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        vm.startPrank(vars.minter2);
+        vars.token0.transfer(address(vars.pair), amount10);
+        vars.token1.transfer(address(vars.pair), amount11);
+        vm.expectRevert(UnequalMint.selector);
+        vars.pair.mint(vars.minter2);
+        vm.stopPrank();
+    }
+
+    function test_mint_CannotFirstMintWithInsufficientLiquidity(uint256 amount0, uint256 amount1) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(amount0 < (2 ** 56));
+        vm.assume(amount1 < (2 ** 56));
+        // Amounts must be non-zero
+        vm.assume(amount0 > 0);
+        vm.assume(amount1 > 0);
+        // They must also be insufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
+        // Use bound to avoid hitting reject cap
+        uint256 min = 999 ** 2;
+        uint256 max = 1001 ** 2;
+        amount0 = bound(amount0, min, max);
+        amount1 = bound(amount1, min / amount0, max / amount0);
+        vm.assume(Math.sqrt(amount0 * amount1) == 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, amount0);
+        vars.token1.mint(vars.minter1, amount1);
+
+        vm.startPrank(vars.minter1);
+        vars.token0.transfer(address(vars.pair), amount0);
+        vars.token1.transfer(address(vars.pair), amount1);
+        vm.expectRevert(InsufficientLiquidityMinted.selector);
+        vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+    }
+
+    function test_mint_CannotFirstMintWithBelowMinimumLiquidity(uint256 amount0, uint256 amount1) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(amount0 < (2 ** 56));
+        vm.assume(amount1 < (2 ** 56));
+        // Amounts must be non-zero
+        vm.assume(amount0 > 0);
+        vm.assume(amount1 > 0);
+        // They must also be insufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
+        vm.assume(Math.sqrt(amount0 * amount1) < 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, amount0);
+        vars.token1.mint(vars.minter1, amount1);
+
+        vm.startPrank(vars.minter1);
+        vars.token0.transfer(address(vars.pair), amount0);
+        vars.token1.transfer(address(vars.pair), amount1);
+        vm.expectRevert(stdError.arithmeticError);
+        vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+    }
+
+    function test_mint_CannotSecondMintWithInsufficientLiquidity(uint256 amount00, uint256 amount01) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(amount00 < (2 ** 111));
+        vm.assume(amount01 < (2 ** 111));
+        // Amounts must be non-zero, and must exceed minimum liquidity
+        vm.assume(amount00 > 1000);
+        vm.assume(amount01 > 1000);
+
+        // Calculate the smallest second mint possible that doesn't violate price ratio
+        uint256 amount10 = 1;
+        uint256 amount11 = 1;
+        if (amount00 < amount01) {
+            amount11 = amount01 / amount00;
+        } else {
+            amount10 = amount00 / amount01;
+        }
+
+        // Filter for scenarios where we expect the new liquidity to dip below 1, to check the error
+        vm.assume(((Math.sqrt(amount00 * amount01) * (amount11 + amount11)) / (amount01 + amount01)) == 0);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.minter2 = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, amount00);
+        vars.token1.mint(vars.minter1, amount01);
+        vars.token0.mint(vars.minter2, amount10);
+        vars.token1.mint(vars.minter2, amount11);
+
+        vm.startPrank(vars.minter1);
+        vars.token0.transfer(address(vars.pair), amount00);
+        vars.token1.transfer(address(vars.pair), amount01);
+        vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        vm.startPrank(vars.minter2);
+        vars.token0.transfer(address(vars.pair), amount10);
+        vars.token1.transfer(address(vars.pair), amount11);
+        vm.expectRevert(InsufficientLiquidityMinted.selector);
+        vars.pair.mint(vars.minter2);
+        vm.stopPrank();
     }
 }

@@ -264,9 +264,11 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         assertEq(buttonswapFactory.getPair(token, address(0)), address(0));
     }
 
-    function test_createPair_CannotCreatePairThatWasAlreadyCreated(address initialFeeToSetter, address tokenA, address tokenB)
-        public
-    {
+    function test_createPair_CannotCreatePairThatWasAlreadyCreated(
+        address initialFeeToSetter,
+        address tokenA,
+        address tokenB
+    ) public {
         vm.assume(initialFeeToSetter != address(this));
         // Ensure fuzzed addresses are non-zero
         vm.assume(tokenA != address(0));
@@ -343,7 +345,9 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         assertEq(buttonswapFactory.feeToSetter(), newFeeToSetter);
     }
 
-    function test_setFeeToSetter_CannotCallWhenNotFeeSetter(address initialFeeToSetter, address newFeeToSetter) public {
+    function test_setFeeToSetter_CannotCallWhenNotFeeSetter(address initialFeeToSetter, address newFeeToSetter)
+        public
+    {
         vm.assume(initialFeeToSetter != address(this));
         ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
         assertEq(buttonswapFactory.feeToSetter(), initialFeeToSetter);
