@@ -348,8 +348,8 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
     function test_mint_CannotSecondMintWithInsufficientLiquidity(uint256 amount00, uint256 amount01) public {
         // Make sure the amounts aren't liable to overflow 2**112
         // Divide by two to make room for second mint
-        vm.assume(amount00 < (2 ** 112)/2);
-        vm.assume(amount01 < (2 ** 112)/2);
+        vm.assume(amount00 < (2 ** 112) / 2);
+        vm.assume(amount01 < (2 ** 112) / 2);
         // Amounts must be non-zero, and must exceed minimum liquidity
         vm.assume(amount00 > 1000);
         vm.assume(amount01 > 1000);
@@ -393,6 +393,107 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.token1.transfer(address(vars.pair), amount11);
         vm.expectRevert(InsufficientLiquidityMinted.selector);
         vars.pair.mint(vars.minter2);
+        vm.stopPrank();
+    }
+
+    function test_burn(uint256 mintAmount0, uint256 mintAmount1, uint256 burnAmount) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(mintAmount0 < (2 ** 112) / 2);
+        vm.assume(mintAmount1 < (2 ** 112) / 2);
+        vm.assume(burnAmount < (2 ** 112) / 2);
+        // Amounts must be non-zero, and must exceed minimum liquidity
+        vm.assume(mintAmount0 > 1000);
+        vm.assume(mintAmount1 > 1000);
+        vm.assume(burnAmount > 0);
+        // Expected token amounts out must be non-zero
+        uint256 pairTotalSupply = Math.sqrt(mintAmount0 * mintAmount1);
+        uint256 expectedAmount0 = (mintAmount0 * burnAmount) / pairTotalSupply;
+        uint256 expectedAmount1 = (mintAmount1 * burnAmount) / pairTotalSupply;
+        // 1000 liquidity sent to zero address
+        vm.assume(burnAmount <= (pairTotalSupply - 1000));
+        vm.assume(expectedAmount0 > 0);
+        vm.assume(expectedAmount1 > 0);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.receiver = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, mintAmount0);
+        vars.token1.mint(vars.minter1, mintAmount1);
+
+        vm.startPrank(vars.minter1);
+        vars.token0.transfer(address(vars.pair), mintAmount0);
+        vars.token1.transfer(address(vars.pair), mintAmount1);
+        vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        pairTotalSupply = vars.pair.totalSupply();
+
+        vm.startPrank(vars.minter1);
+        vars.pair.transfer(address(vars.pair), burnAmount);
+        vm.expectEmit(true, true, true, true);
+        emit Burn(vars.minter1, expectedAmount0, expectedAmount1, vars.receiver);
+        (uint256 amount0, uint256 amount1) = vars.pair.burn(vars.receiver);
+        vm.stopPrank();
+
+        assertEq(amount0, expectedAmount0);
+        assertEq(amount1, expectedAmount1);
+        assertEq(vars.token0.balanceOf(vars.receiver), expectedAmount0);
+        assertEq(vars.token1.balanceOf(vars.receiver), expectedAmount1);
+        assertEq(vars.pair.totalSupply(), pairTotalSupply - burnAmount);
+    }
+
+    function test_burn_CannotCallWithInsufficientLiquidityBurned(
+        uint256 mintAmount0,
+        uint256 mintAmount1,
+        uint256 burnAmount
+    ) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(mintAmount0 < (2 ** 112) / 2);
+        vm.assume(mintAmount1 < (2 ** 112) / 2);
+        vm.assume(burnAmount < (2 ** 112) / 2);
+        // Amounts must be non-zero, and must exceed minimum liquidity
+        vm.assume(mintAmount0 > 1000);
+        vm.assume(mintAmount1 > 1000);
+        // Expected token amounts out must be non-zero
+        uint256 pairTotalSupply = Math.sqrt(mintAmount0 * mintAmount1);
+        uint256 expectedAmount0 = (mintAmount0 * burnAmount) / pairTotalSupply;
+        uint256 expectedAmount1 = (mintAmount1 * burnAmount) / pairTotalSupply;
+        // 1000 liquidity sent to zero address
+        vm.assume(burnAmount <= (pairTotalSupply - 1000));
+        vm.assume(expectedAmount0 == 0 || expectedAmount1 == 0);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.receiver = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, mintAmount0);
+        vars.token1.mint(vars.minter1, mintAmount1);
+
+        vm.startPrank(vars.minter1);
+        vars.token0.transfer(address(vars.pair), mintAmount0);
+        vars.token1.transfer(address(vars.pair), mintAmount1);
+        vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        vm.startPrank(vars.minter1);
+        vars.pair.transfer(address(vars.pair), burnAmount);
+        vm.expectRevert(InsufficientLiquidityBurned.selector);
+        vars.pair.burn(vars.receiver);
         vm.stopPrank();
     }
 }
