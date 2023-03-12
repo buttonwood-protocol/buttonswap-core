@@ -739,6 +739,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
 
+        // Attempt sync
         vm.prank(syncer);
         vm.expectRevert(Uninitialized.selector);
         vars.pair.sync();
@@ -765,23 +766,27 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.token0.mint(vars.minter1, mintAmount0);
         vars.token1.mint(vars.minter1, mintAmount1);
 
+        // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.token0.transfer(address(vars.pair), mintAmount0);
         vars.token1.transfer(address(vars.pair), mintAmount1);
         vars.pair.mint(vars.minter1);
         vm.stopPrank();
 
+        // Store current state for later comparison
         (uint112 pool0, uint112 pool1,) = vars.pair.getPools();
         (uint112 reservoir0, uint112 reservoir1) = vars.pair.getReservoirs();
         uint112 pool0Previous = pool0;
         uint112 pool1Previous = pool1;
 
+        // Do sync
         vm.prank(syncer);
         // Expect no changes since there's no rebasing
         vm.expectEmit(true, true, true, true);
         emit SyncReservoir(uint112(reservoir0), uint112(reservoir1));
         vars.pair.sync();
 
+        // Confirm final state meets expectations
         (pool0, pool1,) = vars.pair.getPools();
         (reservoir0, reservoir1) = vars.pair.getReservoirs();
         // At least one reservoir is 0
@@ -821,12 +826,14 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.rebasingToken0.mint(vars.minter1, mintAmount0);
         vars.token1.mint(vars.minter1, mintAmount1);
 
+        // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.rebasingToken0.transfer(address(vars.pair), mintAmount0);
         vars.token1.transfer(address(vars.pair), mintAmount1);
         vars.pair.mint(vars.minter1);
         vm.stopPrank();
 
+        // Store current state for later comparison
         (uint112 pool0, uint112 pool1,) = vars.pair.getPools();
         (uint112 reservoir0, uint112 reservoir1) = vars.pair.getReservoirs();
         uint112 pool0Previous = pool0;
@@ -835,6 +842,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         // Apply rebase
         vars.rebasingToken0.applyMultiplier(rebaseNumerator, rebaseDenominator);
 
+        // Do sync
         vm.prank(syncer);
         // Predicting final pool and reservoir values is too complex to test
         vm.expectEmit(false, false, false, false);
@@ -843,6 +851,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         emit SyncReservoir(0, 0);
         vars.pair.sync();
 
+        // Confirm final state meets expectations
         (pool0, pool1,) = vars.pair.getPools();
         (reservoir0, reservoir1) = vars.pair.getReservoirs();
         // At least one reservoir is 0
@@ -887,12 +896,14 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vm.assume(mintAmount1 <= vars.rebasingToken1.mintableBalance());
         vars.rebasingToken1.mint(vars.minter1, mintAmount1);
 
+        // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.rebasingToken0.transfer(address(vars.pair), mintAmount0);
         vars.rebasingToken1.transfer(address(vars.pair), mintAmount1);
         vars.pair.mint(vars.minter1);
         vm.stopPrank();
 
+        // Store current state for later comparison
         (uint112 pool0, uint112 pool1,) = vars.pair.getPools();
         (uint112 reservoir0, uint112 reservoir1) = vars.pair.getReservoirs();
         uint112 pool0Previous = pool0;
@@ -902,6 +913,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.rebasingToken0.applyMultiplier(rebaseNumerator0, rebaseDenominator0);
         vars.rebasingToken1.applyMultiplier(rebaseNumerator1, rebaseDenominator1);
 
+        // Do sync
         vm.prank(syncer);
         // Predicting final pool and reservoir values is too complex to test
         vm.expectEmit(false, false, false, false);
@@ -910,6 +922,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         emit SyncReservoir(0, 0);
         vars.pair.sync();
 
+        // Confirm final state meets expectations
         (pool0, pool1,) = vars.pair.getPools();
         (reservoir0, reservoir1) = vars.pair.getReservoirs();
         // At least one reservoir is 0
@@ -954,6 +967,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vm.assume(mintAmount1 <= vars.rebasingToken1.mintableBalance());
         vars.rebasingToken1.mint(vars.minter1, mintAmount1);
 
+        // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.rebasingToken0.transfer(address(vars.pair), mintAmount0);
         vars.rebasingToken1.transfer(address(vars.pair), mintAmount1);
@@ -987,6 +1001,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         emit SyncReservoir(0, 0);
         vars.pair.sync();
 
+        // Confirm final state meets expectations
         (pool0, pool1,) = vars.pair.getPools();
         (reservoir0, reservoir1) = vars.pair.getReservoirs();
         // At least one reservoir is 0
