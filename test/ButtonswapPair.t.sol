@@ -749,12 +749,14 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.token0.mint(vars.swapper1, vars.amount0In);
         vars.token1.mint(vars.swapper1, vars.amount1In);
 
+        // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.token0.transfer(address(vars.pair), mintAmount0);
         vars.token1.transfer(address(vars.pair), mintAmount1);
         vars.pair.mint(vars.minter1);
         vm.stopPrank();
 
+        // Do the swap
         vm.startPrank(vars.swapper1);
         vars.token0.transfer(address(vars.pair), vars.amount0In);
         vars.token1.transfer(address(vars.pair), vars.amount1In);
@@ -763,6 +765,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.pair.swap(vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
         vm.stopPrank();
 
+        // Confirm new state is as expected
         assertEq(vars.token0.balanceOf(address(vars.pair)), mintAmount0 + vars.amount0In - vars.amount0Out);
         assertEq(vars.token0.balanceOf(vars.swapper1), 0);
         assertEq(vars.token0.balanceOf(vars.receiver), vars.amount0Out);
@@ -823,12 +826,14 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.token0.mint(vars.swapper1, vars.amount0In);
         vars.token1.mint(vars.swapper1, vars.amount1In);
 
+        // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.token0.transfer(address(vars.pair), mintAmount0);
         vars.token1.transfer(address(vars.pair), mintAmount1);
         vars.pair.mint(vars.minter1);
         vm.stopPrank();
 
+        // Attempt the swap
         vm.startPrank(vars.swapper1);
         vars.token0.transfer(address(vars.pair), vars.amount0In);
         vars.token1.transfer(address(vars.pair), vars.amount1In);
@@ -883,12 +888,14 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.token0.mint(vars.swapper1, vars.amount0In);
         vars.token1.mint(vars.swapper1, vars.amount1In);
 
+        // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.token0.transfer(address(vars.pair), mintAmount0);
         vars.token1.transfer(address(vars.pair), mintAmount1);
         vars.pair.mint(vars.minter1);
         vm.stopPrank();
 
+        // Attempt the swap
         vm.startPrank(vars.swapper1);
         vars.token0.transfer(address(vars.pair), vars.amount0In);
         vars.token1.transfer(address(vars.pair), vars.amount1In);
@@ -943,12 +950,14 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.token0.mint(vars.swapper1, vars.amount0In);
         vars.token1.mint(vars.swapper1, vars.amount1In);
 
+        // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.token0.transfer(address(vars.pair), mintAmount0);
         vars.token1.transfer(address(vars.pair), mintAmount1);
         vars.pair.mint(vars.minter1);
         vm.stopPrank();
 
+        // Attempt the swap
         vm.startPrank(vars.swapper1);
         vars.token0.transfer(address(vars.pair), vars.amount0In);
         vars.token1.transfer(address(vars.pair), vars.amount1In);
@@ -1004,12 +1013,14 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.token0.mint(vars.swapper1, vars.amount0In);
         vars.token1.mint(vars.swapper1, vars.amount1In);
 
+        // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.token0.transfer(address(vars.pair), mintAmount0);
         vars.token1.transfer(address(vars.pair), mintAmount1);
         vars.pair.mint(vars.minter1);
         vm.stopPrank();
 
+        // Attempt the swap
         vm.startPrank(vars.swapper1);
         // Don't transfer any tokens in
         vm.expectRevert(InsufficientInputAmount.selector);
@@ -1065,12 +1076,14 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.token0.mint(vars.swapper1, vars.amount0In);
         vars.token1.mint(vars.swapper1, vars.amount1In);
 
+        // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.token0.transfer(address(vars.pair), mintAmount0);
         vars.token1.transfer(address(vars.pair), mintAmount1);
         vars.pair.mint(vars.minter1);
         vm.stopPrank();
 
+        // Attempt the swap
         vm.startPrank(vars.swapper1);
         vars.token0.transfer(address(vars.pair), vars.amount0In);
         vars.token1.transfer(address(vars.pair), vars.amount1In);
