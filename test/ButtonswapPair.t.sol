@@ -837,7 +837,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vm.stopPrank();
     }
 
-    function test_swap_CannotSwapForMoreTokensThanInPool(
+    function test_swap_CannotSwapForMoreOutputTokensThanInPool(
         uint256 mintAmount0,
         uint256 mintAmount1,
         uint256 outputAmount,
@@ -897,6 +897,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vm.stopPrank();
     }
 
+    /// @dev Can't specify the recipient as the address of either of the pool tokens
     function test_swap_CannotSwapWithInvalidRecipient(
         uint256 mintAmount0,
         uint256 mintAmount1,
@@ -956,6 +957,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vm.stopPrank();
     }
 
+    /// @param inputToken0 Whether token0 should be used as the input token for the swap
     function test_swap_CannotSwapWithInsufficientInputAmount(
         uint256 mintAmount0,
         uint256 mintAmount1,
