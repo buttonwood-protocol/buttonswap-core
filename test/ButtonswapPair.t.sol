@@ -768,6 +768,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
 
         // Do mint with reservoir
         vm.startPrank(vars.minter2);
+        // Whilst we are sending both tokens, in practise one of these amounts will be zero
         vars.rebasingToken0.transfer(address(vars.pair), amount10);
         vars.token1.transfer(address(vars.pair), amount11);
         vm.expectEmit(true, true, true, true);
@@ -854,7 +855,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         // Ignore edge cases where both reservoirs are still 0
         vm.assume(vars.reservoir0 > 0 || vars.reservoir1 > 0);
 
-        // Attempt mint with reservoir
+        // Attempt mintWithReservoir after sending both tokens
         vm.startPrank(vars.minter2);
         vars.rebasingToken0.transfer(address(vars.pair), amount10);
         vars.token1.transfer(address(vars.pair), amount11);
@@ -863,6 +864,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vm.stopPrank();
     }
 
+    /// @dev Test that the method reverts if the token amounts deposited are zero
     function test_mintWithReservoir_CannotMintWithInsufficientLiquidityAdded(
         uint256 amount00,
         uint256 amount01,
@@ -917,7 +919,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         // Ignore edge cases where both reservoirs are still 0
         vm.assume(vars.reservoir0 > 0 || vars.reservoir1 > 0);
 
-        // Attempt mint with reservoir
+        // Attempt mintWithReservoir with both amounts set to zero
         vm.startPrank(vars.minter2);
         vars.rebasingToken0.transfer(address(vars.pair), amount10);
         vars.token1.transfer(address(vars.pair), amount11);
@@ -948,7 +950,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.rebasingToken0.mint(vars.minter1, amount0);
         vars.token1.mint(vars.minter1, amount1);
 
-        // Attempt mint with reservoir
+        // Attempting mintWithReservoir as the first mint
         vm.startPrank(vars.minter1);
         vars.rebasingToken0.transfer(address(vars.pair), amount0);
         vars.token1.transfer(address(vars.pair), amount1);
@@ -1015,7 +1017,8 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         // Prepare the appropriate token for the second mint based on which reservoir has a non-zero balance
         if (vars.reservoir0 > 0) {
             uint256 reservoir0InTermsOf1 = (vars.reservoir0 * vars.pool1) / vars.pool0;
-            // Ensure we don't try to mint more than there's reservoir funds to pair with
+            // Ensure we mint more than there's reservoir funds to pair with
+            // +1 because due to rounding sometimes the test fails otherwise (amount1X is equal to the reservoir instead)
             vm.assume(amount1X > reservoir0InTermsOf1 + 1);
             // Ensure we don't get math overflow errors
             vm.assume(amount1X < type(uint256).max / (vars.pool0 * vars.pair.totalSupply()));
@@ -1023,7 +1026,8 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
             vars.token1.mint(vars.minter2, amount1X);
         } else {
             uint256 reservoir1InTermsOf0 = (vars.reservoir1 * vars.pool0) / vars.pool1;
-            // Ensure we don't try to mint more than there's reservoir funds to pair with
+            // Ensure we mint more than there's reservoir funds to pair with
+            // +1 because due to rounding sometimes the test fails otherwise (amount1X is equal to the reservoir instead)
             vm.assume(amount1X > reservoir1InTermsOf0 + 1);
             // Ensure we don't get math overflow errors
             vm.assume(amount1X < type(uint256).max / (vars.pool1 * vars.pair.totalSupply()));
@@ -1041,6 +1045,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vm.stopPrank();
     }
 
+    /// @dev Test that the method reverts if the amount of liquidity tokens the user receives is calculated to be zero
     function test_mintWithReservoir_CannotMintWithInsufficientLiquidityMinted(
         uint256 amount00,
         uint256 amount01,

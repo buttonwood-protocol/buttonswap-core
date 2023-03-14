@@ -100,6 +100,32 @@ L_{user} = L_{total} \cdot {A_{user} + A_{user} \over A_{pool} + A_{reservoir} +
 L_{user} = {L_{total} \cdot 2 \cdot A_{user} \over 2 \cdot A_{pool} + A_{reservoir} + {B_{reservoir} \cdot A_{pool} \over B_{pool}}}
 ```
 
+It is also worth mentioning that we know that one reservoir must be zero, and this allows us to further simplify the calculation:
+
+```math
+B_{reservoir} = 0
+```
+```math
+L_{user} = {L_{total} \cdot 2 \cdot A_{user} \over 2 \cdot A_{pool} + A_{reservoir} + {0 \cdot A_{pool} \over B_{pool}}}
+```
+```math
+L_{user} = {L_{total} \cdot 2 \cdot A_{user} \over 2 \cdot A_{pool} + A_{reservoir}}
+```
+
+This expression works for both tokens, simply set $A$ to be the token with non-zero reservoir.
+
+Naturally, if both reservoirs are zero then we can simplify further, ultimately arriving at the expression used in the original Uniswap V2 implementation:
+
+```math
+A_{reservoir} = 0
+```
+```math
+L_{user} = {L_{total} \cdot 2 \cdot A_{user} \over 2 \cdot A_{pool} + 0}
+```
+```math
+L_{user} = {L_{total} \cdot A_{user} \over A_{pool}}
+```
+
 ### Single-sided Mint
 
 A single-sided mint refers to when the user deposits only one of $A$ or $B$, with the pool reservoir supplying the required counterpart in a ratio that matches the current price.
