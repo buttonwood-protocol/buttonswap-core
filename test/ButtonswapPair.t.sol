@@ -99,10 +99,10 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
             // If reservoir0 is zero then pool0 is a fixed value, being the full token balance available
             // It is therefore pool1 that we must check is correct
             withinTolerance =
-            PriceAssertion.isTermWithinTolerance(pool1, pool0, pool1Previous, pool0Previous, tolerance);
+                PriceAssertion.isTermWithinTolerance(pool1, pool0, pool1Previous, pool0Previous, tolerance);
         } else {
             withinTolerance =
-            PriceAssertion.isTermWithinTolerance(pool0, pool1, pool0Previous, pool1Previous, tolerance);
+                PriceAssertion.isTermWithinTolerance(pool0, pool1, pool0Previous, pool1Previous, tolerance);
         }
         assertEq(withinTolerance, true, "New price outside of tolerance");
     }
@@ -1016,7 +1016,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         if (vars.reservoir0 > 0) {
             uint256 reservoir0InTermsOf1 = (vars.reservoir0 * vars.pool1) / vars.pool0;
             // Ensure we don't try to mint more than there's reservoir funds to pair with
-            vm.assume(amount1X > reservoir0InTermsOf1);
+            vm.assume(amount1X > reservoir0InTermsOf1 + 1);
             // Ensure we don't get math overflow errors
             vm.assume(amount1X < type(uint256).max / (vars.pool0 * vars.pair.totalSupply()));
             amount11 = amount1X;
@@ -1024,7 +1024,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         } else {
             uint256 reservoir1InTermsOf0 = (vars.reservoir1 * vars.pool0) / vars.pool1;
             // Ensure we don't try to mint more than there's reservoir funds to pair with
-            vm.assume(amount1X > reservoir1InTermsOf0);
+            vm.assume(amount1X > reservoir1InTermsOf0 + 1);
             // Ensure we don't get math overflow errors
             vm.assume(amount1X < type(uint256).max / (vars.pool1 * vars.pair.totalSupply()));
             vm.assume(amount1X < vars.rebasingToken0.mintableBalance());
