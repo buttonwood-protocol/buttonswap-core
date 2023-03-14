@@ -62,6 +62,29 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         return (poolOutput * inputAmount * 997) / ((poolInput * 1000) + (inputAmount * 997));
     }
 
+    /// @dev Refer to `/notes/mint-math.md`
+    function getNewDualSidedLiquidityAmount(
+        uint256 totalLiquidity,
+        uint256 mintAmountA,
+        uint256 poolA,
+        uint256 poolB,
+        uint256 reservoirA,
+        uint256 reservoirB
+    ) public pure returns (uint256) {
+        return (totalLiquidity * 2 * mintAmountA) / (poolA + poolA + reservoirA + ((reservoirB * poolA) / poolB));
+    }
+
+    /// @dev Refer to `/notes/mint-math.md`
+    function getNewSingleSidedLiquidityAmount(
+        uint256 totalLiquidity,
+        uint256 mintAmountB,
+        uint256 poolA,
+        uint256 poolB,
+        uint256 reservoirA
+    ) public pure returns (uint256) {
+        return (totalLiquidity * mintAmountB * poolA) / (poolB * (poolA + poolA + reservoirA));
+    }
+
     function assertPriceUnchanged(
         uint112 reservoir0,
         uint112 pool0Previous,
@@ -232,32 +255,44 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vm.startPrank(vars.minter1);
         vars.token0.transfer(address(vars.pair), amount00);
         vars.token1.transfer(address(vars.pair), amount01);
-        uint256 liquidity1 = vars.pair.mint(vars.minter1);
+        vars.liquidity1 = vars.pair.mint(vars.minter1);
         vm.stopPrank();
+
+        // Calculate expected values to assert against
+        (vars.pool0, vars.pool1,) = vars.pair.getPools();
+        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        uint256 pool0New = vars.pool0 + amount10;
+        uint256 pool1New = vars.pool1 + amount11;
+        uint256 reservoir0New = vars.reservoir0;
+        uint256 reservoir1New = vars.reservoir1;
+        // After first mint subsequent liquidity is calculated based on ratio of value added to value already in pair
+        uint256 liquidityNew = getNewDualSidedLiquidityAmount(
+            vars.pair.totalSupply(), amount11, vars.pool1, vars.pool0, vars.reservoir1, vars.reservoir0
+        );
+        vm.assume(liquidityNew > 0);
 
         vm.startPrank(vars.minter2);
         vars.token0.transfer(address(vars.pair), amount10);
         vars.token1.transfer(address(vars.pair), amount11);
         vm.expectEmit(true, true, true, true);
         emit Mint(vars.minter2, amount10, amount11);
-        uint256 liquidity2 = vars.pair.mint(vars.minter2);
+        vars.liquidity2 = vars.pair.mint(vars.minter2);
         vm.stopPrank();
 
         // 1000 liquidity was minted to zero address instead of minter1
-        assertEq(vars.pair.totalSupply(), liquidity1 + liquidity2 + 1000);
+        assertEq(vars.pair.totalSupply(), vars.liquidity1 + vars.liquidity2 + 1000, "totalSupply");
         assertEq(vars.pair.balanceOf(vars.zeroAddress), 1000);
         assertEq(vars.pair.balanceOf(vars.feeToSetter), 0);
         assertEq(vars.pair.balanceOf(vars.feeTo), 0);
-        assertEq(vars.pair.balanceOf(vars.minter1), liquidity1);
-        assertEq(vars.pair.balanceOf(vars.minter2), liquidity2);
-        (uint256 pool0, uint256 pool1,) = vars.pair.getPools();
-        (uint256 reservoir0, uint256 reservoir1) = vars.pair.getReservoirs();
-        assertEq(pool0, amount00 + amount10);
-        assertEq(pool1, amount01 + amount11);
-        assertEq(reservoir0, 0);
-        assertEq(reservoir1, 0);
-        // After first mint subsequent liquidity is calculated based on ratio of value added to value already in pair
-        assertEq(liquidity2, vars.pair.totalSupply() * (amount10 * 2) / (pool0 * 2));
+        assertEq(vars.pair.balanceOf(vars.minter1), vars.liquidity1);
+        assertEq(vars.pair.balanceOf(vars.minter2), vars.liquidity2);
+        (vars.pool0, vars.pool1,) = vars.pair.getPools();
+        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        assertEq(vars.pool0, pool0New, "pool0");
+        assertEq(vars.pool1, pool1New, "pool1");
+        assertEq(vars.reservoir0, reservoir0New, "reservoir0");
+        assertEq(vars.reservoir1, reservoir1New, "reservoir1");
+        assertEq(vars.liquidity2, liquidityNew, "liquidity2");
     }
 
     function test_mint_CannotMintWithUnequalAmounts(
@@ -491,13 +526,9 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         uint256 pool1New = vars.pool1 + amount11;
         uint256 reservoir0New = vars.reservoir0;
         uint256 reservoir1New = vars.reservoir1;
-        // After first mint subsequent liquidity is calculated based on ratio of value added to value already in pair
-        uint256 liquidityNew;
-        {
-            uint256 reservoir0InTermsOf1 = (vars.reservoir0 * vars.pool1) / vars.pool0;
-            liquidityNew =
-                vars.pair.totalSupply() * (amount11 * 2) / ((vars.pool1 * 2) + vars.reservoir1 + reservoir0InTermsOf1);
-        }
+        uint256 liquidityNew = getNewDualSidedLiquidityAmount(
+            vars.pair.totalSupply(), amount11, vars.pool1, vars.pool0, vars.reservoir1, vars.reservoir0
+        );
 
         vm.startPrank(vars.minter2);
         vars.rebasingToken0.transfer(address(vars.pair), amount10);
@@ -596,12 +627,9 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         uint256 reservoir0New = vars.reservoir0;
         uint256 reservoir1New = vars.reservoir1;
         // After first mint subsequent liquidity is calculated based on ratio of value added to value already in pair
-        uint256 liquidityNew;
-        {
-            uint256 reservoir0InTermsOf1 = (vars.reservoir0 * vars.pool1) / vars.pool0;
-            liquidityNew =
-                vars.pair.totalSupply() * (amount11 * 2) / ((vars.pool1 * 2) + vars.reservoir1 + reservoir0InTermsOf1);
-        }
+        uint256 liquidityNew = getNewDualSidedLiquidityAmount(
+            vars.pair.totalSupply(), amount11, vars.pool1, vars.pool0, vars.reservoir1, vars.reservoir0
+        );
         vm.assume(liquidityNew > 0);
 
         vm.startPrank(vars.minter2);
@@ -628,6 +656,489 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         assertEq(vars.reservoir0, reservoir0New, "reservoir0");
         assertEq(vars.reservoir1, reservoir1New, "reservoir1");
         assertEq(vars.liquidity2, liquidityNew, "liquidity2");
+    }
+
+    /// @param amount1X The amount for the second mint, with it not yet known which token it corresponds to
+    function test_mintWithReservoir(
+        uint256 amount00,
+        uint256 amount01,
+        uint256 amount1X,
+        uint256 rebaseNumerator,
+        uint256 rebaseDenominator
+    ) public {
+        uint256 amount10;
+        uint256 amount11;
+        // Make sure the amounts aren't liable to overflow 2**112
+        // Divide by 1000 so that it can handle a rebase
+        vm.assume(amount00 < (uint256(2 ** 112) / 1000));
+        vm.assume(amount01 < (uint256(2 ** 112) / 1000));
+        // Amounts must be non-zero
+        // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
+        vm.assume(Math.sqrt(amount00 * amount01) > 1000);
+        // Keep rebase factor in sensible range
+        vm.assume(rebaseNumerator > 0 && rebaseNumerator < 1000);
+        vm.assume(rebaseDenominator > 0 && rebaseDenominator < 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.minter2 = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vm.assume(amount00 < vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.minter1, amount00);
+        vars.token1.mint(vars.minter1, amount01);
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.rebasingToken0.transfer(address(vars.pair), amount00);
+        vars.token1.transfer(address(vars.pair), amount01);
+        vars.liquidity1 = vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        // Rebase
+        vars.rebasingToken0.applyMultiplier(rebaseNumerator, rebaseDenominator);
+        // Sync
+        vars.pair.sync();
+
+        (vars.pool0, vars.pool1,) = vars.pair.getPools();
+        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        // Ignore edge cases where negative rebase removes all liquidity
+        vm.assume(vars.pool0 > 0 && vars.pool1 > 0);
+        // Ignore edge cases where both reservoirs are still 0
+        vm.assume(vars.reservoir0 > 0 || vars.reservoir1 > 0);
+
+        // Calculate expected values to assert against
+        uint256 pool0New;
+        uint256 pool1New;
+        uint256 reservoir0New;
+        uint256 reservoir1New;
+        uint256 liquidityNew;
+
+        // Prepare the appropriate token for the second mint based on which reservoir has a non-zero balance
+        if (vars.reservoir0 > 0) {
+            uint256 reservoir0InTermsOf1 = (vars.reservoir0 * vars.pool1) / vars.pool0;
+            // Ensure we don't try to mint more than there's reservoir funds to pair with
+            vm.assume(amount1X <= reservoir0InTermsOf1);
+            amount11 = amount1X;
+            vars.token1.mint(vars.minter2, amount1X);
+            // Calculate the amount of reservoir token0 that will be paired with amount11 that will be staked
+            uint256 amount11InTermsOf0 = (amount11 * vars.pool0) / vars.pool1;
+            // Active token0 liquidity increases by amount being moved in from reservoir
+            pool0New = vars.pool0 + amount11InTermsOf0;
+            // token1 liquidity increases by amount being deposited
+            pool1New = vars.pool1 + amount11;
+            // Non-zero reservoir should decrease by amount being moved to active liquidity
+            reservoir0New = vars.reservoir0 - amount11InTermsOf0;
+            // Other reservoir should not change value
+            reservoir1New = vars.reservoir1;
+            // Calculate the liquidity the minter should receive
+            liquidityNew = getNewSingleSidedLiquidityAmount(
+                vars.pair.totalSupply(), amount11, vars.pool0, vars.pool1, vars.reservoir0
+            );
+        } else {
+            uint256 reservoir1InTermsOf0 = (vars.reservoir1 * vars.pool0) / vars.pool1;
+            // Ensure we don't try to mint more than there's reservoir funds to pair with
+            vm.assume(amount1X <= reservoir1InTermsOf0);
+            vm.assume(amount1X < vars.rebasingToken0.mintableBalance());
+            amount10 = amount1X;
+            vars.rebasingToken0.mint(vars.minter2, amount1X);
+            // Calculate the amount of reservoir token0 that will be paired with amount11 that will be staked
+            uint256 amount10InTermsOf1 = (amount10 * vars.pool1) / vars.pool0;
+            // token1 liquidity increases by amount being deposited
+            pool0New = vars.pool0 + amount10;
+            // Active token0 liquidity increases by amount being moved in from reservoir
+            pool1New = vars.pool1 + amount10InTermsOf1;
+            // Other reservoir should not change value
+            reservoir0New = vars.reservoir0;
+            // Non-zero reservoir should decrease by amount being moved to active liquidity
+            reservoir1New = vars.reservoir1 - amount10InTermsOf1;
+            // Calculate the liquidity the minter should receive
+            liquidityNew = getNewSingleSidedLiquidityAmount(
+                vars.pair.totalSupply(), amount10, vars.pool1, vars.pool0, vars.reservoir1
+            );
+        }
+        // Ignore cases where no new liquidity is created
+        vm.assume(liquidityNew > 0);
+
+        // Do mint with reservoir
+        vm.startPrank(vars.minter2);
+        // Whilst we are sending both tokens, in practise one of these amounts will be zero
+        vars.rebasingToken0.transfer(address(vars.pair), amount10);
+        vars.token1.transfer(address(vars.pair), amount11);
+        vm.expectEmit(true, true, true, true);
+        emit Mint(vars.minter2, amount10, amount11);
+        vars.liquidity2 = vars.pair.mintWithReservoir(vars.minter2);
+        vm.stopPrank();
+
+        // 1000 liquidity was minted to zero address instead of minter1
+        assertEq(vars.pair.totalSupply(), vars.liquidity1 + vars.liquidity2 + 1000);
+        assertEq(vars.pair.balanceOf(vars.zeroAddress), 1000);
+        assertEq(vars.pair.balanceOf(vars.feeToSetter), 0);
+        // There should be no fee collected on balance increases that occur outside of a swap
+        assertEq(vars.pair.balanceOf(vars.feeTo), 0);
+        assertEq(vars.pair.balanceOf(vars.minter1), vars.liquidity1);
+        assertEq(vars.pair.balanceOf(vars.minter2), vars.liquidity2);
+        (vars.pool0, vars.pool1,) = vars.pair.getPools();
+        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        assertEq(vars.pool0, pool0New, "pool0");
+        assertEq(vars.pool1, pool1New, "pool1");
+        assertEq(vars.reservoir0, reservoir0New, "reservoir0");
+        assertEq(vars.reservoir1, reservoir1New, "reservoir1");
+        assertEq(vars.liquidity2, liquidityNew, "liquidity2");
+    }
+
+    function test_mintWithReservoir_CannotMintWithBothSides(
+        uint256 amount00,
+        uint256 amount01,
+        uint256 amount10,
+        uint256 amount11,
+        uint256 rebaseNumerator,
+        uint256 rebaseDenominator
+    ) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        // Divide by 1000 so that it can handle a rebase
+        vm.assume(amount00 < (uint256(2 ** 112) / 1000));
+        vm.assume(amount01 < (uint256(2 ** 112) / 1000));
+        // Amounts must be non-zero
+        // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
+        vm.assume(Math.sqrt(amount00 * amount01) > 1000);
+        // Keep rebase factor in sensible range
+        vm.assume(rebaseNumerator > 0 && rebaseNumerator < 1000);
+        vm.assume(rebaseDenominator > 0 && rebaseDenominator < 1000);
+        // Both second mint amounts must be non-zero
+        vm.assume(amount10 > 0);
+        vm.assume(amount11 > 0);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.minter2 = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vm.assume(amount00 < vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.minter1, amount00);
+        vars.token1.mint(vars.minter1, amount01);
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.rebasingToken0.transfer(address(vars.pair), amount00);
+        vars.token1.transfer(address(vars.pair), amount01);
+        vars.liquidity1 = vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        // Rebase
+        vars.rebasingToken0.applyMultiplier(rebaseNumerator, rebaseDenominator);
+        // Sync
+        vars.pair.sync();
+
+        // Give minter 2 required tokens
+        vm.assume(amount10 < vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.minter2, amount10);
+        vm.assume(amount11 < vars.token1.mintableBalance());
+        vars.token1.mint(vars.minter2, amount11);
+
+        (vars.pool0, vars.pool1,) = vars.pair.getPools();
+        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        // Ignore edge cases where negative rebase removes all liquidity
+        vm.assume(vars.pool0 > 0 && vars.pool1 > 0);
+        // Ignore edge cases where both reservoirs are still 0
+        vm.assume(vars.reservoir0 > 0 || vars.reservoir1 > 0);
+
+        // Attempt mintWithReservoir after sending both tokens
+        vm.startPrank(vars.minter2);
+        vars.rebasingToken0.transfer(address(vars.pair), amount10);
+        vars.token1.transfer(address(vars.pair), amount11);
+        vm.expectRevert(TwoSidedReservoirMint.selector);
+        vars.pair.mintWithReservoir(vars.minter2);
+        vm.stopPrank();
+    }
+
+    /// @dev Test that the method reverts if the token amounts deposited are zero
+    function test_mintWithReservoir_CannotMintWithInsufficientLiquidityAdded(
+        uint256 amount00,
+        uint256 amount01,
+        uint256 rebaseNumerator,
+        uint256 rebaseDenominator
+    ) public {
+        // Keep these as zero
+        uint256 amount10;
+        uint256 amount11;
+        // Make sure the amounts aren't liable to overflow 2**112
+        // Divide by 1000 so that it can handle a rebase
+        vm.assume(amount00 < (uint256(2 ** 112) / 1000));
+        vm.assume(amount01 < (uint256(2 ** 112) / 1000));
+        // Amounts must be non-zero
+        // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
+        vm.assume(Math.sqrt(amount00 * amount01) > 1000);
+        // Keep rebase factor in sensible range
+        vm.assume(rebaseNumerator > 0 && rebaseNumerator < 1000);
+        vm.assume(rebaseDenominator > 0 && rebaseDenominator < 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.minter2 = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vm.assume(amount00 < vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.minter1, amount00);
+        vars.token1.mint(vars.minter1, amount01);
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.rebasingToken0.transfer(address(vars.pair), amount00);
+        vars.token1.transfer(address(vars.pair), amount01);
+        vars.liquidity1 = vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        // Rebase
+        vars.rebasingToken0.applyMultiplier(rebaseNumerator, rebaseDenominator);
+        // Sync
+        vars.pair.sync();
+
+        (vars.pool0, vars.pool1,) = vars.pair.getPools();
+        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        // Ignore edge cases where negative rebase removes all liquidity
+        vm.assume(vars.pool0 > 0 && vars.pool1 > 0);
+        // Ignore edge cases where both reservoirs are still 0
+        vm.assume(vars.reservoir0 > 0 || vars.reservoir1 > 0);
+
+        // Attempt mintWithReservoir with both amounts set to zero
+        vm.startPrank(vars.minter2);
+        vars.rebasingToken0.transfer(address(vars.pair), amount10);
+        vars.token1.transfer(address(vars.pair), amount11);
+        vm.expectRevert(InsufficientLiquidityAdded.selector);
+        vars.pair.mintWithReservoir(vars.minter2);
+        vm.stopPrank();
+    }
+
+    function test_mintWithReservoir_CannotMintWhenUninitialized(uint256 amount0, uint256 amount1) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        // Divide by 1000 so that it can handle a rebase
+        vm.assume(amount0 < (uint256(2 ** 112) / 1000));
+        vm.assume(amount1 < (uint256(2 ** 112) / 1000));
+        // One amount must be zero
+        vm.assume((amount0 == 0 && amount1 != 0) || (amount0 != 0 && amount1 == 0));
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vm.assume(amount0 < vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.minter1, amount0);
+        vars.token1.mint(vars.minter1, amount1);
+
+        // Attempting mintWithReservoir as the first mint
+        vm.startPrank(vars.minter1);
+        vars.rebasingToken0.transfer(address(vars.pair), amount0);
+        vars.token1.transfer(address(vars.pair), amount1);
+        vm.expectRevert(Uninitialized.selector);
+        vars.pair.mintWithReservoir(vars.minter1);
+        vm.stopPrank();
+    }
+
+    /// @param amount1X The amount for the second mint, with it not yet known which token it corresponds to
+    function test_mintWithReservoir_CannotMintWithInsufficientReservoir(
+        uint256 amount00,
+        uint256 amount01,
+        uint256 amount1X,
+        uint256 rebaseNumerator,
+        uint256 rebaseDenominator
+    ) public {
+        uint256 amount10;
+        uint256 amount11;
+        // Make sure the amounts aren't liable to overflow 2**112
+        // Divide by 1000 so that it can handle a rebase
+        vm.assume(amount00 < (uint256(2 ** 112) / 1000));
+        vm.assume(amount01 < (uint256(2 ** 112) / 1000));
+        // Amounts must be non-zero
+        // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
+        vm.assume(Math.sqrt(amount00 * amount01) > 1000);
+        // Keep rebase factor in sensible range
+        vm.assume(rebaseNumerator > 0 && rebaseNumerator < 1000);
+        vm.assume(rebaseDenominator > 0 && rebaseDenominator < 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.minter2 = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vm.assume(amount00 < vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.minter1, amount00);
+        vars.token1.mint(vars.minter1, amount01);
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.rebasingToken0.transfer(address(vars.pair), amount00);
+        vars.token1.transfer(address(vars.pair), amount01);
+        vars.liquidity1 = vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        // Rebase
+        vars.rebasingToken0.applyMultiplier(rebaseNumerator, rebaseDenominator);
+        // Sync
+        vars.pair.sync();
+
+        (vars.pool0, vars.pool1,) = vars.pair.getPools();
+        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        // Ignore edge cases where negative rebase removes all liquidity
+        vm.assume(vars.pool0 > 0 && vars.pool1 > 0);
+        // Ignore edge cases where both reservoirs are still 0
+        vm.assume(vars.reservoir0 > 0 || vars.reservoir1 > 0);
+
+        // Prepare the appropriate token for the second mint based on which reservoir has a non-zero balance
+        if (vars.reservoir0 > 0) {
+            uint256 reservoir0InTermsOf1 = (vars.reservoir0 * vars.pool1) / vars.pool0;
+            // Ensure we mint more than there's reservoir funds to pair with
+            // +1 because due to rounding sometimes the test fails otherwise (amount1X is equal to the reservoir instead)
+            vm.assume(amount1X > reservoir0InTermsOf1 + 1);
+            // Ensure we don't get math overflow errors
+            vm.assume(amount1X < type(uint256).max / (vars.pool0 * vars.pair.totalSupply()));
+            amount11 = amount1X;
+            vars.token1.mint(vars.minter2, amount1X);
+        } else {
+            uint256 reservoir1InTermsOf0 = (vars.reservoir1 * vars.pool0) / vars.pool1;
+            // Ensure we mint more than there's reservoir funds to pair with
+            // +1 because due to rounding sometimes the test fails otherwise (amount1X is equal to the reservoir instead)
+            vm.assume(amount1X > reservoir1InTermsOf0 + 1);
+            // Ensure we don't get math overflow errors
+            vm.assume(amount1X < type(uint256).max / (vars.pool1 * vars.pair.totalSupply()));
+            vm.assume(amount1X < vars.rebasingToken0.mintableBalance());
+            amount10 = amount1X;
+            vars.rebasingToken0.mint(vars.minter2, amount1X);
+        }
+
+        // Attempt mint with reservoir
+        vm.startPrank(vars.minter2);
+        vars.rebasingToken0.transfer(address(vars.pair), amount10);
+        vars.token1.transfer(address(vars.pair), amount11);
+        vm.expectRevert(InsufficientReservoir.selector);
+        vars.pair.mintWithReservoir(vars.minter2);
+        vm.stopPrank();
+    }
+
+    /// @dev Test that the method reverts if the amount of liquidity tokens the user receives is calculated to be zero
+    function test_mintWithReservoir_CannotMintWithInsufficientLiquidityMinted(
+        uint256 amount00,
+        uint256 amount01,
+        uint256 rebaseNumerator,
+        uint256 rebaseDenominator
+    ) public {
+        // Hardcode to smallest value as fuzzer hits retry limit otherwise
+        uint256 amount1X = 1;
+        uint256 amount10;
+        uint256 amount11;
+        // Make sure the amounts aren't liable to overflow 2**112
+        // Divide by 1000 so that it can handle a rebase
+        vm.assume(amount00 < (uint256(2 ** 112) / 1000));
+        vm.assume(amount01 < (uint256(2 ** 112) / 1000));
+        // Amounts must be non-zero
+        // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
+        vm.assume(Math.sqrt(amount00 * amount01) > 1000);
+        // Keep rebase factor in sensible range
+        rebaseNumerator = bound(rebaseNumerator, 1, 1000);
+        rebaseDenominator = bound(rebaseDenominator, 1, 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.minter2 = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vm.assume(amount00 < vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.minter1, amount00);
+        vars.token1.mint(vars.minter1, amount01);
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.rebasingToken0.transfer(address(vars.pair), amount00);
+        vars.token1.transfer(address(vars.pair), amount01);
+        vars.liquidity1 = vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        // Rebase
+        vars.rebasingToken0.applyMultiplier(rebaseNumerator, rebaseDenominator);
+        // Sync
+        vars.pair.sync();
+
+        (vars.pool0, vars.pool1,) = vars.pair.getPools();
+        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        // Ignore edge cases where negative rebase removes all liquidity
+        vm.assume(vars.pool0 > 0 && vars.pool1 > 0);
+        // Ignore edge cases where both reservoirs are still 0
+        vm.assume(vars.reservoir0 > 0 || vars.reservoir1 > 0);
+
+        // Calculate expected values to assert against
+        uint256 liquidityNew;
+
+        // Prepare the appropriate token for the second mint based on which reservoir has a non-zero balance
+        if (vars.reservoir0 > 0) {
+            uint256 reservoir0InTermsOf1 = (vars.reservoir0 * vars.pool1) / vars.pool0;
+            // Ensure we don't try to mint more than there's reservoir funds to pair with
+            vm.assume(amount1X <= reservoir0InTermsOf1);
+            amount11 = amount1X;
+            vars.token1.mint(vars.minter2, amount1X);
+            // Calculate the liquidity the minter should receive
+            liquidityNew = getNewSingleSidedLiquidityAmount(
+                vars.pair.totalSupply(), amount11, vars.pool0, vars.pool1, vars.reservoir0
+            );
+        } else {
+            uint256 reservoir1InTermsOf0 = (vars.reservoir1 * vars.pool0) / vars.pool1;
+            // Ensure we don't try to mint more than there's reservoir funds to pair with
+            vm.assume(amount1X <= reservoir1InTermsOf0);
+            vm.assume(amount1X < vars.rebasingToken0.mintableBalance());
+            amount10 = amount1X;
+            vars.rebasingToken0.mint(vars.minter2, amount1X);
+            // Calculate the liquidity the minter should receive
+            liquidityNew = getNewSingleSidedLiquidityAmount(
+                vars.pair.totalSupply(), amount10, vars.pool1, vars.pool0, vars.reservoir1
+            );
+        }
+        // Ignore cases where no new liquidity is created
+        vm.assume(liquidityNew == 0);
+        // amount1X must be non-zero though to test this specific error
+        vm.assume(amount1X > 0);
+
+        // Attempt mint with reservoir
+        vm.startPrank(vars.minter2);
+        vars.rebasingToken0.transfer(address(vars.pair), amount10);
+        vars.token1.transfer(address(vars.pair), amount11);
+        vm.expectRevert(InsufficientLiquidityMinted.selector);
+        vars.pair.mintWithReservoir(vars.minter2);
+        vm.stopPrank();
     }
 
     function test_burn(uint256 mintAmount0, uint256 mintAmount1, uint256 burnAmount) public {
