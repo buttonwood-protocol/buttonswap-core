@@ -13,4 +13,25 @@ library Utils {
         }
         return true;
     }
+
+    function getDelta(uint256 a, uint256 b) public pure returns (uint256) {
+        if (a > b) {
+            return a - b;
+        }
+        return b - a;
+    }
+
+    function getDelta224(uint224 a, uint224 b) public pure returns (uint224) {
+        if (a > b) {
+            return a - b;
+        }
+        return b - a;
+    }
+
+    function getDelta112(uint112 a, uint112 b) public pure returns (uint112) {
+        if (a > b) {
+            return a - b;
+        }
+        return b - a;
+    }
 }
