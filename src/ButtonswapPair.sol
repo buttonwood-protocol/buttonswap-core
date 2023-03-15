@@ -407,7 +407,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             amount1 = liquidity.mul(newReservoir1.add(_pool1).add(_pool1)) / _totalSupply;
         }
 
-        if (amount0 == 0 || amount1 == 0) {
+        if (amount0 == 0 && amount1 == 0) {
             revert InsufficientLiquidityBurned();
         }
         if (amount0 != 0 && amount1 != 0) {
