@@ -216,3 +216,76 @@ Caveats:
   - if this impact is minimal, then your fees are not worth something which partially refutes the point of this change
 - The extra token transfer might be more gas costly than the internal balance update of an LP mint (?)
 
+### Fixed Price Swap
+
+This refers to the ability to swap with zero price impact using reservoir funds, exchanging them at the current pool price.
+
+eg.
+```
+pool0 = 6
+pool1 = 9
+reservoir0 = 4
+reservoir1 = 0
+
+A user can exchange 3 token1 for 2 token0, resulting in:
+
+pool0 = 6
+pool1 = 9
+reservoir0 = 2
+reservoir1 = 3
+
+In this case the change in reservoir balances allow us to then increase the active liquidity:
+
+pool0 = 8
+pool1 = 12
+reservoir0 = 0
+reservoir1 = 0
+```
+
+In the current pool design there is no explicit fixed price swap functionality.
+It does however exist implicitly in the single sided mint and burn operations.
+
+It is worth then to recognise that single sided mint and burn operations are actually composite operations, comprised of a fixed price swap and then a dual sided mint/burn.
+
+It would be possible to adjust the contract to represent this:
+
+```solidity
+contract ButtonswapPair {
+  function fixedPriceSwap(){}
+  
+  function singleSidedMint(){
+    fixedPriceSwap();
+    mint();
+  }
+  
+  function singleSidedBurn(){
+    fixedPriceSwap();
+    burn();
+  }
+}
+```
+
+This would also make it easier to introduce the swap fee to the fixed price swap too, applying it automatically during single sided mint and burn operations too.
+
+Caveats:
+
+- Practically speaking, it would likely be more gas efficient for single-sided operations to collapse the fixed price swap into their own calculations
+  - (you can probably save on storage reads and writes by doing so)
+- Having an explicit fixed price swap method is nice to have but not crucial, and time is tight
+- This actually contradicts the other suggestion above of laxer restrictions
+  - laxer restrictions would allow for swap, mint and burn to all be hybrid dual+single, making explicit methods for those needless
+  - I think laxer hybrid approach is better since is means regular swaps will optimise liquidity depth in the process, rather than relying on someone to consciously make that decision
+
+### Fixed Price Swap Fee
+
+Currently, fixed price swaps are exempt from swap fees.
+The rationale is that the swap puts the pool into a healthier state by growing the active liquidity depth, and thus it's beneficial to entice this activity.
+
+I offer the following counter-arguments:
+
+- it is attractive to do a fixed price swap even if it had a fee because the swapper gets more output for their input - due to the price being fixed
+- it is "cleaner"/"purer" for the swap fee to be consistently applied to all swap activity
+
+Caveats:
+
+- Might more work than it is worth considering the anticipated volume of fixed price swaps is relatively low
