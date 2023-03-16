@@ -290,3 +290,30 @@ I offer the following counter-arguments:
 Caveats:
 
 - Might more work than it is worth considering the anticipated volume of fixed price swaps is relatively low
+
+### Skim
+
+To quote the Uniswap V2 whitepaper:
+
+> To protect against bespoke token implementations that can update the pair contract’s balance, and to more gracefully handle tokens whose total supply can be greater than 2^112, Uniswap v2 has two bail-out functions: `sync()` and `skim()`.
+
+> `skim()` functions as a recovery mechanism in case enough tokens are sent to an pair to overflow the two uint112 storage slots for reserves, which could otherwise cause trades to fail.
+> `skim()` allows a user to withdraw the difference between the current balance of the pair and 2^112 − 1 to the caller, if that difference is greater than 0.
+
+The current implementation has removed the `skim` function, favouring to instead revert during `sync` operations that would set virtual balances that exceeded 2^112-1.
+If a `sync` call would revert, then a user can do a `burn` operation that would reduce the liquidity in the pool and allow for a `sync` that didn't overflow.
+
+Unfortunately, as discussed earlier, we need to enforce `sync` operations being run before any other contract call in order to avoid the theft of rebased tokens.
+Making this change would then prohibit the ability to `burn` to circumvent overflow errors.
+
+The ultimate result is that if a pool entered an overflow state it is impossible to remedy it until the tokens naturally rebase down.
+In the case where a non-rebasing token with huge supply has had a huge supply transferred to the pool contract it would be impossible to recover entirely.
+
+I have not yet given much thought as to a practical solution to this problem.
+I think it could depend on decisions made for various other topics raised above.
+
+Some possible options:
+
+- reintroduce a skim function (care would need to be taken to ensure it can't be used to steal rebased tokens)
+- if reservoirs were no longer storage values they could exceed uint112, and could potentially store any surplus tokens
+  - this would involve breaking the "reservoir invariant" that one or more reservoirs are zero
