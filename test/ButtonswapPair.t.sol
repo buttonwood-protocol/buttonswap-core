@@ -1362,6 +1362,9 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         assertEq(vars.pair.totalSupply(), expectedTotalSupply);
     }
 
+    /// @dev The approach here is a little more obtuse that normal.
+    /// This is due to repeated `vm.assume`s causing it to run out of retry attempts.
+    /// Liberal use of `bound` gets around this issue.
     function test_burnFromReservoir_CannotCallWhenInsufficientLiquidityBurned(
         uint256 mintAmount0,
         uint256 mintAmount1,
@@ -1372,11 +1375,9 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         // Make sure the amounts aren't liable to overflow 2**112
         vm.assume(mintAmount0 < (2 ** 112) / 2);
         vm.assume(mintAmount1 < (2 ** 112) / 2);
-        vm.assume(burnAmount < (2 ** 112) / 2);
         // Amounts must be non-zero, and must exceed minimum liquidity
         vm.assume(mintAmount0 > 1000);
         vm.assume(mintAmount1 > 1000);
-        vm.assume(burnAmount > 0);
         // Keep rebase factor in sensible range
         rebaseNumerator = bound(rebaseNumerator, 1, 1000);
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
@@ -1408,19 +1409,34 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         // Sync
         vars.pair.sync();
 
-        burnAmount = 1;
-
-        // burnAmount must not exceed amount of liquidity tokens minter has
-        vm.assume(burnAmount <= vars.pair.balanceOf(vars.minter1));
         // Calculate expected values to assert against
         (vars.pool0, vars.pool1,) = vars.pair.getPools();
         (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
         // Ignore edge cases where both reservoirs are still 0
         vm.assume(vars.reservoir0 > 0 || vars.reservoir1 > 0);
-        (uint256 expectedAmount0, uint256 expectedAmount1) = getSingleSidedBurnOutputAmounts(
+        // Start with full possible burnAmount
+        uint256 burnAmountMax = vars.pair.balanceOf(vars.minter1);
+        uint256 expectedAmount0;
+        uint256 expectedAmount1;
+        // Estimate redeemed amounts if full balance was burned
+        (expectedAmount0, expectedAmount1) = getSingleSidedBurnOutputAmounts(
+            vars.pair.totalSupply(), burnAmountMax, vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1
+        );
+        // Divide the max by expected amount, +1 to ensure that it always divides to zero
+        if (expectedAmount0 > 0) {
+            burnAmountMax = burnAmountMax / (expectedAmount0 + 1);
+        } else if (expectedAmount1 > 0) {
+            burnAmountMax = burnAmountMax / (expectedAmount1 + 1);
+        }
+        // We don't want to test the trivial case where burnAmount is zero
+        vm.assume(burnAmountMax > 0);
+        // Scale the random burnAmount to be within valid range
+        burnAmount = bound(burnAmount, 1, burnAmountMax);
+        // Update estimate redeemed amounts with adjusted burnAmount
+        (expectedAmount0, expectedAmount1) = getSingleSidedBurnOutputAmounts(
             vars.pair.totalSupply(), burnAmount, vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1
         );
-        // Target edge cases where both expected amounts are zero
+        // This should result in  both expected amounts being zero
         vm.assume(expectedAmount0 == 0 && expectedAmount1 == 0);
         // Ignore cases where expected amount exceeds reservoir balances
         vm.assume(expectedAmount0 <= vars.reservoir0 && expectedAmount1 <= vars.reservoir1);
@@ -1490,11 +1506,9 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         // Make sure the amounts aren't liable to overflow 2**112
         vm.assume(mintAmount0 < (2 ** 112) / 2);
         vm.assume(mintAmount1 < (2 ** 112) / 2);
-        vm.assume(burnAmount < (2 ** 112) / 2);
         // Amounts must be non-zero, and must exceed minimum liquidity
         vm.assume(mintAmount0 > 1000);
         vm.assume(mintAmount1 > 1000);
-        vm.assume(burnAmount > 0);
         // Keep rebase factor in sensible range
         rebaseNumerator = bound(rebaseNumerator, 1, 1000);
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
@@ -1526,8 +1540,9 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         // Sync
         vars.pair.sync();
 
+        // Scale the random burnAmount to be within valid range
         // burnAmount must not exceed amount of liquidity tokens minter has
-        vm.assume(burnAmount <= vars.pair.balanceOf(vars.minter1));
+        burnAmount = bound(burnAmount, 1, vars.pair.balanceOf(vars.minter1));
         // Calculate expected values to assert against
         (vars.pool0, vars.pool1,) = vars.pair.getPools();
         (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
