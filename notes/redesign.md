@@ -17,6 +17,12 @@
   - eg. user balance is product of underlying balance and multiplier
   - this is prone to balance changes being rounded to multiples of multiplier
   - this breaks the contract's checks for operations handling proper ratios of A and B
+- pool death scenario
+  - if a token rebased downwards enough that the pool's balance read zero, then a pool sync will update the active liquidity virtual balances to zero
+  - even if the token then rebased upwards again, the pool has lost the price ratio information that's required to reinstate active liquidity
+  - need to confirm whether liquidity providers can burn to retrieve their tokens
+  - even if all funds removed, the final 1000 liquidity tokens were sent to burn address
+  - the ButtonswapFactory does not permit creation of new pool with same asset pair
 
 ## Other desired changes to core contract:
 
