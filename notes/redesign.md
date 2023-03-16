@@ -284,6 +284,7 @@ The rationale is that the swap puts the pool into a healthier state by growing t
 I offer the following counter-arguments:
 
 - it is attractive to do a fixed price swap even if it had a fee because the swapper gets more output for their input - due to the price being fixed
+- eliminates risk of users finding a trick to circumvent regular swap fees beyond our expectations
 - it is "cleaner"/"purer" for the swap fee to be consistently applied to all swap activity
 
 Caveats:
