@@ -85,6 +85,17 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         return (totalLiquidity * mintAmountB * poolA) / (poolB * (poolA + poolA + reservoirA));
     }
 
+    /// @dev Refer to `/notes/fee-math.md`
+    function getProtocolFeeLiquidityMinted(uint256 totalLiquidity, uint256 kLast, uint256 k)
+        public
+        pure
+        returns (uint256)
+    {
+        uint256 rootKLast = Math.sqrt(kLast);
+        uint256 rootK = Math.sqrt(k);
+        return (totalLiquidity * (rootK - rootKLast)) / ((5 * rootK) + rootKLast);
+    }
+
     function assertPriceUnchanged(
         uint112 reservoir0,
         uint112 pool0Previous,
