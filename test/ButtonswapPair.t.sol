@@ -1916,4 +1916,82 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         // Price hasn't changed
         assertPriceUnchanged(reservoir0, pool0Previous, pool1Previous, pool0, pool1);
     }
+
+    function test__mintFee(uint256 mintAmount00, uint256 mintAmount01, uint256 inputAmount, bool inputToken0) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        // Div by 3 to have room for two mints and a swap
+        vm.assume(mintAmount00 < uint256(2 ** 112) / 3);
+        vm.assume(mintAmount01 < uint256(2 ** 112) / 3);
+        vm.assume(inputAmount < mintAmount00 && inputAmount < mintAmount01);
+        // Amounts must be non-zero, and must exceed minimum liquidity
+        vm.assume(mintAmount00 > 1000);
+        vm.assume(mintAmount01 > 1000);
+
+        TestVariables memory vars;
+        vars.amount0In;
+        vars.amount1In;
+        vars.amount0Out;
+        vars.amount1Out;
+        // Output amount must be non-zero
+        if (inputToken0) {
+            vars.amount0In = inputAmount;
+            vars.amount1Out = getOutputAmount(inputAmount, mintAmount00, mintAmount01);
+            vm.assume(vars.amount1Out > 0);
+        } else {
+            vars.amount1In = inputAmount;
+            vars.amount0Out = getOutputAmount(inputAmount, mintAmount01, mintAmount00);
+            vm.assume(vars.amount0Out > 0);
+        }
+
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.swapper1 = userD;
+        vars.receiver = userE;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, mintAmount00);
+        vars.token1.mint(vars.minter1, mintAmount01);
+        vars.token0.mint(vars.swapper1, vars.amount0In);
+        vars.token1.mint(vars.swapper1, vars.amount1In);
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.token0.transfer(address(vars.pair), mintAmount00);
+        vars.token1.transfer(address(vars.pair), mintAmount01);
+        vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        // Do the swap
+        vm.startPrank(vars.swapper1);
+        vars.token0.transfer(address(vars.pair), vars.amount0In);
+        vars.token1.transfer(address(vars.pair), vars.amount1In);
+        vars.pair.swap(vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vm.stopPrank();
+
+        // Grant the minter tokens for a second mint
+        (vars.pool0, vars.pool1,) = vars.pair.getPools();
+        // Scale down by 10
+        uint256 mintAmount10 = vars.pool0 / 10;
+        uint256 mintAmount11 = (mintAmount10 * vars.pool1) / vars.pool0;
+        vars.token0.mint(vars.minter1, mintAmount10);
+        vars.token1.mint(vars.minter1, mintAmount11);
+        // Estimate fee
+        uint256 expectedFeeToBalance =
+            getProtocolFeeLiquidityMinted(vars.pair.totalSupply(), vars.pair.kLast(), vars.pool0 * vars.pool1);
+
+        // Mint liquidity again to trigger the protocol fee being updated
+        vm.startPrank(vars.minter1);
+        vars.token0.transfer(address(vars.pair), mintAmount10);
+        vars.token1.transfer(address(vars.pair), mintAmount11);
+        vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        // Confirm new state is as expected
+        assertEq(vars.pair.balanceOf(vars.feeTo), expectedFeeToBalance);
+    }
 }
