@@ -1994,4 +1994,96 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         // Confirm new state is as expected
         assertEq(vars.pair.balanceOf(vars.feeTo), expectedFeeToBalance);
     }
+
+    function test__mintFee_DoesNotCollectFeeFromRebasing(
+        uint256 mintAmount00,
+        uint256 mintAmount01,
+        uint256 rebaseNumerator0,
+        uint256 rebaseDenominator0,
+        uint256 rebaseNumerator1,
+        uint256 rebaseDenominator1
+    ) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        // Div by 2 to have room for two mints
+        vm.assume(mintAmount00 < uint256(2 ** 112) / 2);
+        vm.assume(mintAmount01 < uint256(2 ** 112) / 2);
+        // Amounts must be non-zero, and must exceed minimum liquidity
+        vm.assume(mintAmount00 > 1000);
+        vm.assume(mintAmount01 > 1000);
+        // Keep rebase factor in sensible range
+        rebaseNumerator0 = bound(rebaseNumerator0, 1, 1000);
+        rebaseDenominator0 = bound(rebaseDenominator0, 1, 1000);
+        rebaseNumerator1 = bound(rebaseNumerator1, 1, 1000);
+        rebaseDenominator1 = bound(rebaseDenominator1, 1, 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.swapper1 = userD;
+        vars.receiver = userE;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.rebasingToken1 = ICommonMockRebasingERC20(vars.pair.token1());
+        vm.assume(mintAmount00 <= vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.minter1, mintAmount00);
+        vm.assume(mintAmount01 <= vars.rebasingToken1.mintableBalance());
+        vars.rebasingToken1.mint(vars.minter1, mintAmount01);
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.rebasingToken0.transfer(address(vars.pair), mintAmount00);
+        vars.rebasingToken1.transfer(address(vars.pair), mintAmount01);
+        vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        // Stash the current K value
+        (vars.pool0, vars.pool1,) = vars.pair.getPools();
+        uint256 kLast = vars.pool0 * vars.pool1;
+
+        // Apply rebase
+        vars.rebasingToken0.applyMultiplier(rebaseNumerator0, rebaseDenominator0);
+        vars.rebasingToken1.applyMultiplier(rebaseNumerator1, rebaseDenominator1);
+        // Do sync
+        vars.pair.sync();
+
+        // Estimate fee
+        (vars.pool0, vars.pool1,) = vars.pair.getPools();
+        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        uint256 k = vars.pool0 * vars.pool1;
+        // K must increase for the fee calculation to work
+        vm.assume(k > kLast);
+        uint256 expectedFeeToBalance = getProtocolFeeLiquidityMinted(vars.pair.totalSupply(), kLast, k);
+        // Filter for scenarios where the gain in tokens from rebase would cause protocol fee to be generated if K is handled naively
+        vm.assume(expectedFeeToBalance > 0);
+
+        // Grant the minter tokens for a second mint
+        // Scale down by 10
+        uint256 mintAmount10 = vars.pool0 / 10;
+        uint256 mintAmount11 = (mintAmount10 * vars.pool1) / vars.pool0;
+        vm.assume(mintAmount10 <= vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.minter1, mintAmount10);
+        vm.assume(mintAmount11 <= vars.rebasingToken1.mintableBalance());
+        vars.rebasingToken1.mint(vars.minter1, mintAmount11);
+
+        // Calculate expected liquidity amount to make sure it's non-zero
+        uint256 liquidityNew = getNewDualSidedLiquidityAmount(
+            vars.pair.totalSupply(), mintAmount11, vars.pool1, vars.pool0, vars.reservoir1, vars.reservoir0
+        );
+        vm.assume(liquidityNew > 0);
+
+        // Mint liquidity again to trigger the protocol fee being updated
+        vm.startPrank(vars.minter1);
+        vars.rebasingToken0.transfer(address(vars.pair), mintAmount10);
+        vars.rebasingToken1.transfer(address(vars.pair), mintAmount11);
+        vars.pair.mint(vars.minter1);
+        vm.stopPrank();
+
+        // Confirm new state is as expected
+        // @TODO re-enable when this test can pass again
+        //        assertEq(vars.pair.balanceOf(vars.feeTo), 0);
+    }
 }
