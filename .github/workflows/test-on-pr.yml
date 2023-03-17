@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.BUTTONWOOD_CORE_CI_TOKEN }}
+          token: ${{ secrets.BUTTONSWAP_CORE_CI_TOKEN }}
           submodules: recursive
 
       - name: Install Foundry
