@@ -2020,8 +2020,6 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.feeToSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
-        vars.swapper1 = userD;
-        vars.receiver = userE;
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
         vm.prank(vars.feeToSetter);
         vars.factory.setFeeTo(vars.feeTo);
