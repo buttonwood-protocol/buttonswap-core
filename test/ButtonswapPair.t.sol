@@ -8,7 +8,7 @@ import {Math} from "src/libraries/Math.sol";
 import {MockERC20} from "mock-contracts/MockERC20.sol";
 import {MockRebasingERC20} from "mock-contracts/MockRebasingERC20.sol";
 import {MockUFragments} from "mock-contracts/MockUFragments.sol";
-import {ICommonMockRebasingERC20} from "mock-contracts/interfaces/ICommonMockRebasingERC20.sol";
+import {ICommonMockRebasingERC20} from "mock-contracts/interfaces/ICommonMockRebasingERC20/ICommonMockRebasingERC20.sol";
 import {MockButtonswapFactory} from "test/mocks/MockButtonswapFactory.sol";
 import {Utils} from "test/utils/Utils.sol";
 import {PriceAssertion} from "test/utils/PriceAssertion.sol";
