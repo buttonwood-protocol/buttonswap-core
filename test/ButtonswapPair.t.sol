@@ -25,7 +25,6 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         address receiver;
         address burner1;
         address burner2;
-        address exploiter;
         MockButtonswapFactory factory;
         ButtonswapPair pair;
         MockERC20 token0;
