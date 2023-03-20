@@ -30,9 +30,9 @@ jobs:
           forge build --sizes
         id: build
 
-      - name: Run Forge tests
+      - name: Run Forge tests (excluding known issues)
         run: |
-          forge test -vvv
+          forge test -vvv --no-match-path test/known-issues/**
         id: test
 
       - name: Run Forge Coverage

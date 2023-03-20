@@ -84,4 +84,24 @@ library PriceAssertion {
         // Check whether the final currentVariableA is sufficiently close to the initial variableA
         return Utils.getDelta112(currentVariableA, variableA) <= tolerance;
     }
+
+    function isPriceUnchanged(
+        uint112 reservoir0,
+        uint112 pool0Previous,
+        uint112 pool1Previous,
+        uint112 pool0,
+        uint112 pool1
+    ) public pure returns (bool) {
+        // Accept the optimal new pool value to be up to 1 away from the value the contract computed
+        uint112 tolerance = 1;
+        bool withinTolerance;
+        if (reservoir0 == 0) {
+            // If reservoir0 is zero then pool0 is a fixed value, being the full token balance available
+            // It is therefore pool1 that we must check is correct
+            withinTolerance = isTermWithinTolerance(pool1, pool0, pool1Previous, pool0Previous, tolerance);
+        } else {
+            withinTolerance = isTermWithinTolerance(pool0, pool1, pool0Previous, pool1Previous, tolerance);
+        }
+        return withinTolerance;
+    }
 }
