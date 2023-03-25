@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "./IButtonswapERC20Errors.sol";
-import "./IButtonswapERC20Events.sol";
+import {IButtonswapERC20Errors} from "./IButtonswapERC20Errors.sol";
+import {IButtonswapERC20Events} from "./IButtonswapERC20Events.sol";
 
 interface IButtonswapERC20 is IButtonswapERC20Errors, IButtonswapERC20Events {
     function name() external pure returns (string memory);

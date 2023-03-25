@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "./interfaces/IButtonswapFactory/IButtonswapFactory.sol";
-import "./ButtonswapPair.sol";
+import {IButtonswapFactory} from "./interfaces/IButtonswapFactory/IButtonswapFactory.sol";
+import {IButtonswapPair} from "./interfaces/IButtonswapPair/IButtonswapPair.sol";
+import {ButtonswapPair} from "./ButtonswapPair.sol";
 
 contract ButtonswapFactory is IButtonswapFactory {
     address public feeTo;

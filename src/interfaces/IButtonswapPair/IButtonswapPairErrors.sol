@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../IButtonswapERC20/IButtonswapERC20Errors.sol";
+import {IButtonswapERC20Errors} from "../IButtonswapERC20/IButtonswapERC20Errors.sol";
 
 interface IButtonswapPairErrors is IButtonswapERC20Errors {
     /// @notice Re-entrancy guard prevented method call
