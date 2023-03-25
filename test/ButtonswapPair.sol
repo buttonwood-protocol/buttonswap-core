@@ -6,8 +6,6 @@ import {IButtonswapPairEvents, IButtonswapPairErrors} from "../src/interfaces/IB
 import {ButtonswapPair} from "../src/ButtonswapPair.sol";
 import {Math} from "../src/libraries/Math.sol";
 import {MockERC20} from "mock-contracts/MockERC20.sol";
-import {MockRebasingERC20} from "mock-contracts/MockRebasingERC20.sol";
-import {MockUFragments} from "mock-contracts/MockUFragments.sol";
 import {ICommonMockRebasingERC20} from "mock-contracts/interfaces/ICommonMockRebasingERC20/ICommonMockRebasingERC20.sol";
 import {MockButtonswapFactory} from "./mocks/MockButtonswapFactory.sol";
 import {Utils} from "./utils/Utils.sol";
@@ -15,7 +13,8 @@ import {PairMath} from "./utils/PairMath.sol";
 import {PriceAssertion} from "./utils/PriceAssertion.sol";
 import {UQ112x112} from "../src/libraries/UQ112x112.sol";
 
-contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairErrors {
+// This defines the tests but this contract is abstract because multiple implementations using different rebasing token types run them
+abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairErrors {
     struct TestVariables {
         address zeroAddress;
         address feeToSetter;
@@ -56,14 +55,30 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
     address public userD = 0x000000000000000000000000000000000000000d;
     address public userE = 0x000000000000000000000000000000000000000E;
 
+    function getTokenA() public virtual returns (MockERC20) {
+        return new MockERC20("TokenA", "TKNA");
+    }
+
+    function getTokenB() public virtual returns (MockERC20) {
+        return new MockERC20("TokenB", "TKNB");
+    }
+
+    function getRebasingTokenA() public virtual returns (ICommonMockRebasingERC20) {
+        return ICommonMockRebasingERC20(address(0));
+    }
+
+    function getRebasingTokenB() public virtual returns (ICommonMockRebasingERC20) {
+        return ICommonMockRebasingERC20(address(0));
+    }
+
     function setUp() public {
-        tokenA = new MockERC20("TokenA", "TKNA");
-        tokenB = new MockERC20("TokenB", "TKNB");
-        // rebasingTokenA = ICommonMockRebasingERC20(address(MockRebasingERC20("TokenA", "TKNA", 18)));
-        // rebasingTokenB = ICommonMockRebasingERC20(address(new MockRebasingERC20("TokenB", "TKNB", 18)));
-        rebasingTokenA = ICommonMockRebasingERC20(address(new MockUFragments()));
-        rebasingTokenB = ICommonMockRebasingERC20(address(new MockUFragments()));
+        tokenA = getTokenA();
+        tokenA.initialize();
+        tokenB = getTokenB();
+        tokenB.initialize();
+        rebasingTokenA = getRebasingTokenA();
         rebasingTokenA.initialize();
+        rebasingTokenB = getRebasingTokenB();
         rebasingTokenB.initialize();
     }
 
@@ -2047,7 +2062,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         vars.token1.mint(vars.minter1, mintAmount11);
         // Estimate fee
         uint256 expectedFeeToBalance =
-            PairMath.getProtocolFeeLiquidityMinted(vars.pair.totalSupply(), vars.pair.kLast(), vars.pool0 * vars.pool1);
+        PairMath.getProtocolFeeLiquidityMinted(vars.pair.totalSupply(), vars.pair.kLast(), vars.pool0 * vars.pool1);
 
         // Mint liquidity again to trigger the protocol fee being updated
         vm.startPrank(vars.minter1);
@@ -2177,7 +2192,7 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
     }
 
     function test__update_CumulativePriceValuesUpdate(uint256 mintAmount0, uint256 mintAmount1, uint32 warpTime)
-        public
+    public
     {
         // Make sure the amounts aren't liable to overflow 2**112
         vm.assume(mintAmount0 < (2 ** 112) / 2);
@@ -2213,13 +2228,13 @@ contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairError
         // Calculate expected values
         (,, uint32 blockTimestampLast) = vars.pair.getPools();
         uint32 timeElapsed;
-        unchecked {
-            timeElapsed = warpTime - blockTimestampLast;
-        }
+    unchecked {
+        timeElapsed = warpTime - blockTimestampLast;
+    }
         uint256 expectedPrice0CumulativeLast =
-            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount1)), uint112(mintAmount0))) * timeElapsed;
+        uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount1)), uint112(mintAmount0))) * timeElapsed;
         uint256 expectedPrice1CumulativeLast =
-            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount0)), uint112(mintAmount1))) * timeElapsed;
+        uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount0)), uint112(mintAmount1))) * timeElapsed;
 
         // Move time forward so that price can accrue
         vm.warp(warpTime);
