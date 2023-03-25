@@ -6,20 +6,44 @@ import {IButtonswapPair} from "./interfaces/IButtonswapPair/IButtonswapPair.sol"
 import {ButtonswapPair} from "./ButtonswapPair.sol";
 
 contract ButtonswapFactory is IButtonswapFactory {
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
     address public feeTo;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
     address public feeToSetter;
 
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
     mapping(address => mapping(address => address)) public getPair;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
     address[] public allPairs;
 
+    /**
+     * @dev `feeTo` is not initialised during deployment, and must be set separately by a call to {setFeeTo}.
+     * @param _feeToSetter The account that has the ability to set `feeToSetter` and `feeTo`
+     */
     constructor(address _feeToSetter) {
         feeToSetter = _feeToSetter;
     }
 
-    function allPairsLength() external view returns (uint256) {
-        return allPairs.length;
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function allPairsLength() external view returns (uint256 count) {
+        count = allPairs.length;
     }
 
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
     function createPair(address tokenA, address tokenB) external returns (address pair) {
         if (tokenA == tokenB) {
             revert TokenIdenticalAddress();
@@ -44,6 +68,9 @@ contract ButtonswapFactory is IButtonswapFactory {
         emit PairCreated(token0, token1, pair, allPairs.length);
     }
 
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
     function setFeeTo(address _feeTo) external {
         if (msg.sender != feeToSetter) {
             revert Forbidden();
@@ -51,6 +78,9 @@ contract ButtonswapFactory is IButtonswapFactory {
         feeTo = _feeTo;
     }
 
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
     function setFeeToSetter(address _feeToSetter) external {
         if (msg.sender != feeToSetter) {
             revert Forbidden();
