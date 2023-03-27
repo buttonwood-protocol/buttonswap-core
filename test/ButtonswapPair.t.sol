@@ -2,18 +2,18 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {IButtonswapPairEvents, IButtonswapPairErrors} from "src/interfaces/IButtonswapPair/IButtonswapPair.sol";
-import {ButtonswapPair} from "src/ButtonswapPair.sol";
-import {Math} from "src/libraries/Math.sol";
+import {IButtonswapPairEvents, IButtonswapPairErrors} from "../src/interfaces/IButtonswapPair/IButtonswapPair.sol";
+import {ButtonswapPair} from "../src/ButtonswapPair.sol";
+import {Math} from "../src/libraries/Math.sol";
 import {MockERC20} from "mock-contracts/MockERC20.sol";
 import {MockRebasingERC20} from "mock-contracts/MockRebasingERC20.sol";
 import {MockUFragments} from "mock-contracts/MockUFragments.sol";
 import {ICommonMockRebasingERC20} from "mock-contracts/interfaces/ICommonMockRebasingERC20/ICommonMockRebasingERC20.sol";
-import {MockButtonswapFactory} from "test/mocks/MockButtonswapFactory.sol";
-import {Utils} from "test/utils/Utils.sol";
-import {PairMath} from "test/utils/PairMath.sol";
-import {PriceAssertion} from "test/utils/PriceAssertion.sol";
-import {UQ112x112} from "src/libraries/UQ112x112.sol";
+import {MockButtonswapFactory} from "./mocks/MockButtonswapFactory.sol";
+import {Utils} from "./utils/Utils.sol";
+import {PairMath} from "./utils/PairMath.sol";
+import {PriceAssertion} from "./utils/PriceAssertion.sol";
+import {UQ112x112} from "../src/libraries/UQ112x112.sol";
 
 contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairErrors {
     struct TestVariables {

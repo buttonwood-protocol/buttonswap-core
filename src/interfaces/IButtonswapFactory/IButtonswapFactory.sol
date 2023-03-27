@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "./IButtonswapFactoryErrors.sol";
-import "./IButtonswapFactoryEvents.sol";
+import {IButtonswapFactoryErrors} from "./IButtonswapFactoryErrors.sol";
+import {IButtonswapFactoryEvents} from "./IButtonswapFactoryEvents.sol";
 
 interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEvents {
     function feeTo() external view returns (address);

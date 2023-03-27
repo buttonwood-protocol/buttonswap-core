@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {PriceAssertion} from "test/utils/PriceAssertion.sol";
+import {PriceAssertion} from "./PriceAssertion.sol";
 
 contract PriceAssertionTest is Test {
     function test_isTermWithinTolerance(uint112 fixedB, uint112 targetA, uint112 targetB) public {

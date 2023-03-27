@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "./IButtonswapPairErrors.sol";
-import "./IButtonswapPairEvents.sol";
-import "../IButtonswapERC20/IButtonswapERC20.sol";
+import {IButtonswapPairErrors} from "./IButtonswapPairErrors.sol";
+import {IButtonswapPairEvents} from "./IButtonswapPairEvents.sol";
+import {IButtonswapERC20} from "../IButtonswapERC20/IButtonswapERC20.sol";
 
 interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButtonswapERC20 {
     function MINIMUM_LIQUIDITY() external pure returns (uint256);

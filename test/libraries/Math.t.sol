@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import {Math} from "src/libraries/Math.sol";
+import {Math} from "../../src/libraries/Math.sol";
 
 contract MathTest is Test {
     function test_min(uint256 value1, uint256 value2) public {

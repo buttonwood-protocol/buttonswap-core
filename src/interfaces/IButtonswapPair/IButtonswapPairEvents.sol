@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "../IButtonswapERC20/IButtonswapERC20Events.sol";
+import {IButtonswapERC20Events} from "../IButtonswapERC20/IButtonswapERC20Events.sol";
 
 interface IButtonswapPairEvents is IButtonswapERC20Events {
     event Mint(address indexed sender, uint256 amount0, uint256 amount1);

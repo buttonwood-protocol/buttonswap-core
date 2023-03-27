@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Math} from "src/libraries/Math.sol";
+import {Math} from "../../src/libraries/Math.sol";
 
 library PairMath {
     /// @dev Refer to `/notes/swap-math.md`

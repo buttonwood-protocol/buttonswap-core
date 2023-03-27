@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "./interfaces/IButtonswapERC20/IButtonswapERC20.sol";
-import "./libraries/SafeMath.sol";
+import {IButtonswapERC20} from "./interfaces/IButtonswapERC20/IButtonswapERC20.sol";
+import {SafeMath} from "./libraries/SafeMath.sol";
 
 contract ButtonswapERC20 is IButtonswapERC20 {
     using SafeMath for uint256;
