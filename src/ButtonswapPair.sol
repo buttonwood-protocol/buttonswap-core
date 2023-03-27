@@ -6,7 +6,7 @@ import {ButtonswapERC20} from "./ButtonswapERC20.sol";
 import {Math} from "./libraries/Math.sol";
 import {SafeMath} from "./libraries/SafeMath.sol";
 import {UQ112x112} from "./libraries/UQ112x112.sol";
-import {IERC20} from "./interfaces/IERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {IButtonswapFactory} from "./interfaces/IButtonswapFactory/IButtonswapFactory.sol";
 import {IButtonswapCallee} from "./interfaces/IButtonswapCallee.sol";
 
