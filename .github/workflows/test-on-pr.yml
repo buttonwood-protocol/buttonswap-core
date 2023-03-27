@@ -32,7 +32,7 @@ jobs:
 
       - name: Run Forge tests (excluding known issues)
         run: |
-          forge test -vvv --no-match-path test/known-issues/**
+          forge test -vvv --no-match-path 'test/known-issues/**'
         id: test
 
       - name: Run Forge Coverage
