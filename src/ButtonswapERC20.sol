@@ -70,8 +70,9 @@ contract ButtonswapERC20 is IButtonswapERC20 {
     }
 
     /**
-     * @notice Mints `value` tokens to `to`.
-     * @dev Emits a {IButtonswapERC20Events-Transfer} event.
+     * @dev Mints `value` tokens to `to`.
+     *
+     * Emits a {IButtonswapERC20Events-Transfer} event.
      * @param to The account that is receiving the tokens
      * @param value The amount of tokens being created
      */
@@ -82,8 +83,9 @@ contract ButtonswapERC20 is IButtonswapERC20 {
     }
 
     /**
-     * @notice Burns `value` tokens from `from`.
-     * @dev Emits a {IButtonswapERC20Events-Transfer} event.
+     * @dev Burns `value` tokens from `from`.
+     *
+     * Emits a {IButtonswapERC20Events-Transfer} event.
      * @param from The account that is sending the tokens
      * @param value The amount of tokens being destroyed
      */
@@ -94,8 +96,9 @@ contract ButtonswapERC20 is IButtonswapERC20 {
     }
 
     /**
-     * @notice Sets `value` as the allowance of `spender` over the caller's tokens.
-     * @dev Emits a {IButtonswapERC20Events-Approval} event.
+     * @dev Sets `value` as the allowance of `spender` over the caller's tokens.
+     *
+     * Emits a {IButtonswapERC20Events-Approval} event.
      * @param owner The account whose tokens are being approved
      * @param spender The account that is granted permission to spend the tokens
      * @param value The amount of tokens that can be spent
@@ -106,8 +109,9 @@ contract ButtonswapERC20 is IButtonswapERC20 {
     }
 
     /**
-     * @notice Moves `value` tokens from `from` to `to`.
-     * @dev Emits a {IButtonswapERC20Events-Transfer} event.
+     * @dev Moves `value` tokens from `from` to `to`.
+     *
+     * Emits a {IButtonswapERC20Events-Transfer} event.
      * @param from The account that is sending the tokens
      * @param to The account that is receiving the tokens
      * @param value The amount of tokens being sent
