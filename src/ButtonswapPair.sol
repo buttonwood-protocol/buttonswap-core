@@ -14,25 +14,79 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     using SafeMath for uint256;
     using UQ112x112 for uint224;
 
+    /**
+     * @inheritdoc IButtonswapPair
+     */
     uint256 public constant MINIMUM_LIQUIDITY = 10 ** 3;
+
+    /**
+     * @dev TODO
+     */
     bytes4 private constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
 
+    /**
+     * @inheritdoc IButtonswapPair
+     */
     address public factory;
+
+    /**
+     * @inheritdoc IButtonswapPair
+     */
     address public token0;
+
+    /**
+     * @inheritdoc IButtonswapPair
+     */
     address public token1;
 
+    /**
+     * @dev TODO
+     */
     uint112 private pool0; // uses single storage slot, accessible via getPools
+
+    /**
+     * @dev TODO
+     */
     uint112 private pool1; // uses single storage slot, accessible via getPools
+
+    /**
+     * @dev TODO
+     */
     uint112 private reservoir0; // uses single storage slot, accessible via getReservoirs
+
+    /**
+     * @dev TODO
+     */
     uint112 private reservoir1; // uses single storage slot, accessible via getReservoirs
+
+    /**
+     * @dev TODO
+     */
     uint32 private blockTimestampLast; // uses single storage slot, accessible via getPools
 
+    /**
+     * @inheritdoc IButtonswapPair
+     */
     uint256 public price0CumulativeLast;
+
+    /**
+     * @inheritdoc IButtonswapPair
+     */
     uint256 public price1CumulativeLast;
+
+    /**
+     * @inheritdoc IButtonswapPair
+     */
     uint256 public kLast; // pool0 * pool1, as of immediately after the most recent liquidity event
 
+    /**
+     * @dev TODO
+     */
     uint256 private unlocked = 1;
 
+    /**
+     * @dev TODO
+     */
     modifier lock() {
         if (unlocked == 0) {
             revert Locked();
@@ -42,17 +96,29 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         unlocked = 1;
     }
 
+    /**
+     * @inheritdoc IButtonswapPair
+     */
     function getPools() public view returns (uint112 _pool0, uint112 _pool1, uint32 _blockTimestampLast) {
         _pool0 = pool0;
         _pool1 = pool1;
         _blockTimestampLast = blockTimestampLast;
     }
 
+    /**
+     * @inheritdoc IButtonswapPair
+     */
     function getReservoirs() public view returns (uint112 _reservoir0, uint112 _reservoir1) {
         _reservoir0 = reservoir0;
         _reservoir1 = reservoir1;
     }
 
+    /**
+     * @dev TODO
+     * @param token TODO
+     * @param to TODO
+     * @param value TODO
+     */
     function _safeTransfer(address token, address to, uint256 value) private {
         (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
         if (!success || (data.length != 0 && !abi.decode(data, (bool)))) {
@@ -64,7 +130,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         factory = msg.sender;
     }
 
-    // called once by the factory at time of deployment
+    /**
+     * @inheritdoc IButtonswapPair
+     * @dev Called once by the factory at time of deployment
+     */
     function initialize(address _token0, address _token1) external {
         // sufficient check
         if (msg.sender != factory) {
@@ -74,7 +143,13 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         token1 = _token1;
     }
 
-    // update pools and, on the first call per block, price accumulators
+    /**
+     * @dev Update pools and, on the first call per block, price accumulators
+     * @param balance0 TODO
+     * @param balance1 TODO
+     * @param _pool0 TODO
+     * @param _pool1 TODO
+     */
     function _update(uint256 balance0, uint256 balance1, uint112 _pool0, uint112 _pool1) private {
         if (balance0 > type(uint112).max || balance1 > type(uint112).max) {
             revert Overflow();
@@ -97,7 +172,15 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         emit Sync(pool0, pool1);
     }
 
-    // update pools and reservoirs to the given values
+    /**
+     * @dev Update pools and reservoirs to the given values
+     * @param previousPool0 TODO
+     * @param previousPool1 TODO
+     * @param newPool0 TODO
+     * @param newPool1 TODO
+     * @param newReservoir0 TODO
+     * @param newReservoir1 TODO
+     */
     function _updateReservoirs(
         uint112 previousPool0,
         uint112 previousPool1,
@@ -124,8 +207,19 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         emit SyncReservoir(reservoir0, reservoir1);
     }
 
-    // Get the pool and reservoir updates given the new balance and previous pools and reservoirs
-    // New updated values should include the full balance in (pool + reservoir) and maintain the same marginal price as before.
+    /**
+     * @dev Get the pool and reservoir updates given the new balance and previous pools and reservoirs.
+     * New updated values should include the full balance in (pool + reservoir) and maintain the same marginal price as before.
+     * @param balance TODO
+     * @param pool TODO
+     * @param otherPool TODO
+     * @param reservoir TODO
+     * @param otherReservoir TODO
+     * @return newPool TODO
+     * @return newReservoir TODO
+     * @return newOtherPool TODO
+     * @return newOtherReservoir TODO
+     */
     function _getNewStoredBalances(
         uint256 balance,
         uint256 pool,
@@ -168,11 +262,19 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
     }
 
-    // update pools and reservoirs, ensuring that the marginal price remains the same
-    // The updated values should have the following invariants:
-    //  - (pool + reservoir) == balance for each token.
-    //  - At least one of the reservoirs should have 0 tokens. In other words we maximize the number of tokens in the pools.
-    //  - The marginal prices should be the same before the updates as after
+    /**
+     * @dev Update pools and reservoirs, ensuring that the marginal price remains the same.
+     * The updated values should have the following invariants:
+     * - (pool + reservoir) == balance for each token.
+     * - At least one of the reservoirs should have 0 tokens. In other words we maximize the number of tokens in the pools.
+     * - The marginal prices should be the same before the updates as after
+     * @param balance0 TODO
+     * @param balance1 TODO
+     * @param _pool0 TODO
+     * @param _pool1 TODO
+     * @param _reservoir0 TODO
+     * @param _reservoir1 TODO
+     */
     function _syncReservoirs(
         uint256 balance0,
         uint256 balance1,
@@ -223,7 +325,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         _updateReservoirs(pool0, _pool1, newPool0, newPool1, newReservoir0, newReservoir1);
     }
 
-    // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
+    /**
+     * @dev If fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
+     * @param _pool0 TODO
+     * @param _pool1 TODO
+     * @return feeOn TODO
+     */
     function _mintFee(uint112 _pool0, uint112 _pool1) private returns (bool feeOn) {
         address feeTo = IButtonswapFactory(factory).feeTo();
         feeOn = feeTo != address(0);
@@ -244,7 +351,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
     }
 
-    // this low-level function should be called from a contract which performs important safety checks
+    /**
+     * @inheritdoc IButtonswapPair
+     * @dev This low-level function should be called from a contract which performs important safety checks.
+     */
     function mint(address to) external lock returns (uint256 liquidity) {
         (uint256 _pool0, uint256 _pool1,) = getPools(); // gas savings
         (uint256 _reservoir0, uint256 _reservoir1) = getReservoirs(); // gas savings
@@ -281,7 +391,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         emit Mint(msg.sender, amount0, amount1);
     }
 
-    // this low-level function should be called from a contract which performs important safety checks
+    /**
+     * @inheritdoc IButtonswapPair
+     * @dev This low-level function should be called from a contract which performs important safety checks.
+     */
     function mintWithReservoir(address to) external lock returns (uint256 liquidity) {
         (uint112 _pool0, uint112 _pool1,) = getPools(); // gas savings
         (uint256 newReservoir0, uint256 newReservoir1) = getReservoirs(); // gas savings
@@ -352,7 +465,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         emit Mint(msg.sender, amount0, amount1);
     }
 
-    // this low-level function should be called from a contract which performs important safety checks
+    /**
+     * @inheritdoc IButtonswapPair
+     * @dev This low-level function should be called from a contract which performs important safety checks.
+     */
     function burn(address to) external lock returns (uint256 amount0, uint256 amount1) {
         (uint112 _pool0, uint112 _pool1,) = getPools(); // gas savings
         (uint256 newReservoir0, uint256 newReservoir1) = getReservoirs(); // gas savings
@@ -390,7 +506,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         emit Burn(msg.sender, amount0, amount1, to);
     }
 
-    // this low-level function should be called from a contract which performs important safety checks
+    /**
+     * @inheritdoc IButtonswapPair
+     * @dev This low-level function should be called from a contract which performs important safety checks.
+     */
     function burnFromReservoir(address to) external lock returns (uint256 amount0, uint256 amount1) {
         (uint112 _pool0, uint112 _pool1,) = getPools(); // gas savings
         (uint256 newReservoir0, uint256 newReservoir1) = getReservoirs(); // gas savings
@@ -429,7 +548,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         emit Burn(msg.sender, amount0, amount1, to);
     }
 
-    // this low-level function should be called from a contract which performs important safety checks
+    /**
+     * @inheritdoc IButtonswapPair
+     * @dev This low-level function should be called from a contract which performs important safety checks.
+     */
     function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external lock {
         if (amount0Out == 0 && amount1Out == 0) {
             revert InsufficientOutputAmount();
@@ -474,7 +596,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
     }
 
-    // force reserves to match balances
+    /**
+     * @inheritdoc IButtonswapPair
+     * @dev Force reserves to match balances.
+     */
     function sync() external lock {
         _syncReservoirs(
             IERC20(token0).balanceOf(address(this)),

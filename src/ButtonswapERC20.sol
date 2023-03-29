@@ -7,16 +7,50 @@ import {SafeMath} from "./libraries/SafeMath.sol";
 contract ButtonswapERC20 is IButtonswapERC20 {
     using SafeMath for uint256;
 
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
     string public constant name = "Buttonswap";
+
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
     string public constant symbol = "BTNSWP";
+
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
     uint8 public constant decimals = 18;
+
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
     uint256 public totalSupply;
+
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
     mapping(address => uint256) public balanceOf;
+
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
     mapping(address => mapping(address => uint256)) public allowance;
 
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
     bytes32 public DOMAIN_SEPARATOR;
-    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+
+    /**
+     * @inheritdoc IButtonswapERC20
+     * @dev Pre-computed to equal `keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");`
+     */
     bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
     mapping(address => uint256) public nonces;
 
     constructor() {
@@ -35,47 +69,89 @@ contract ButtonswapERC20 is IButtonswapERC20 {
         );
     }
 
+    /**
+     * @dev Mints `value` tokens to `to`.
+     *
+     * Emits a {IButtonswapERC20Events-Transfer} event.
+     * @param to The account that is receiving the tokens
+     * @param value The amount of tokens being created
+     */
     function _mint(address to, uint256 value) internal {
         totalSupply = totalSupply.add(value);
         balanceOf[to] = balanceOf[to].add(value);
         emit Transfer(address(0), to, value);
     }
 
+    /**
+     * @dev Burns `value` tokens from `from`.
+     *
+     * Emits a {IButtonswapERC20Events-Transfer} event.
+     * @param from The account that is sending the tokens
+     * @param value The amount of tokens being destroyed
+     */
     function _burn(address from, uint256 value) internal {
         balanceOf[from] = balanceOf[from].sub(value);
         totalSupply = totalSupply.sub(value);
         emit Transfer(from, address(0), value);
     }
 
+    /**
+     * @dev Sets `value` as the allowance of `spender` over the caller's tokens.
+     *
+     * Emits a {IButtonswapERC20Events-Approval} event.
+     * @param owner The account whose tokens are being approved
+     * @param spender The account that is granted permission to spend the tokens
+     * @param value The amount of tokens that can be spent
+     */
     function _approve(address owner, address spender, uint256 value) private {
         allowance[owner][spender] = value;
         emit Approval(owner, spender, value);
     }
 
+    /**
+     * @dev Moves `value` tokens from `from` to `to`.
+     *
+     * Emits a {IButtonswapERC20Events-Transfer} event.
+     * @param from The account that is sending the tokens
+     * @param to The account that is receiving the tokens
+     * @param value The amount of tokens being sent
+     */
     function _transfer(address from, address to, uint256 value) private {
         balanceOf[from] = balanceOf[from].sub(value);
         balanceOf[to] = balanceOf[to].add(value);
         emit Transfer(from, to, value);
     }
 
-    function approve(address spender, uint256 value) external returns (bool) {
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
+    function approve(address spender, uint256 value) external returns (bool success) {
         _approve(msg.sender, spender, value);
-        return true;
+        success = true;
     }
 
-    function transfer(address to, uint256 value) external returns (bool) {
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
+    function transfer(address to, uint256 value) external returns (bool success) {
         _transfer(msg.sender, to, value);
-        return true;
+        success = true;
     }
 
-    function transferFrom(address from, address to, uint256 value) external returns (bool) {
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
+    function transferFrom(address from, address to, uint256 value) external returns (bool success) {
         if (allowance[from][msg.sender] != type(uint256).max) {
             allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
         }
         _transfer(from, to, value);
-        return true;
+        success = true;
     }
 
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
     function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
         external
     {
