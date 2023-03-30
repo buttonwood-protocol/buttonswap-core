@@ -368,9 +368,13 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             liquidity = Math.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
             _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
         } else {
+            // Check that value0AddedInTermsOf1 == amount1 or value1AddedInTermsOf0 == amount0
             uint256 value0AddedInTermsOf1 = (_pool1.mul(amount0)) / _pool0;
             if (value0AddedInTermsOf1 != amount1) {
-                revert UnequalMint();
+                uint256 value1AddedInTermsOf0 = (_pool0.mul(amount1)) / _pool1;
+                if (value1AddedInTermsOf0 != amount0) {
+                    revert UnequalMint();
+                }
             }
             uint256 reservoir0InTermsOf1 = (_pool1.mul(_reservoir0)) / _pool0;
 
