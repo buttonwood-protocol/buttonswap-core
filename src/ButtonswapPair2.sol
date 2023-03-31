@@ -165,10 +165,17 @@ contract ButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButton
             liquidityOut = Math.sqrt(amountIn0 * amountIn1) - MINIMUM_LIQUIDITY;
             // permanently lock the first MINIMUM_LIQUIDITY tokens
             _mint(address(0), MINIMUM_LIQUIDITY);
+            // Initialize Pair last swap price
+            active0Last = uint112(amountIn0);
+            active1Last = uint112(amountIn1);
         } else {
+            // Check that value0AddedInTermsOf1 == amountIn1 or value1AddedInTermsOf0 == amountIn0
             uint256 value0AddedInTermsOf1 = (amountIn0 * active1) / active0;
             if (value0AddedInTermsOf1 != amountIn1) {
-                revert UnequalMint();
+                uint256 value1AddedInTermsOf0 = (amountIn1 * active0) / active1;
+                if (value1AddedInTermsOf0 != amountIn0) {
+                    revert UnequalMint();
+                }
             }
             liquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
                 _totalSupply, amountIn0, amountIn1, active0, active1, inactive0, inactive1
