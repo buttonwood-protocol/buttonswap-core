@@ -9,16 +9,16 @@ library PairMath {
         uint256 totalLiquidity,
         uint256 amountInA,
         uint256 amountInB,
-        uint256 activeA,
-        uint256 activeB,
-        uint256 inactiveA,
-        uint256 inactiveB
+        uint256 poolA,
+        uint256 poolB,
+        uint256 reservoirA,
+        uint256 reservoirB
     ) public pure returns (uint256 liquidityOut) {
         // We know at least one side has no inactive liquidity, and this simplifies the liquidity calculation
-        if (inactiveA == 0) {
-            liquidityOut = (totalLiquidity * 2 * amountInB) / (activeB + activeB + inactiveB);
+        if (reservoirA == 0) {
+            liquidityOut = (totalLiquidity * 2 * amountInB) / (poolB + poolB + reservoirB);
         } else {
-            liquidityOut = (totalLiquidity * 2 * amountInA) / (activeA + activeA + inactiveA);
+            liquidityOut = (totalLiquidity * 2 * amountInA) / (poolA + poolA + reservoirA);
         }
     }
 
@@ -26,11 +26,11 @@ library PairMath {
     function getSingleSidedMintLiquidityOutAmount(
         uint256 totalLiquidity,
         uint256 mintAmountB,
-        uint256 activeA,
-        uint256 activeB,
-        uint256 inactiveA
+        uint256 poolA,
+        uint256 poolB,
+        uint256 reservoirA
     ) public pure returns (uint256 liquidityOut) {
-        liquidityOut = (totalLiquidity * mintAmountB * activeA) / (activeB * (activeA + activeA + inactiveA));
+        liquidityOut = (totalLiquidity * mintAmountB * poolA) / (poolB * (poolA + poolA + reservoirA));
     }
 
     /// @dev Refer to `/notes/burn-math.md`
@@ -47,25 +47,25 @@ library PairMath {
     function getSingleSidedBurnOutputAmounts(
         uint256 totalLiquidity,
         uint256 burnAmount,
-        uint256 activeA,
-        uint256 activeB,
-        uint256 inactiveA,
-        uint256 inactiveB
+        uint256 poolA,
+        uint256 poolB,
+        uint256 reservoirA,
+        uint256 reservoirB
     ) public pure returns (uint256 amountOutA, uint256 amountOutB) {
-        if (inactiveA > 0) {
-            amountOutA = (burnAmount * (inactiveA + activeA + activeA)) / totalLiquidity;
+        if (reservoirA > 0) {
+            amountOutA = (burnAmount * (reservoirA + poolA + poolA)) / totalLiquidity;
         } else {
-            amountOutB = (burnAmount * (inactiveB + activeB + activeB)) / totalLiquidity;
+            amountOutB = (burnAmount * (reservoirB + poolB + poolB)) / totalLiquidity;
         }
     }
 
     /// @dev Refer to `/notes/swap-math.md`
-    function getSwapOutputAmount(uint256 inputAmount, uint256 activeInput, uint256 activeOutput)
+    function getSwapOutputAmount(uint256 inputAmount, uint256 poolInput, uint256 poolOutput)
         public
         pure
         returns (uint256 outputAmount)
     {
-        outputAmount = (activeOutput * inputAmount * 997) / ((activeInput * 1000) + (inputAmount * 997));
+        outputAmount = (poolOutput * inputAmount * 997) / ((poolInput * 1000) + (inputAmount * 997));
     }
 
     /// @dev Refer to `/notes/fee-math.md`
