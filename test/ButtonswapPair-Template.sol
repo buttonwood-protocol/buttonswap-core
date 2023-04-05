@@ -1839,7 +1839,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assert(reservoir0 == 0 || reservoir1 == 0);
         // Price hasn't changed
         assertEq(
-            PriceAssertion.isPriceUnchanged(reservoir0, pool0Previous, pool1Previous, pool0, pool1),
+            PriceAssertion.isPriceUnchanged(reservoir0, reservoir1, pool0Previous, pool1Previous, pool0, pool1),
             true,
             "New price outside of tolerance"
         );
@@ -1908,7 +1908,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assert(reservoir0 == 0 || reservoir1 == 0);
         // Price hasn't changed
         assertEq(
-            PriceAssertion.isPriceUnchanged(reservoir0, pool0Previous, pool1Previous, pool0, pool1),
+            PriceAssertion.isPriceUnchanged(reservoir0, reservoir1, pool0Previous, pool1Previous, pool0, pool1),
             true,
             "New price outside of tolerance"
         );
@@ -1991,7 +1991,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assert(reservoir0 == 0 || reservoir1 == 0);
         // Price hasn't changed
         assertEq(
-            PriceAssertion.isPriceUnchanged(reservoir0, pool0Previous, pool1Previous, pool0, pool1),
+            PriceAssertion.isPriceUnchanged(reservoir0, reservoir1, pool0Previous, pool1Previous, pool0, pool1),
             true,
             "New price outside of tolerance"
         );

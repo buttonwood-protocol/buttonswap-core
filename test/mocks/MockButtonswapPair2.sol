@@ -11,6 +11,7 @@ contract MockButtonswapPair2 is ButtonswapPair2 {
 
     function mockGetLiquidityBalances(uint256 total0, uint256 total1)
         public
+        view
         returns (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1)
     {
         if (total0 > 0 && total1 > 0) {

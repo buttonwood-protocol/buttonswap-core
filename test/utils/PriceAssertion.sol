@@ -69,6 +69,7 @@ library PriceAssertion {
     /// The "optimal" value is one which produces the ratio closest to the target ratio.
     function isTermWithinTolerance(
         uint112 variableA,
+        uint112 limitA,
         uint112 fixedB,
         uint112 targetA,
         uint112 targetB,
@@ -80,28 +81,60 @@ library PriceAssertion {
             // If input currentVariableA is the optimal value then the same value is returned
             // If the optimal value is far away instead, then currentVariableA will keep drifting towards it
             currentVariableA = getLowestDeltaTermForRatio(currentVariableA, fixedB, targetA, targetB);
+            // Cap it to prevent finding optimal value in excess of total tokens available
+            if (currentVariableA > limitA) {
+                currentVariableA = limitA;
+            }
         }
         // Check whether the final currentVariableA is sufficiently close to the initial variableA
         return Utils.getDelta112(currentVariableA, variableA) <= tolerance;
     }
 
     function isPriceUnchanged(
-        uint112 reservoir0,
-        uint112 pool0Previous,
-        uint112 pool1Previous,
-        uint112 pool0,
-        uint112 pool1
+        uint112 reservoirA,
+        uint112 reservoirB,
+        uint112 poolAPrevious,
+        uint112 poolBPrevious,
+        uint112 poolA,
+        uint112 poolB
     ) public pure returns (bool) {
         // Accept the optimal new pool value to be up to 1 away from the value the contract computed
+        // TODO change this to 0 when fully switching to Pair2
         uint112 tolerance = 1;
+        if (poolA < 1000 || poolB < 1000) {
+            // Pair2 active liquidity calculations are slightly less accurate when values are extremely small, due to the
+            //   need to scale them up to avoid precision related errors.
+            tolerance = 1;
+        }
         bool withinTolerance;
-        if (reservoir0 == 0) {
-            // If reservoir0 is zero then pool0 is a fixed value, being the full token balance available
-            // It is therefore pool1 that we must check is correct
-            withinTolerance = isTermWithinTolerance(pool1, pool0, pool1Previous, pool0Previous, tolerance);
+        if (reservoirA == 0) {
+            // If reservoirA is zero then poolA is a fixed value, being the full token balance available
+            // It is therefore poolB that we must check is correct
+            withinTolerance =
+                isTermWithinTolerance(poolB, poolB + reservoirB, poolA, poolBPrevious, poolAPrevious, tolerance);
         } else {
-            withinTolerance = isTermWithinTolerance(pool0, pool1, pool0Previous, pool1Previous, tolerance);
+            withinTolerance =
+                isTermWithinTolerance(poolA, poolA + reservoirA, poolB, poolAPrevious, poolBPrevious, tolerance);
         }
         return withinTolerance;
+    }
+
+    /// @dev Just a convenience method to save writing out the type coercion each time
+    function isPriceUnchanged256(
+        uint256 reservoirA,
+        uint256 reservoirB,
+        uint256 poolAPrevious,
+        uint256 poolBPrevious,
+        uint256 poolA,
+        uint256 poolB
+    ) public pure returns (bool) {
+        return isPriceUnchanged(
+            uint112(reservoirA),
+            uint112(reservoirB),
+            uint112(poolAPrevious),
+            uint112(poolBPrevious),
+            uint112(poolA),
+            uint112(poolB)
+        );
     }
 }
