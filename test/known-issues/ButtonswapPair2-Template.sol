@@ -112,7 +112,7 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
         vm.prank(vars.feeToSetter);
         vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+        vars.pair = ButtonswapPair2(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
         vars.token1 = MockERC20(vars.pair.token1());
         vm.assume(amount00 < vars.rebasingToken0.mintableBalance());
@@ -199,7 +199,7 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
         vm.prank(vars.feeToSetter);
         vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
+        vars.pair = ButtonswapPair2(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
         vars.rebasingToken1 = ICommonMockRebasingERC20(vars.pair.token1());
         vm.assume(mintAmount00 <= vars.rebasingToken0.mintableBalance());
@@ -392,7 +392,7 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
         vm.prank(vars.feeToSetter);
         vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
+        vars.pair = ButtonswapPair2(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
         vars.rebasingToken1 = ICommonMockRebasingERC20(vars.pair.token1());
         vm.assume(mintAmount0 <= vars.rebasingToken0.mintableBalance());
