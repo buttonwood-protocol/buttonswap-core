@@ -98,4 +98,9 @@ interface IButtonswapPairErrors is IButtonswapERC20Errors {
      * @notice The product of pool balances must not change during a swap (save for accounting for fees)
      */
     error KInvariant();
+
+    /**
+     * @notice The new price ratio after a swap is invalid (one or more of the price terms are zero)
+     */
+    error InvalidFinalPrice();
 }

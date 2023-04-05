@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {IButtonswapPair} from "./interfaces/IButtonswapPair/IButtonswapPair.sol";
 import {ButtonswapERC20} from "./ButtonswapERC20.sol";
 import {Math} from "./libraries/Math.sol";
-import {PairMath} from "./libraries/PairMath.sol";
+import {PairMath2} from "./libraries/PairMath2.sol";
 import {UQ112x112} from "./libraries/UQ112x112.sol";
 import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
@@ -15,19 +15,19 @@ import {IButtonswapPairErrors} from "./interfaces/IButtonswapPair/IButtonswapPai
 import {IButtonswapPairEvents} from "./interfaces/IButtonswapPair/IButtonswapPairEvents.sol";
 import {IButtonswapERC20} from "./interfaces/IButtonswapERC20/IButtonswapERC20.sol";
 
-contract ButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButtonswapERC20, ButtonswapERC20 {
+contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButtonswapERC20, ButtonswapERC20 {
     using UQ112x112 for uint224;
 
     uint256 public constant MINIMUM_LIQUIDITY = 10 ** 3;
-    bytes4 private constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
+    bytes4 internal constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
 
     address public factory;
     address public token0;
     address public token1;
 
-    uint112 private pool0Last;
-    uint112 private pool1Last;
-    uint32 private blockTimestampLast;
+    uint112 internal pool0Last;
+    uint112 internal pool1Last;
+    uint32 internal blockTimestampLast;
 
     uint256 public price0CumulativeLast;
     uint256 public price1CumulativeLast;
@@ -58,18 +58,18 @@ contract ButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButton
     }
 
     // if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
-    function _mintFee(uint256 pool0, uint256 pool1, uint256 pool0New, uint256 pool1New) private {
+    function _mintFee(uint256 pool0, uint256 pool1, uint256 pool0New, uint256 pool1New) internal {
         address feeTo = IButtonswapFactory(factory).feeTo();
         if (feeTo != address(0)) {
             uint256 liquidityOut =
-                PairMath.getProtocolFeeLiquidityMinted(totalSupply, pool0 * pool1, pool0New * pool1New);
+                PairMath2.getProtocolFeeLiquidityMinted(totalSupply, pool0 * pool1, pool0New * pool1New);
             if (liquidityOut > 0) {
                 _mint(feeTo, liquidityOut);
             }
         }
     }
 
-    function _updatePriceCumulative(uint256 pool0, uint256 pool1) private {
+    function _updatePriceCumulative(uint256 pool0, uint256 pool1) internal {
         uint112 _pool0 = uint112(pool0);
         uint112 _pool1 = uint112(pool1);
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
@@ -84,8 +84,8 @@ contract ButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButton
                 price0CumulativeLast += uint256(UQ112x112.encode(_pool1).uqdiv(_pool0)) * timeElapsed;
                 price1CumulativeLast += uint256(UQ112x112.encode(_pool0).uqdiv(_pool1)) * timeElapsed;
             }
+            blockTimestampLast = blockTimestamp;
         }
-        blockTimestampLast = blockTimestamp;
     }
 
     function _getDelta(uint256 a, uint256 b) internal pure returns (uint256) {
@@ -168,6 +168,8 @@ contract ButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButton
             // Initialize Pair last swap price
             pool0Last = uint112(amountIn0);
             pool1Last = uint112(amountIn1);
+            // Initialize timestamp so first price update is accurate
+            blockTimestampLast = uint32(block.timestamp % 2 ** 32);
         } else {
             // Check that value0AddedInTermsOf1 == amountIn1 or value1AddedInTermsOf0 == amountIn0
             uint256 value0AddedInTermsOf1 = (amountIn0 * pool1) / pool0;
@@ -177,7 +179,7 @@ contract ButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButton
                     revert UnequalMint();
                 }
             }
-            liquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
+            liquidityOut = PairMath2.getDualSidedMintLiquidityOutAmount(
                 _totalSupply, amountIn0, amountIn1, pool0, pool1, reservoir0, reservoir1
             );
         }
@@ -215,7 +217,7 @@ contract ButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButton
             }
 
             liquidityOut =
-                PairMath.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, pool1, pool0, reservoir1);
+                PairMath2.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, pool1, pool0, reservoir1);
         } else {
             // If reservoir1 is empty then we're adding token1 to pair with token0 liquidity
             SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn);
@@ -228,7 +230,7 @@ contract ButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButton
             }
 
             liquidityOut =
-                PairMath.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, pool0, pool1, reservoir0);
+                PairMath2.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, pool0, pool1, reservoir0);
         }
 
         if (liquidityOut == 0) {
@@ -250,7 +252,7 @@ contract ButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButton
         uint256 total0 = IERC20(_token0).balanceOf(address(this));
         uint256 total1 = IERC20(_token1).balanceOf(address(this));
 
-        (amountOut0, amountOut1) = PairMath.getDualSidedBurnOutputAmounts(_totalSupply, liquidityIn, total0, total1);
+        (amountOut0, amountOut1) = PairMath2.getDualSidedBurnOutputAmounts(_totalSupply, liquidityIn, total0, total1);
 
         if (amountOut0 == 0 || amountOut1 == 0) {
             revert InsufficientLiquidityBurned();
@@ -275,7 +277,7 @@ contract ButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButton
         (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
 
         (amountOut0, amountOut1) =
-            PairMath.getSingleSidedBurnOutputAmounts(_totalSupply, liquidityIn, pool0, pool1, reservoir0, reservoir1);
+            PairMath2.getSingleSidedBurnOutputAmounts(_totalSupply, liquidityIn, pool0, pool1, reservoir0, reservoir1);
 
         if (amountOut0 > reservoir0 || amountOut1 > reservoir1) {
             revert InsufficientReservoir();
@@ -341,6 +343,9 @@ contract ButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButton
         total1 = IERC20(_token1).balanceOf(address(this));
         (uint256 pool0New, uint256 pool1New, uint256 reservoir0New, uint256 reservoir1New) =
             _getLiquidityBalances(total0, total1);
+        if (pool0New == 0 || pool1New == 0) {
+            revert InvalidFinalPrice();
+        }
         if (reservoir0New > reservoir0 || reservoir1New > reservoir1) {
             revert ReservoirInvariant();
         }

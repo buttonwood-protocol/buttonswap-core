@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Math} from "./Math.sol";
 
-library PairMath {
+library PairMath2 {
     /// @dev Refer to `/notes/mint-math.md`
     function getDualSidedMintLiquidityOutAmount(
         uint256 totalLiquidity,
