@@ -2062,7 +2062,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token1.mint(vars.minter1, mintAmount11);
         // Estimate fee
         uint256 expectedFeeToBalance =
-        PairMath.getProtocolFeeLiquidityMinted(vars.pair.totalSupply(), vars.pair.kLast(), vars.pool0 * vars.pool1);
+            PairMath.getProtocolFeeLiquidityMinted(vars.pair.totalSupply(), vars.pair.kLast(), vars.pool0 * vars.pool1);
 
         // Mint liquidity again to trigger the protocol fee being updated
         vm.startPrank(vars.minter1);
@@ -2192,7 +2192,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
     }
 
     function test__update_CumulativePriceValuesUpdate(uint256 mintAmount0, uint256 mintAmount1, uint32 warpTime)
-    public
+        public
     {
         // Make sure the amounts aren't liable to overflow 2**112
         vm.assume(mintAmount0 < (2 ** 112) / 2);
@@ -2228,13 +2228,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Calculate expected values
         (,, uint32 blockTimestampLast) = vars.pair.getPools();
         uint32 timeElapsed;
-    unchecked {
-        timeElapsed = warpTime - blockTimestampLast;
-    }
+        unchecked {
+            timeElapsed = warpTime - blockTimestampLast;
+        }
         uint256 expectedPrice0CumulativeLast =
-        uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount1)), uint112(mintAmount0))) * timeElapsed;
+            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount1)), uint112(mintAmount0))) * timeElapsed;
         uint256 expectedPrice1CumulativeLast =
-        uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount0)), uint112(mintAmount1))) * timeElapsed;
+            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount0)), uint112(mintAmount1))) * timeElapsed;
 
         // Move time forward so that price can accrue
         vm.warp(warpTime);
