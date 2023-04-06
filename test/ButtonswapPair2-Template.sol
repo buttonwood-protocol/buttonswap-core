@@ -337,6 +337,7 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vm.assume(Math.sqrt(amount00 * amount01) > 1000);
         // Second mint must not match price ratio
         vm.assume(amount11 != ((amount10 * amount01) / amount00));
+        vm.assume(amount10 != ((amount11 * amount00) / amount01));
 
         TestVariables memory vars;
         vars.feeToSetter = userA;
