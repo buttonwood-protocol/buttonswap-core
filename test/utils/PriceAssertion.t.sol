@@ -12,8 +12,10 @@ contract PriceAssertionTest is Test {
         vm.assume(fixedB < type(uint112).max / targetA);
         uint112 variableA = (targetA * fixedB) / targetB;
         vm.assume(variableA > 0);
+        uint112 limitA = type(uint112).max;
         uint112 tolerance = 1;
-        bool withinTolerance = PriceAssertion.isTermWithinTolerance(variableA, fixedB, targetA, targetB, tolerance);
+        bool withinTolerance =
+            PriceAssertion.isTermWithinTolerance(variableA, limitA, fixedB, targetA, targetB, tolerance);
         assertEq(withinTolerance, true, "New price outside of tolerance");
     }
 }

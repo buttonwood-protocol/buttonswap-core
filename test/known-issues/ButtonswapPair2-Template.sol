@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 import {IButtonswapPairEvents, IButtonswapPairErrors} from "../../src/interfaces/IButtonswapPair/IButtonswapPair.sol";
-import {ButtonswapPair} from "../../src/ButtonswapPair.sol";
+import {ButtonswapPair2} from "../../src/ButtonswapPair2.sol";
 import {Math} from "../../src/libraries/Math.sol";
 import {MockERC20} from "mock-contracts/MockERC20.sol";
 import {ICommonMockRebasingERC20} from "mock-contracts/interfaces/ICommonMockRebasingERC20/ICommonMockRebasingERC20.sol";
@@ -14,7 +14,7 @@ import {PriceAssertion} from "../utils/PriceAssertion.sol";
 import {UQ112x112} from "../../src/libraries/UQ112x112.sol";
 
 // This defines the tests but this contract is abstract because multiple implementations using different rebasing token types run them
-abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairErrors {
+abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswapPairErrors {
     struct TestVariables {
         address zeroAddress;
         address feeToSetter;
@@ -28,7 +28,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         address burner2;
         address exploiter;
         MockButtonswapFactory factory;
-        ButtonswapPair pair;
+        ButtonswapPair2 pair;
         MockERC20 token0;
         MockERC20 token1;
         ICommonMockRebasingERC20 rebasingToken0;
@@ -82,6 +82,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebasingTokenB.initialize();
     }
 
+    // TODO progress cutoff point
+
     function test_exploit_CanMintUsingUnaccountedSurplusIfSyncNotCalled(
         uint256 amount00,
         uint256 amount01,
@@ -110,7 +112,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
         vm.prank(vars.feeToSetter);
         vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+        vars.pair = ButtonswapPair2(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
         vars.token1 = MockERC20(vars.pair.token1());
         vm.assume(amount00 < vars.rebasingToken0.mintableBalance());
@@ -197,7 +199,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
         vm.prank(vars.feeToSetter);
         vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
+        vars.pair = ButtonswapPair2(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
         vars.rebasingToken1 = ICommonMockRebasingERC20(vars.pair.token1());
         vm.assume(mintAmount00 <= vars.rebasingToken0.mintableBalance());
@@ -390,7 +392,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
         vm.prank(vars.feeToSetter);
         vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
+        vars.pair = ButtonswapPair2(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
         vars.rebasingToken1 = ICommonMockRebasingERC20(vars.pair.token1());
         vm.assume(mintAmount0 <= vars.rebasingToken0.mintableBalance());

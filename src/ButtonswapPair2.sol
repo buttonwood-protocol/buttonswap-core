@@ -114,6 +114,39 @@ contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButto
         return poolANewUpper;
     }
 
+    /// @dev This method lacks proper checks and should not be called directly
+    function _getLiquidityBalancesUnsafe(uint256 total0, uint256 total1, uint256 _pool0Last, uint256 _pool1Last)
+        internal
+        pure
+        returns (uint256 pool0, uint256 pool1)
+    {
+        if (total0 < 1000 || total1 < 1000) {
+            // Scale total{0,1} up to over 1000 to avoid precision issues with extremely low values
+            // With, for example, _pool1Last=1 and total1=1 and a token0 rebase of x1.5 we would otherwise try and
+            //   succeed trying the first way, however new pool0 would be x1.5 what it was before without pool1
+            //   changing, with the effect of the price ratio changing drastically in an undesired way.
+            (pool0, pool1) = _getLiquidityBalancesUnsafe(total0 * 10, total1 * 10, _pool0Last, _pool1Last);
+            // Now scale output values back down again
+            pool0 /= 10;
+            pool1 /= 10;
+        } else {
+            // Try it one way
+            pool0 = total0;
+            // pool0Last/pool1Last == pool0/pool1 => pool1 == (pool0*pool1Last)/pool0Last
+            // pool1Last/pool0Last == pool1/pool0 => pool1 == (pool0*pool1Last)/pool0Last
+            pool1 = (pool0 * _pool1Last) / _pool0Last;
+            pool1 = _closestBound(pool1, pool0, _pool1Last, _pool0Last);
+            if (pool1 > total1) {
+                // Try the other way
+                pool1 = total1;
+                // pool0Last/pool1Last == pool0/pool1 => pool0 == (pool1*pool0Last)/pool1Last
+                // pool1Last/pool0Last == pool1/pool0 => pool0 == (pool1*pool0Last)/pool1Last
+                pool0 = (pool1 * _pool0Last) / _pool1Last;
+                pool0 = _closestBound(pool0, pool1, _pool0Last, _pool1Last);
+            }
+        }
+    }
+
     function _getLiquidityBalances(uint256 total0, uint256 total1)
         internal
         view
@@ -121,30 +154,34 @@ contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButto
     {
         uint256 _pool0Last = uint256(pool0Last);
         uint256 _pool1Last = uint256(pool1Last);
-
-        // Try it one way
-        pool0 = total0;
-        reservoir0 = 0;
-        // pool0Last/pool1Last == pool0/pool1 => pool1 == (pool0*pool1Last)/pool0Last
-        // pool1Last/pool0Last == pool1/pool0 => pool1 == (pool0*pool1Last)/pool0Last
-        pool1 = (pool0 * _pool1Last) / _pool0Last;
-        pool1 = _closestBound(pool1, pool0, _pool1Last, _pool0Last);
-        if (pool1 <= total1) {
-            reservoir1 = total1 - pool1;
+        if (_pool0Last == 0 || _pool1Last == 0) {
+            // Before Pair is initialized by first dual mint just return zeroes
+        } else if (total0 == 0 || total1 == 0) {
+            // Return zeroes, _getLiquidityBalancesUnsafe will get stuck in an infinite loop if called
         } else {
-            // Try the other way
-            pool1 = total1;
-            reservoir1 = 0;
-            // pool0Last/pool1Last == pool0/pool1 => pool0 == (pool1*pool0Last)/pool1Last
-            // pool1Last/pool0Last == pool1/pool0 => pool0 == (pool1*pool0Last)/pool1Last
-            pool0 = (pool1 * _pool0Last) / _pool1Last;
-            pool0 = _closestBound(pool0, pool1, _pool0Last, _pool1Last);
+            (pool0, pool1) = _getLiquidityBalancesUnsafe(total0, total1, _pool0Last, _pool1Last);
             reservoir0 = total0 - pool0;
+            reservoir1 = total1 - pool1;
+            // TODO could scale pool to fit instead, transferring excess to reservoir?
+            if (pool0 > type(uint112).max || pool1 > type(uint112).max) {
+                revert Overflow();
+            }
         }
-        // TODO could scale pool to fit instead, transferring excess to reservoir?
-        if (pool0 > type(uint112).max || pool1 > type(uint112).max) {
-            revert Overflow();
-        }
+    }
+
+    function getLiquidityBalances()
+        external
+        view
+        returns (uint112 _pool0, uint112 _pool1, uint112 _reservoir0, uint112 _reservoir1, uint32 _blockTimestampLast)
+    {
+        uint256 total0 = IERC20(token0).balanceOf(address(this));
+        uint256 total1 = IERC20(token1).balanceOf(address(this));
+        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
+        _pool0 = uint112(pool0);
+        _pool1 = uint112(pool1);
+        _reservoir0 = uint112(reservoir0);
+        _reservoir1 = uint112(reservoir1);
+        _blockTimestampLast = blockTimestampLast;
     }
 
     function mint(uint256 amountIn0, uint256 amountIn1, address to) external lock returns (uint256 liquidityOut) {
@@ -171,6 +208,9 @@ contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButto
             // Initialize timestamp so first price update is accurate
             blockTimestampLast = uint32(block.timestamp % 2 ** 32);
         } else {
+            if (pool0 == 0 || pool1 == 0) {
+                revert InsufficientLiquidity();
+            }
             // Check that value0AddedInTermsOf1 == amountIn1 or value1AddedInTermsOf0 == amountIn0
             uint256 value0AddedInTermsOf1 = (amountIn0 * pool1) / pool0;
             if (value0AddedInTermsOf1 != amountIn1) {
@@ -205,6 +245,9 @@ contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButto
         uint256 total1 = IERC20(_token1).balanceOf(address(this));
         // Determine current pool liquidity
         (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
+        if (pool0 == 0 || pool1 == 0) {
+            revert InsufficientLiquidity();
+        }
         if (reservoir0 == 0) {
             // If reservoir0 is empty then we're adding token0 to pair with token1 liquidity
             SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn);
@@ -275,6 +318,9 @@ contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButto
         uint256 total1 = IERC20(_token1).balanceOf(address(this));
         // Determine current pool liquidity
         (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
+        if (pool0 == 0 || pool1 == 0) {
+            revert InsufficientLiquidity();
+        }
 
         (amountOut0, amountOut1) =
             PairMath2.getSingleSidedBurnOutputAmounts(_totalSupply, liquidityIn, pool0, pool1, reservoir0, reservoir1);
