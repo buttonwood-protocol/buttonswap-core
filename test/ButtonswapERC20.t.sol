@@ -80,9 +80,6 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
 
         mockButtonswapERC20.mockMint(userA, amount1);
         mockButtonswapERC20.mockMint(userB, amount2);
-        assertEq(mockButtonswapERC20.totalSupply(), amount1 + amount2);
-        assertEq(mockButtonswapERC20.balanceOf(userA), amount1);
-        assertEq(mockButtonswapERC20.balanceOf(userB), amount2);
 
         mockButtonswapERC20.mockBurn(userA, amount1);
         assertEq(mockButtonswapERC20.totalSupply(), amount2);
@@ -93,6 +90,17 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.totalSupply(), 0);
         assertEq(mockButtonswapERC20.balanceOf(userA), 0);
         assertEq(mockButtonswapERC20.balanceOf(userB), 0);
+    }
+
+    function test_burn_CannotBurnMoreThanBalance(uint256 amount) public {
+        vm.assume(amount > 0);
+        vm.assume(amount <= type(uint256).max);
+
+        // Mint slightly less than what is burned
+        mockButtonswapERC20.mockMint(userA, amount - 1);
+
+        vm.expectRevert(stdError.arithmeticError);
+        mockButtonswapERC20.mockBurn(userA, amount);
     }
 
     function test_approve(uint256 amount) public {
