@@ -967,6 +967,7 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         // Divide by 1000 so that it can handle a rebase
         vm.assume(amount00 < (uint256(2 ** 112) / 1000));
         vm.assume(amount01 < (uint256(2 ** 112) / 1000));
+        vm.assume(amount1X < uint256(2 ** 112));
         // Amounts must be non-zero
         // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
         vm.assume(Math.sqrt(amount00 * amount01) > 1000);
@@ -1007,19 +1008,15 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Prepare the appropriate token for the second mint based on which reservoir has a non-zero balance
         if (vars.reservoir0 > 0) {
-            uint256 reservoir0InTermsOf1 = (vars.reservoir0 * vars.pool1) / vars.pool0;
             // Ensure we mint more than there's reservoir funds to pair with
-            // +1 because due to rounding sometimes the test fails otherwise (amount1X is equal to the reservoir instead)
-            vm.assume(amount1X > reservoir0InTermsOf1 + 1);
+            vm.assume((amount1X * vars.pool0 / vars.pool1) > vars.reservoir0);
             // Ensure we don't get math overflow errors
             vm.assume(amount1X < type(uint256).max / (vars.pool0 * vars.pair.totalSupply()));
             amount11 = amount1X;
             vars.token1.mint(vars.minter2, amount1X);
         } else {
-            uint256 reservoir1InTermsOf0 = (vars.reservoir1 * vars.pool0) / vars.pool1;
             // Ensure we mint more than there's reservoir funds to pair with
-            // +1 because due to rounding sometimes the test fails otherwise (amount1X is equal to the reservoir instead)
-            vm.assume(amount1X > reservoir1InTermsOf0 + 1);
+            vm.assume((amount1X * vars.pool1) / vars.pool0 > vars.reservoir1);
             // Ensure we don't get math overflow errors
             vm.assume(amount1X < type(uint256).max / (vars.pool1 * vars.pair.totalSupply()));
             vm.assume(amount1X < vars.rebasingToken0.mintableBalance());
