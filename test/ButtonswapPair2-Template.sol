@@ -1127,8 +1127,6 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vm.stopPrank();
     }
 
-    // TODO progress cutoff point
-
     function test_burn(uint256 mintAmount0, uint256 mintAmount1, uint256 burnAmount) public {
         // Make sure the amounts aren't liable to overflow 2**112
         vm.assume(mintAmount0 < (2 ** 112) / 2);
@@ -1155,29 +1153,30 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // burnAmount must not exceed amount of liquidity tokens minter has
         vm.assume(burnAmount <= vars.pair.balanceOf(vars.minter1));
         // Calculate expected values to assert against
-        (vars.pool0, vars.pool1,) = vars.pair.getPools();
-        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
         uint256 expectedTotalSupply = vars.pair.totalSupply() - burnAmount;
-        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath.getDualSidedBurnOutputAmounts(
-            vars.pair.totalSupply(), burnAmount, vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1
+        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath2.getDualSidedBurnOutputAmounts(
+            vars.pair.totalSupply(),
+            burnAmount,
+            vars.token0.balanceOf(address(vars.pair)),
+            vars.token1.balanceOf(address(vars.pair))
         );
         // Ignore edge cases where both expected amounts are zero
         vm.assume(expectedAmount0 > 0 && expectedAmount1 > 0);
 
         // Do burn
         vm.startPrank(vars.minter1);
-        vars.pair.transfer(address(vars.pair), burnAmount);
         vm.expectEmit(true, true, true, true);
         emit Burn(vars.minter1, expectedAmount0, expectedAmount1, vars.receiver);
-        (uint256 amount0, uint256 amount1) = vars.pair.burn(vars.receiver);
+        (uint256 amount0, uint256 amount1) = vars.pair.burn(burnAmount, vars.receiver);
         vm.stopPrank();
 
         // Confirm state as expected
@@ -1217,27 +1216,28 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // burnAmount must not exceed amount of liquidity tokens minter has
         vm.assume(burnAmount <= vars.pair.balanceOf(vars.minter1));
         // Calculate expected values to assert against
-        (vars.pool0, vars.pool1,) = vars.pair.getPools();
-        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
-        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath.getDualSidedBurnOutputAmounts(
-            vars.pair.totalSupply(), burnAmount, vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath2.getDualSidedBurnOutputAmounts(
+            vars.pair.totalSupply(),
+            burnAmount,
+            vars.token0.balanceOf(address(vars.pair)),
+            vars.token1.balanceOf(address(vars.pair))
         );
         // Target edge cases where one or both expected amounts are zero
         vm.assume(expectedAmount0 == 0 || expectedAmount1 == 0);
 
         // Attempt burn
         vm.startPrank(vars.minter1);
-        vars.pair.transfer(address(vars.pair), burnAmount);
         vm.expectRevert(InsufficientLiquidityBurned.selector);
-        vars.pair.burn(vars.receiver);
+        vars.pair.burn(burnAmount, vars.receiver);
         vm.stopPrank();
     }
 
@@ -1257,8 +1257,8 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vm.assume(mintAmount1 > 1000);
         vm.assume(burnAmount > 0);
         // Keep rebase factor in sensible range
-        vm.assume(rebaseNumerator > 0 && rebaseNumerator < 1000);
-        vm.assume(rebaseDenominator > 0 && rebaseDenominator < 1000);
+        rebaseNumerator = bound(rebaseNumerator, 1, 1000);
+        rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
         vars.feeToSetter = userA;
@@ -1277,23 +1277,20 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.rebasingToken0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.rebasingToken0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // Rebase
         vars.rebasingToken0.applyMultiplier(rebaseNumerator, rebaseDenominator);
-        // Sync
-        vars.pair.sync();
 
         // burnAmount must not exceed amount of liquidity tokens minter has
         vm.assume(burnAmount <= vars.pair.balanceOf(vars.minter1));
         // Calculate expected values to assert against
-        (vars.pool0, vars.pool1,) = vars.pair.getPools();
-        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
         uint256 expectedTotalSupply = vars.pair.totalSupply() - burnAmount;
-        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath.getSingleSidedBurnOutputAmounts(
+        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath2.getSingleSidedBurnOutputAmounts(
             vars.pair.totalSupply(), burnAmount, vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1
         );
         // Ignore edge cases where both expected amounts are zero
@@ -1303,10 +1300,9 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Do burnFromReservoir
         vm.startPrank(vars.minter1);
-        vars.pair.transfer(address(vars.pair), burnAmount);
         vm.expectEmit(true, true, true, true);
         emit Burn(vars.minter1, expectedAmount0, expectedAmount1, vars.receiver);
-        (uint256 amount0, uint256 amount1) = vars.pair.burnFromReservoir(vars.receiver);
+        (uint256 amount0, uint256 amount1) = vars.pair.burnFromReservoir(burnAmount, vars.receiver);
         vm.stopPrank();
 
         // Confirm state as expected
@@ -1354,19 +1350,18 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.rebasingToken0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.rebasingToken0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // Rebase
         vars.rebasingToken0.applyMultiplier(rebaseNumerator, rebaseDenominator);
-        // Sync
-        vars.pair.sync();
 
         // Calculate expected values to assert against
-        (vars.pool0, vars.pool1,) = vars.pair.getPools();
-        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        // Ignore edge cases where either pool is 0
+        vm.assume(vars.pool0 > 0 && vars.pool1 > 0);
         // Ignore edge cases where both reservoirs are still 0
         vm.assume(vars.reservoir0 > 0 || vars.reservoir1 > 0);
         // Start with full possible burnAmount
@@ -1374,7 +1369,7 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         uint256 expectedAmount0;
         uint256 expectedAmount1;
         // Estimate redeemed amounts if full balance was burned
-        (expectedAmount0, expectedAmount1) = PairMath.getSingleSidedBurnOutputAmounts(
+        (expectedAmount0, expectedAmount1) = PairMath2.getSingleSidedBurnOutputAmounts(
             vars.pair.totalSupply(), burnAmountMax, vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1
         );
         // Divide the max by expected amount, +1 to ensure that it always divides to zero
@@ -1388,7 +1383,7 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         // Scale the random burnAmount to be within valid range
         burnAmount = bound(burnAmount, 1, burnAmountMax);
         // Update estimate redeemed amounts with adjusted burnAmount
-        (expectedAmount0, expectedAmount1) = PairMath.getSingleSidedBurnOutputAmounts(
+        (expectedAmount0, expectedAmount1) = PairMath2.getSingleSidedBurnOutputAmounts(
             vars.pair.totalSupply(), burnAmount, vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1
         );
         // This should result in  both expected amounts being zero
@@ -1398,9 +1393,8 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Attempt burnFromReservoir
         vm.startPrank(vars.minter1);
-        vars.pair.transfer(address(vars.pair), burnAmount);
         vm.expectRevert(InsufficientLiquidityBurned.selector);
-        vars.pair.burnFromReservoir(vars.receiver);
+        vars.pair.burnFromReservoir(burnAmount, vars.receiver);
         vm.stopPrank();
     }
 
@@ -1435,19 +1429,24 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.rebasingToken0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.rebasingToken0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // burnAmount must not exceed amount of liquidity tokens minter has
         vm.assume(burnAmount <= vars.pair.balanceOf(vars.minter1));
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath2.getSingleSidedBurnOutputAmounts(
+            vars.pair.totalSupply(), burnAmount, vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1
+        );
+        // Filter out cases when expected amounts are both zero
+        vm.assume(expectedAmount0 > 0 || expectedAmount1 > 0);
 
         // Attempt burnFromReservoir
         vm.startPrank(vars.minter1);
-        vars.pair.transfer(address(vars.pair), burnAmount);
-        vm.expectRevert(InsufficientLiquidityBurned.selector);
-        vars.pair.burnFromReservoir(vars.receiver);
+        vm.expectRevert(InsufficientReservoir.selector);
+        vars.pair.burnFromReservoir(burnAmount, vars.receiver);
         vm.stopPrank();
     }
 
@@ -1485,39 +1484,37 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.rebasingToken0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.rebasingToken0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // Rebase
         vars.rebasingToken0.applyMultiplier(rebaseNumerator, rebaseDenominator);
-        // Sync
-        vars.pair.sync();
 
         // Scale the random burnAmount to be within valid range
         // burnAmount must not exceed amount of liquidity tokens minter has
         burnAmount = bound(burnAmount, 1, vars.pair.balanceOf(vars.minter1));
         // Calculate expected values to assert against
-        (vars.pool0, vars.pool1,) = vars.pair.getPools();
-        (vars.reservoir0, vars.reservoir1) = vars.pair.getReservoirs();
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        // Ignore edge cases where either pool is 0
+        vm.assume(vars.pool0 > 0 && vars.pool1 > 0);
         // Ignore edge cases where both reservoirs are still 0
         vm.assume(vars.reservoir0 > 0 || vars.reservoir1 > 0);
-        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath.getSingleSidedBurnOutputAmounts(
+        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath2.getSingleSidedBurnOutputAmounts(
             vars.pair.totalSupply(), burnAmount, vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1
         );
-        // Ignore edge cases where both expected amounts are zero
-        vm.assume(expectedAmount0 > 0 || expectedAmount1 > 0);
         // Target cases where expected amount exceeds reservoir balances
         vm.assume(expectedAmount0 > vars.reservoir0 || expectedAmount1 > vars.reservoir1);
 
         // Attempt burnFromReservoir
         vm.startPrank(vars.minter1);
-        vars.pair.transfer(address(vars.pair), burnAmount);
         vm.expectRevert(InsufficientReservoir.selector);
-        vars.pair.burnFromReservoir(vars.receiver);
+        vars.pair.burnFromReservoir(burnAmount, vars.receiver);
         vm.stopPrank();
     }
+
+    // TODO progress cutoff point
 
     function test_swap(uint256 mintAmount0, uint256 mintAmount1, uint256 inputAmount, bool inputToken0) public {
         // Make sure the amounts aren't liable to overflow 2**112
