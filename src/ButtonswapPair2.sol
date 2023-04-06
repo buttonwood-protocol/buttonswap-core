@@ -361,18 +361,12 @@ contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButto
         if (amountOut0 >= pool0 || amountOut1 >= pool1) {
             revert InsufficientLiquidity();
         }
+        // Transfer in the specified input
         if (amountIn0 > 0) {
             SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn0);
-            // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
-            amountIn0 = IERC20(_token0).balanceOf(address(this)) - total0;
         }
         if (amountIn1 > 0) {
             SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn1);
-            // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
-            amountIn1 = IERC20(_token1).balanceOf(address(this)) - total1;
-        }
-        if (amountIn0 == 0 && amountIn1 == 0) {
-            revert InsufficientInputAmount();
         }
         // Optimistically transfer output
         if (amountOut0 > 0) {
@@ -387,13 +381,27 @@ contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButto
         // Refresh balances
         total0 = IERC20(_token0).balanceOf(address(this));
         total1 = IERC20(_token1).balanceOf(address(this));
-        (uint256 pool0New, uint256 pool1New, uint256 reservoir0New, uint256 reservoir1New) =
-            _getLiquidityBalances(total0, total1);
+        // The reservoir balances must remain unchanged during a swap, so all balance changes impact the pool balances
+        uint256 pool0New = total0 - reservoir0;
+        uint256 pool1New = total1 - reservoir1;
         if (pool0New == 0 || pool1New == 0) {
             revert InvalidFinalPrice();
         }
-        if (reservoir0New > reservoir0 || reservoir1New > reservoir1) {
-            revert ReservoirInvariant();
+        // Update to the actual amount of tokens the user sent in based on the delta between old and new pool balances
+        if (pool0New > pool0) {
+            amountIn0 = pool0New - pool0;
+        } else {
+            amountIn0 = 0;
+        }
+        if (pool1New > pool1) {
+            amountIn1 = pool1New - pool1;
+        } else {
+            amountIn1 = 0;
+        }
+        // If after accounting for input and output cancelling one another out, fee on transfer, etc there is no
+        //   input tokens in real terms then revert.
+        if (amountIn0 == 0 && amountIn1 == 0) {
+            revert InsufficientInputAmount();
         }
         uint256 pool0NewAdjusted = (pool0New * 1000) - (amountIn0 * 3);
         uint256 pool1NewAdjusted = (pool1New * 1000) - (amountIn1 * 3);
