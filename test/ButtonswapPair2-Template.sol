@@ -1437,8 +1437,6 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vm.stopPrank();
     }
 
-    // TODO progress cutoff point
-
     function test_swap(uint256 mintAmount0, uint256 mintAmount1, uint256 inputAmount, bool inputToken0) public {
         // Make sure the amounts aren't liable to overflow 2**112
         vm.assume(mintAmount0 < (2 ** 112) / 2);
@@ -1456,11 +1454,11 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vars.amount1Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vars.amount0Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -1482,18 +1480,18 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // Do the swap
         vm.startPrank(vars.swapper1);
-        vars.token0.transfer(address(vars.pair), vars.amount0In);
-        vars.token1.transfer(address(vars.pair), vars.amount1In);
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectEmit(true, true, true, true);
         emit Swap(vars.swapper1, vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
-        vars.pair.swap(vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
         vm.stopPrank();
 
         // Confirm new state is as expected
@@ -1503,12 +1501,103 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         assertEq(vars.token1.balanceOf(address(vars.pair)), mintAmount1 + vars.amount1In - vars.amount1Out);
         assertEq(vars.token1.balanceOf(vars.swapper1), 0);
         assertEq(vars.token1.balanceOf(vars.receiver), vars.amount1Out);
-        (uint256 pool0, uint256 pool1,) = vars.pair.getPools();
-        (uint256 reservoir0, uint256 reservoir1) = vars.pair.getReservoirs();
+        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1,) = vars.pair.getLiquidityBalances();
         assertEq(pool0, mintAmount0 + vars.amount0In - vars.amount0Out);
         assertEq(pool1, mintAmount1 + vars.amount1In - vars.amount1Out);
         assertEq(reservoir0, 0);
         assertEq(reservoir1, 0);
+    }
+
+    function test_swap_Rebasing(
+        uint256 mintAmount0,
+        uint256 mintAmount1,
+        uint256 inputAmount,
+        bool inputToken0,
+        uint256 rebaseNumerator,
+        uint256 rebaseDenominator
+    ) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(mintAmount0 < (2 ** 112) / 2);
+        vm.assume(mintAmount1 < (2 ** 112) / 2);
+        vm.assume(inputAmount < mintAmount0 && inputAmount < mintAmount1);
+        // Amounts must be non-zero, and must exceed minimum liquidity
+        vm.assume(mintAmount0 > 1000);
+        vm.assume(mintAmount1 > 1000);
+        // Keep rebase factor in sensible range
+        rebaseNumerator = bound(rebaseNumerator, 1, 1000);
+        rebaseDenominator = bound(rebaseDenominator, 1, 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.swapper1 = userD;
+        vars.receiver = userE;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair2(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vm.assume(mintAmount0 < vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.minter1, mintAmount0);
+        vars.token1.mint(vars.minter1, mintAmount1);
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.rebasingToken0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
+        vm.stopPrank();
+
+        // Rebase
+        vars.rebasingToken0.applyMultiplier(rebaseNumerator, rebaseDenominator);
+
+        // Cache pre-swap balances
+        (uint256 pool0Previous, uint256 pool1Previous, uint256 reservoir0Previous, uint256 reservoir1Previous,) =
+            vars.pair.getLiquidityBalances();
+        // Output amount must be non-zero
+        if (inputToken0) {
+            vars.amount0In = inputAmount;
+            vars.amount1Out = PairMath2.getSwapOutputAmount(inputAmount, pool0Previous, pool1Previous);
+            vm.assume(vars.amount1Out > 0);
+        } else {
+            vars.amount1In = inputAmount;
+            vars.amount0Out = PairMath2.getSwapOutputAmount(inputAmount, pool1Previous, pool0Previous);
+            vm.assume(vars.amount0Out > 0);
+        }
+        // Mint swap amounts
+        vm.assume(vars.amount0In < vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.swapper1, vars.amount0In);
+        vars.token1.mint(vars.swapper1, vars.amount1In);
+
+        // Do the swap
+        vm.startPrank(vars.swapper1);
+        vars.rebasingToken0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
+        vm.expectEmit(true, true, true, true);
+        emit Swap(vars.swapper1, vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vm.stopPrank();
+
+        // Confirm new state is as expected
+        assertEq(
+            vars.rebasingToken0.balanceOf(address(vars.pair)),
+            pool0Previous + reservoir0Previous + vars.amount0In - vars.amount0Out
+        );
+        assertEq(vars.rebasingToken0.balanceOf(vars.swapper1), 0);
+        assertEq(vars.rebasingToken0.balanceOf(vars.receiver), vars.amount0Out);
+        assertEq(
+            vars.token1.balanceOf(address(vars.pair)),
+            pool1Previous + reservoir1Previous + vars.amount1In - vars.amount1Out
+        );
+        assertEq(vars.token1.balanceOf(vars.swapper1), 0);
+        assertEq(vars.token1.balanceOf(vars.receiver), vars.amount1Out);
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        assertEq(vars.pool0, pool0Previous + vars.amount0In - vars.amount0Out);
+        assertEq(vars.pool1, pool1Previous + vars.amount1In - vars.amount1Out);
+        assertEq(vars.reservoir0, reservoir0Previous);
+        assertEq(vars.reservoir1, reservoir1Previous);
     }
 
     function test_swap_CannotSwapWithInsufficientOutputAmount(
@@ -1533,11 +1622,11 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         // Output amount must be zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vars.amount1Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
             vm.assume(vars.amount1Out == 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vars.amount0Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
             vm.assume(vars.amount0Out == 0);
         }
 
@@ -1559,17 +1648,17 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // Attempt the swap
         vm.startPrank(vars.swapper1);
-        vars.token0.transfer(address(vars.pair), vars.amount0In);
-        vars.token1.transfer(address(vars.pair), vars.amount1In);
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(InsufficientOutputAmount.selector);
-        vars.pair.swap(vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
         vm.stopPrank();
     }
 
@@ -1621,17 +1710,17 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // Attempt the swap
         vm.startPrank(vars.swapper1);
-        vars.token0.transfer(address(vars.pair), vars.amount0In);
-        vars.token1.transfer(address(vars.pair), vars.amount1In);
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(InsufficientLiquidity.selector);
-        vars.pair.swap(vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
         vm.stopPrank();
     }
 
@@ -1657,7 +1746,7 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vars.amount1Out;
         // Output amount must be non-zero
         vars.amount0In = inputAmount;
-        vars.amount1Out = PairMath.getOutputAmount(inputAmount, mintAmount0, mintAmount1);
+        vars.amount1Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
         vm.assume(vars.amount1Out > 0);
 
         vars.feeToSetter = userA;
@@ -1683,17 +1772,17 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // Attempt the swap
         vm.startPrank(vars.swapper1);
-        vars.token0.transfer(address(vars.pair), vars.amount0In);
-        vars.token1.transfer(address(vars.pair), vars.amount1In);
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(InvalidRecipient.selector);
-        vars.pair.swap(vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
         vm.stopPrank();
     }
 
@@ -1720,11 +1809,11 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vars.amount1Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vars.amount0Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -1746,16 +1835,16 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // Attempt the swap
         vm.startPrank(vars.swapper1);
         // Don't transfer any tokens in
         vm.expectRevert(InsufficientInputAmount.selector);
-        vars.pair.swap(vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(0, 0, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
         vm.stopPrank();
     }
 
@@ -1783,11 +1872,11 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         // Add 1 to calculated output amount to test K invariant prevents transaction
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getOutputAmount(inputAmount, mintAmount0, mintAmount1) + 1;
+            vars.amount1Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1) + 1;
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getOutputAmount(inputAmount, mintAmount1, mintAmount0) + 1;
+            vars.amount0Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0) + 1;
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -1809,19 +1898,21 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
         // Attempt the swap
         vm.startPrank(vars.swapper1);
-        vars.token0.transfer(address(vars.pair), vars.amount0In);
-        vars.token1.transfer(address(vars.pair), vars.amount1In);
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(KInvariant.selector);
-        vars.pair.swap(vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
         vm.stopPrank();
     }
+
+    // TODO progress cutoff point
 
     function test_sync_CannotSyncBeforeFirstMint(address syncer) public {
         TestVariables memory vars;
