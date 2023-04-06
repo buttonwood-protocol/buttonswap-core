@@ -288,7 +288,6 @@ contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButto
     }
 
     function burn(uint256 liquidityIn, address to) external lock returns (uint256 amountOut0, uint256 amountOut1) {
-        _burn(msg.sender, liquidityIn);
         uint256 _totalSupply = totalSupply;
         address _token0 = token0;
         address _token1 = token1;
@@ -300,6 +299,7 @@ contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButto
         if (amountOut0 == 0 || amountOut1 == 0) {
             revert InsufficientLiquidityBurned();
         }
+        _burn(msg.sender, liquidityIn);
         SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
         SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
         emit Burn(msg.sender, amountOut0, amountOut1, to);
@@ -310,7 +310,6 @@ contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButto
         lock
         returns (uint256 amountOut0, uint256 amountOut1)
     {
-        _burn(msg.sender, liquidityIn);
         uint256 _totalSupply = totalSupply;
         address _token0 = token0;
         address _token1 = token1;
@@ -328,6 +327,7 @@ contract ButtonswapPair2 is IButtonswapPairErrors, IButtonswapPairEvents, IButto
         if (amountOut0 > reservoir0 || amountOut1 > reservoir1) {
             revert InsufficientReservoir();
         }
+        _burn(msg.sender, liquidityIn);
         if (amountOut0 > 0) {
             SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
         } else if (amountOut1 > 0) {
