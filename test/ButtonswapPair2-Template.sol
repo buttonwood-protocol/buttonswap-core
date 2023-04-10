@@ -173,6 +173,27 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         }
     }
 
+    function test_getLiquidityBalances_RevertsIfBalancesOverflow(
+        uint112 _pool0Last,
+        uint112 _pool1Last,
+        uint256 total0,
+        uint256 total1
+    ) public {
+        vm.assume(_pool0Last != 0 && _pool1Last != 0);
+        // Target pool values that will cause final values to overflow uint112
+        vm.assume(total0 > type(uint112).max && total1 > type(uint112).max);
+        // Make sure there's no integer overflow
+        vm.assume(total0 < type(uint256).max / _pool1Last);
+        vm.assume(total1 < type(uint256).max / _pool0Last);
+        vm.assume(((total0 * _pool1Last) / _pool0Last) + 1 < type(uint256).max / _pool0Last);
+        vm.assume(((total1 * _pool0Last) / _pool1Last) + 1 < type(uint256).max / _pool1Last);
+
+        MockButtonswapPair2 pair = new MockButtonswapPair2();
+        pair.mockSetPoolsLast(_pool0Last, _pool1Last);
+        vm.expectRevert(Overflow.selector);
+        pair.mockGetLiquidityBalances(total0, total1);
+    }
+
     function test_getLiquidityBalances_ReturnsZeroWhenEitherTotalIsZero(
         uint112 _pool0Last,
         uint112 _pool1Last,
@@ -1212,6 +1233,8 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vm.assume(burnAmount <= vars.pair.balanceOf(vars.minter1));
         // Calculate expected values to assert against
         (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        // Ignore edge cases where both pool values are zero
+        vm.assume(vars.pool0 > 0 || vars.pool1 > 0);
         uint256 expectedTotalSupply = vars.pair.totalSupply() - burnAmount;
         (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath2.getSingleSidedBurnOutputAmounts(
             vars.pair.totalSupply(), burnAmount, vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1
@@ -1912,230 +1935,13 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vm.stopPrank();
     }
 
-    // TODO progress cutoff point
-
-    function test_sync_CannotSyncBeforeFirstMint(address syncer) public {
-        TestVariables memory vars;
-        vars.feeToSetter = userA;
-        vars.feeTo = userB;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
-        vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair2(vars.factory.createPair(address(tokenA), address(tokenB)));
-
-        // Attempt sync
-        vm.prank(syncer);
-        vm.expectRevert(Uninitialized.selector);
-        vars.pair.sync();
-    }
-
-    function test_sync_NonRebasing(uint256 mintAmount0, uint256 mintAmount1, address syncer) public {
-        // Make sure the amounts aren't liable to overflow 2**112
-        vm.assume(mintAmount0 < (2 ** 112) / 2);
-        vm.assume(mintAmount1 < (2 ** 112) / 2);
-        // Amounts must be non-zero, and must exceed minimum liquidity
-        vm.assume(mintAmount0 > 1000);
-        vm.assume(mintAmount1 > 1000);
-
-        TestVariables memory vars;
-        vars.feeToSetter = userA;
-        vars.feeTo = userB;
-        vars.minter1 = userC;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
-        vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair2(vars.factory.createPair(address(tokenA), address(tokenB)));
-        vars.token0 = MockERC20(vars.pair.token0());
-        vars.token1 = MockERC20(vars.pair.token1());
-        vars.token0.mint(vars.minter1, mintAmount0);
-        vars.token1.mint(vars.minter1, mintAmount1);
-
-        // Mint initial liquidity
-        vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
-        vm.stopPrank();
-
-        // Store current state for later comparison
-        (uint112 pool0, uint112 pool1,) = vars.pair.getPools();
-        (uint112 reservoir0, uint112 reservoir1) = vars.pair.getReservoirs();
-        uint112 pool0Previous = pool0;
-        uint112 pool1Previous = pool1;
-
-        // Do sync
-        vm.prank(syncer);
-        // Expect no changes since there's no rebasing
-        vm.expectEmit(true, true, true, true);
-        emit SyncReservoir(uint112(reservoir0), uint112(reservoir1));
-        vars.pair.sync();
-
-        // Confirm final state meets expectations
-        (pool0, pool1,) = vars.pair.getPools();
-        (reservoir0, reservoir1) = vars.pair.getReservoirs();
-        // At least one reservoir is 0
-        assert(reservoir0 == 0 || reservoir1 == 0);
-        // Price hasn't changed
-        assertEq(
-            PriceAssertion.isPriceUnchanged(reservoir0, pool0Previous, pool1Previous, pool0, pool1),
-            true,
-            "New price outside of tolerance"
-        );
-    }
-
-    function test_sync_PartialRebasing(
-        uint256 mintAmount0,
-        uint256 mintAmount1,
-        address syncer,
-        uint256 rebaseNumerator,
-        uint256 rebaseDenominator
+    function test_swap_CumulativePriceValuesUpdate(
+        uint256 mintAmount00,
+        uint256 mintAmount01,
+        uint256 inputAmount,
+        bool inputToken0,
+        uint32 warpTime
     ) public {
-        // Make sure the amounts aren't liable to overflow 2**112
-        vm.assume(mintAmount0 < (2 ** 112) / 2);
-        vm.assume(mintAmount1 < (2 ** 112) / 2);
-        // Amounts must be non-zero, and must exceed minimum liquidity
-        vm.assume(mintAmount0 > 1000);
-        vm.assume(mintAmount1 > 1000);
-        // Keep rebase factor in sensible range
-        vm.assume(rebaseNumerator > 0 && rebaseNumerator < 1000);
-        vm.assume(rebaseDenominator > 0 && rebaseDenominator < 1000);
-
-        TestVariables memory vars;
-        vars.feeToSetter = userA;
-        vars.feeTo = userB;
-        vars.minter1 = userC;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
-        vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair2(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
-        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
-        vars.token1 = MockERC20(vars.pair.token1());
-        vm.assume(mintAmount0 <= vars.rebasingToken0.mintableBalance());
-        vars.rebasingToken0.mint(vars.minter1, mintAmount0);
-        vars.token1.mint(vars.minter1, mintAmount1);
-
-        // Mint initial liquidity
-        vm.startPrank(vars.minter1);
-        vars.rebasingToken0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
-        vm.stopPrank();
-
-        // Store current state for later comparison
-        (uint112 pool0, uint112 pool1,) = vars.pair.getPools();
-        (uint112 reservoir0, uint112 reservoir1) = vars.pair.getReservoirs();
-        uint112 pool0Previous = pool0;
-        uint112 pool1Previous = pool1;
-
-        // Apply rebase
-        vars.rebasingToken0.applyMultiplier(rebaseNumerator, rebaseDenominator);
-
-        // Do sync
-        vm.prank(syncer);
-        // Predicting final pool and reservoir values is too complex to test
-        vm.expectEmit(false, false, false, false);
-        emit Sync(0, 0);
-        vm.expectEmit(false, false, false, false);
-        emit SyncReservoir(0, 0);
-        vars.pair.sync();
-
-        // Confirm final state meets expectations
-        (pool0, pool1,) = vars.pair.getPools();
-        (reservoir0, reservoir1) = vars.pair.getReservoirs();
-        // At least one reservoir is 0
-        assert(reservoir0 == 0 || reservoir1 == 0);
-        // Price hasn't changed
-        assertEq(
-            PriceAssertion.isPriceUnchanged(reservoir0, pool0Previous, pool1Previous, pool0, pool1),
-            true,
-            "New price outside of tolerance"
-        );
-    }
-
-    function test_sync_FullRebasingAfterNonEmptyReservoir(
-        uint256 mintAmount0,
-        uint256 mintAmount1,
-        address syncer,
-        uint256 rebaseNumerator0,
-        uint256 rebaseDenominator0,
-        uint256 rebaseNumerator1,
-        uint256 rebaseDenominator1
-    ) public {
-        // Make sure the amounts aren't liable to overflow 2**112
-        vm.assume(mintAmount0 < (2 ** 111));
-        vm.assume(mintAmount1 < (2 ** 111));
-        // Amounts must be non-zero, and must exceed minimum liquidity
-        vm.assume(mintAmount0 > 1000);
-        vm.assume(mintAmount1 > 1000);
-        // Keep rebase factor in sensible range
-        rebaseNumerator0 = bound(rebaseNumerator0, 1, 1000);
-        rebaseDenominator0 = bound(rebaseDenominator0, 1, 1000);
-        rebaseNumerator1 = bound(rebaseNumerator1, 1, 1000);
-        rebaseDenominator1 = bound(rebaseDenominator1, 1, 1000);
-
-        TestVariables memory vars;
-        vars.feeToSetter = userA;
-        vars.feeTo = userB;
-        vars.minter1 = userC;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
-        vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair2(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
-        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
-        vars.rebasingToken1 = ICommonMockRebasingERC20(vars.pair.token1());
-        vm.assume(mintAmount0 <= vars.rebasingToken0.mintableBalance());
-        vars.rebasingToken0.mint(vars.minter1, mintAmount0);
-        vm.assume(mintAmount1 <= vars.rebasingToken1.mintableBalance());
-        vars.rebasingToken1.mint(vars.minter1, mintAmount1);
-
-        // Mint initial liquidity
-        vm.startPrank(vars.minter1);
-        vars.rebasingToken0.transfer(address(vars.pair), mintAmount0);
-        vars.rebasingToken1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
-        vm.stopPrank();
-
-        // Apply first rebase
-        vars.rebasingToken0.applyMultiplier(rebaseNumerator0, rebaseDenominator0);
-
-        // Do first sync
-        vm.prank(syncer);
-        vars.pair.sync();
-
-        // One reservoir should be non-zero now
-        (uint112 pool0, uint112 pool1,) = vars.pair.getPools();
-        (uint112 reservoir0, uint112 reservoir1) = vars.pair.getReservoirs();
-        // Filter out fuzzed input that didn't rebase
-        vm.assume(reservoir0 != 0 || reservoir1 != 0);
-        uint112 pool0Previous = pool0;
-        uint112 pool1Previous = pool1;
-
-        // Apply second rebase
-        vars.rebasingToken1.applyMultiplier(rebaseNumerator1, rebaseDenominator1);
-
-        // Do second sync starting from non-empty reservoir state
-        vm.prank(syncer);
-        // Predicting final pool and reservoir values is too complex to test
-        vm.expectEmit(false, false, false, false);
-        emit Sync(0, 0);
-        vm.expectEmit(false, false, false, false);
-        emit SyncReservoir(0, 0);
-        vars.pair.sync();
-
-        // Confirm final state meets expectations
-        (pool0, pool1,) = vars.pair.getPools();
-        (reservoir0, reservoir1) = vars.pair.getReservoirs();
-        // At least one reservoir is 0
-        assert(reservoir0 == 0 || reservoir1 == 0);
-        // Price hasn't changed
-        assertEq(
-            PriceAssertion.isPriceUnchanged(reservoir0, pool0Previous, pool1Previous, pool0, pool1),
-            true,
-            "New price outside of tolerance"
-        );
-    }
-
-    function test__mintFee(uint256 mintAmount00, uint256 mintAmount01, uint256 inputAmount, bool inputToken0) public {
         // Make sure the amounts aren't liable to overflow 2**112
         // Div by 3 to have room for two mints and a swap
         vm.assume(mintAmount00 < uint256(2 ** 112) / 3);
@@ -2146,18 +1952,14 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vm.assume(mintAmount01 > 1000);
 
         TestVariables memory vars;
-        vars.amount0In;
-        vars.amount1In;
-        vars.amount0Out;
-        vars.amount1Out;
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getOutputAmount(inputAmount, mintAmount00, mintAmount01);
+            vars.amount1Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount00, mintAmount01);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getOutputAmount(inputAmount, mintAmount01, mintAmount00);
+            vars.amount0Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount01, mintAmount00);
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -2179,121 +1981,63 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount00);
-        vars.token1.transfer(address(vars.pair), mintAmount01);
-        vars.pair.mint(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount00);
+        vars.token1.approve(address(vars.pair), mintAmount01);
+        vars.pair.mint(mintAmount00, mintAmount01, vars.minter1);
         vm.stopPrank();
+
+        // Price cumulative values should start at zero
+        assertEq(vars.pair.price0CumulativeLast(), 0);
+        assertEq(vars.pair.price1CumulativeLast(), 0);
+
+        // Calculate expected values
+        uint32 blockTimestampLast;
+        (,,,, blockTimestampLast) = vars.pair.getLiquidityBalances();
+        uint32 timeElapsed;
+        unchecked {
+            timeElapsed = warpTime - blockTimestampLast;
+        }
+        uint256 expectedPrice0CumulativeLast =
+            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount01)), uint112(mintAmount00))) * timeElapsed;
+        uint256 expectedPrice1CumulativeLast =
+            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount00)), uint112(mintAmount01))) * timeElapsed;
+
+        // Move time forward so that price can accrue
+        vm.warp(warpTime);
 
         // Do the swap
         vm.startPrank(vars.swapper1);
-        vars.token0.transfer(address(vars.pair), vars.amount0In);
-        vars.token1.transfer(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
         vm.stopPrank();
 
-        // Grant the minter tokens for a second mint
-        (vars.pool0, vars.pool1,) = vars.pair.getPools();
-        // Scale down by 10
-        uint256 mintAmount10 = vars.pool0 / 10;
-        uint256 mintAmount11 = (mintAmount10 * vars.pool1) / vars.pool0;
-        vars.token0.mint(vars.minter1, mintAmount10);
-        vars.token1.mint(vars.minter1, mintAmount11);
-        // Estimate fee
-        uint256 expectedFeeToBalance =
-            PairMath.getProtocolFeeLiquidityMinted(vars.pair.totalSupply(), vars.pair.kLast(), vars.pool0 * vars.pool1);
-
-        // Mint liquidity again to trigger the protocol fee being updated
-        vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount10);
-        vars.token1.transfer(address(vars.pair), mintAmount11);
-        vars.pair.mint(vars.minter1);
-        vm.stopPrank();
-
-        // Confirm new state is as expected
-        assertEq(vars.pair.balanceOf(vars.feeTo), expectedFeeToBalance);
+        // Confirm final state meets expectations
+        (,,,, blockTimestampLast) = vars.pair.getLiquidityBalances();
+        assertEq(blockTimestampLast, block.timestamp);
+        assertEq(vars.pair.price0CumulativeLast(), expectedPrice0CumulativeLast);
+        assertEq(vars.pair.price1CumulativeLast(), expectedPrice1CumulativeLast);
     }
 
-    /// @dev Tests that the function correctly reverts when trying to update `reservoir{0,1}` to value that exceeds uint112
-    function test__updateReservoirs_RevertsWhenExceedsMax(
-        uint256 mintAmount1,
-        address syncer,
-        uint256 rebaseNumerator,
-        uint256 rebaseDenominator
-    ) public {
+    function test__mintFee(uint256 mintAmount00, uint256 mintAmount01, uint256 inputAmount, bool inputToken0) public {
         // Make sure the amounts aren't liable to overflow 2**112
-        vm.assume(mintAmount1 < (2 ** 112) / 2);
+        // Div by 3 to have room for two mints and a swap
+        vm.assume(mintAmount00 < uint256(2 ** 112) / 3);
+        vm.assume(mintAmount01 < uint256(2 ** 112) / 3);
+        vm.assume(inputAmount < mintAmount00 && inputAmount < mintAmount01);
         // Amounts must be non-zero, and must exceed minimum liquidity
-        vm.assume(mintAmount1 > 1000);
-        // Keep rebase factor in sensible range
-        rebaseNumerator = bound(rebaseNumerator, 1, 1000);
-        rebaseDenominator = bound(rebaseDenominator, 1, 1000);
+        vm.assume(mintAmount00 > 1000);
+        vm.assume(mintAmount01 > 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
-        vars.feeTo = userB;
-        vars.minter1 = userC;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
-        vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair2(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
-        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
-        vars.token1 = MockERC20(vars.pair.token1());
-        // Need a lot of token0 for the balance to exceed after a large rebase because the rebasing implementation has
-        //   a max total supply of 2^128
-        uint256 mintAmount0 = vars.rebasingToken0.mintableBalance();
-        vars.rebasingToken0.mint(vars.minter1, mintAmount0);
-        vars.token1.mint(vars.minter1, mintAmount1);
-
-        // Mint initial liquidity
-        vm.startPrank(vars.minter1);
-        vars.rebasingToken0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
-        vm.stopPrank();
-
-        // Apply rebase that will push a reservoir over 2^112
-        vars.rebasingToken0.applyMultiplier(rebaseNumerator * (2 ** 112), rebaseDenominator);
-
-        // Filter for when the new balance is large enough to overflow
-        (vars.pool0,,) = vars.pair.getPools();
-        vm.assume(vars.rebasingToken0.balanceOf(address(vars.pair)) - vars.pool0 > (2 ** 112));
-
-        // Attempt sync
-        vm.prank(syncer);
-        vm.expectRevert(Overflow.selector);
-        vars.pair.sync();
-    }
-
-    /// @dev Tests that the function correctly reverts when trying to update `pool{0,1}` to value that exceeds uint112
-    function test__update_RevertsWhenExceedsMax(
-        uint256 mintAmount0,
-        uint256 mintAmount1,
-        uint256 inputAmount,
-        bool inputToken0
-    ) public {
-        // Make sure the amounts aren't liable to overflow 2**112
-        // mintAmounts must be smaller still to ensure we don't overflow when calculating getOutputAmount using a
-        //   very large inputAmount
-        // Amounts must be non-zero, and must exceed minimum liquidity
-        mintAmount0 = bound(mintAmount0, 1001, 2 ** 56);
-        mintAmount1 = bound(mintAmount1, 1001, 2 ** 56);
-        // Make sure the swap input amount will cause overflow at the end
-        // But also keep it low enough to calculate getOutputAmount without issue
-        inputAmount = bound(inputAmount, 2 ** 112, 2 ** 180);
-
-        TestVariables memory vars;
-        vars.amount0In;
-        vars.amount1In;
-        vars.amount0Out;
-        vars.amount1Out;
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vars.amount1Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount00, mintAmount01);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vars.amount0Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount01, mintAmount00);
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -2308,79 +2052,132 @@ abstract contract ButtonswapPair2Test is Test, IButtonswapPairEvents, IButtonswa
         vars.pair = ButtonswapPair2(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
         vars.token1 = MockERC20(vars.pair.token1());
-        vars.token0.mint(vars.minter1, mintAmount0);
-        vars.token1.mint(vars.minter1, mintAmount1);
+        vars.token0.mint(vars.minter1, mintAmount00);
+        vars.token1.mint(vars.minter1, mintAmount01);
         vars.token0.mint(vars.swapper1, vars.amount0In);
         vars.token1.mint(vars.swapper1, vars.amount1In);
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount00);
+        vars.token1.approve(address(vars.pair), mintAmount01);
+        vars.pair.mint(mintAmount00, mintAmount01, vars.minter1);
         vm.stopPrank();
 
-        // Attempt the swap
+        // Estimate fee
+        (vars.pool0, vars.pool1,,,) = vars.pair.getLiquidityBalances();
+        uint256 pool0New = vars.pool0 + vars.amount0In - vars.amount0Out;
+        uint256 pool1New = vars.pool1 + vars.amount1In - vars.amount1Out;
+        uint256 expectedFeeToBalance = PairMath2.getProtocolFeeLiquidityMinted(
+            vars.pair.totalSupply(), vars.pool0 * vars.pool1, pool0New * pool1New
+        );
+
+        // Do the swap
         vm.startPrank(vars.swapper1);
-        vars.token0.transfer(address(vars.pair), vars.amount0In);
-        vars.token1.transfer(address(vars.pair), vars.amount1In);
-        vm.expectRevert(Overflow.selector);
-        vars.pair.swap(vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
         vm.stopPrank();
+
+        // Confirm new state is as expected
+        assertEq(vars.pair.balanceOf(vars.feeTo), expectedFeeToBalance);
     }
 
-    function test__update_CumulativePriceValuesUpdate(uint256 mintAmount0, uint256 mintAmount1, uint32 warpTime)
-        public
-    {
+    function test__mintFee_DoesNotCollectFeeFromRebasing(
+        uint256 mintAmount00,
+        uint256 mintAmount01,
+        uint256 inputAmount,
+        bool inputToken0,
+        uint256 rebaseNumerator0,
+        uint256 rebaseDenominator0,
+        uint256 rebaseNumerator1,
+        uint256 rebaseDenominator1
+    ) public {
         // Make sure the amounts aren't liable to overflow 2**112
-        vm.assume(mintAmount0 < (2 ** 112) / 2);
-        vm.assume(mintAmount1 < (2 ** 112) / 2);
+        // Div by 3 to have room for two mints and a swap
+        vm.assume(mintAmount00 < uint256(2 ** 112) / 3);
+        vm.assume(mintAmount01 < uint256(2 ** 112) / 3);
+        vm.assume(inputAmount < mintAmount00 && inputAmount < mintAmount01);
         // Amounts must be non-zero, and must exceed minimum liquidity
-        vm.assume(mintAmount0 > 1000);
-        vm.assume(mintAmount1 > 1000);
+        vm.assume(mintAmount00 > 1000);
+        vm.assume(mintAmount01 > 1000);
+        // Keep rebase factor in sensible range
+        rebaseNumerator0 = bound(rebaseNumerator0, 1, 1000);
+        rebaseDenominator0 = bound(rebaseDenominator0, 1, 1000);
+        rebaseNumerator1 = bound(rebaseNumerator1, 1, 1000);
+        rebaseDenominator1 = bound(rebaseDenominator1, 1, 1000);
 
         TestVariables memory vars;
+        // Output amount must be non-zero
+        if (inputToken0) {
+            vars.amount0In = inputAmount;
+            vars.amount1Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount00, mintAmount01);
+            vm.assume(vars.amount1Out > 0);
+        } else {
+            vars.amount1In = inputAmount;
+            vars.amount0Out = PairMath2.getSwapOutputAmount(inputAmount, mintAmount01, mintAmount00);
+            vm.assume(vars.amount0Out > 0);
+        }
+
         vars.feeToSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
+        vars.swapper1 = userD;
+        vars.receiver = userE;
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
         vm.prank(vars.feeToSetter);
         vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair2(vars.factory.createPair(address(tokenA), address(tokenB)));
-        vars.token0 = MockERC20(vars.pair.token0());
-        vars.token1 = MockERC20(vars.pair.token1());
-        vars.token0.mint(vars.minter1, mintAmount0);
-        vars.token1.mint(vars.minter1, mintAmount1);
+        vars.pair = ButtonswapPair2(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.rebasingToken1 = ICommonMockRebasingERC20(vars.pair.token1());
+        vm.assume(mintAmount00 < vars.rebasingToken0.mintableBalance());
+        vm.assume(mintAmount01 < vars.rebasingToken1.mintableBalance());
+        vars.rebasingToken0.mint(vars.minter1, mintAmount00);
+        vars.rebasingToken1.mint(vars.minter1, mintAmount01);
 
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
-        vars.token0.transfer(address(vars.pair), mintAmount0);
-        vars.token1.transfer(address(vars.pair), mintAmount1);
-        vars.pair.mint(vars.minter1);
+        vars.rebasingToken0.approve(address(vars.pair), mintAmount00);
+        vars.rebasingToken1.approve(address(vars.pair), mintAmount01);
+        vars.pair.mint(mintAmount00, mintAmount01, vars.minter1);
         vm.stopPrank();
 
-        // Price cumulative values should start at zero
-        assertEq(vars.pair.price0CumulativeLast(), 0);
-        assertEq(vars.pair.price1CumulativeLast(), 0);
+        // Apply rebase
+        vars.rebasingToken0.applyMultiplier(rebaseNumerator0, rebaseDenominator0);
+        vars.rebasingToken1.applyMultiplier(rebaseNumerator1, rebaseDenominator1);
 
-        // Calculate expected values
-        (,, uint32 blockTimestampLast) = vars.pair.getPools();
-        uint32 timeElapsed;
-        unchecked {
-            timeElapsed = warpTime - blockTimestampLast;
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        // Output amount must be non-zero
+        if (inputToken0) {
+            vars.amount0In = inputAmount;
+            vars.amount1Out = PairMath2.getSwapOutputAmount(inputAmount, vars.pool0, vars.pool1);
+            vm.assume(vars.amount1Out > 0);
+        } else {
+            vars.amount1In = inputAmount;
+            vars.amount0Out = PairMath2.getSwapOutputAmount(inputAmount, vars.pool1, vars.pool0);
+            vm.assume(vars.amount0Out > 0);
         }
-        uint256 expectedPrice0CumulativeLast =
-            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount1)), uint112(mintAmount0))) * timeElapsed;
-        uint256 expectedPrice1CumulativeLast =
-            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount0)), uint112(mintAmount1))) * timeElapsed;
+        // Mint swap amounts
+        vm.assume(vars.amount0In < vars.rebasingToken0.mintableBalance());
+        vars.rebasingToken0.mint(vars.swapper1, vars.amount0In);
+        vars.rebasingToken1.mint(vars.swapper1, vars.amount1In);
 
-        // Move time forward so that price can accrue
-        vm.warp(warpTime);
-        // Do sync to force update
-        vars.pair.sync();
+        // Estimate fee using post-rebase pool balances
+        // If the fee didn't ignore rebasing then this would estimate the wrong fee amount
+        uint256 pool0New = vars.pool0 + vars.amount0In - vars.amount0Out;
+        uint256 pool1New = vars.pool1 + vars.amount1In - vars.amount1Out;
+        uint256 expectedFeeToBalance = PairMath2.getProtocolFeeLiquidityMinted(
+            vars.pair.totalSupply(), vars.pool0 * vars.pool1, pool0New * pool1New
+        );
 
-        // Confirm final state meets expectations
-        assertEq(vars.pair.price0CumulativeLast(), expectedPrice0CumulativeLast);
-        assertEq(vars.pair.price1CumulativeLast(), expectedPrice1CumulativeLast);
+        // Do the swap
+        vm.startPrank(vars.swapper1);
+        vars.rebasingToken0.approve(address(vars.pair), vars.amount0In);
+        vars.rebasingToken1.approve(address(vars.pair), vars.amount1In);
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vm.stopPrank();
+
+        // Confirm new state is as expected
+        assertEq(vars.pair.balanceOf(vars.feeTo), expectedFeeToBalance);
     }
 }
