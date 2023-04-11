@@ -2,10 +2,10 @@
 pragma solidity ^0.8.13;
 
 import {Test} from "forge-std/Test.sol";
-import {PairMath2} from "../../src/libraries/PairMath2.sol";
+import {PairMath} from "../../src/libraries/PairMath.sol";
 import {Math} from "../../src/libraries/Math.sol";
 
-contract PairMath2Test is Test {
+contract PairMathTest is Test {
     function test_getDualSidedMintLiquidityOutAmount_usingReservoirA(
         uint256 totalLiquidity,
         uint256 amountInA,
@@ -26,7 +26,7 @@ contract PairMath2Test is Test {
         vm.assume(amountInA == 0 || totalLiquidity < (type(uint256).max / 2) / amountInA);
         vm.assume(reservoirA < (type(uint256).max - poolA) - poolA);
 
-        uint256 liquidityOut = PairMath2.getDualSidedMintLiquidityOutAmount(
+        uint256 liquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
             totalLiquidity, amountInA, amountInB, poolA, poolB, reservoirA, 0
         );
         uint256 expectedLiquidityOut = (totalLiquidity * 2 * amountInA) / (poolA + poolA + reservoirA);
@@ -53,7 +53,7 @@ contract PairMath2Test is Test {
         vm.assume(amountInB == 0 || totalLiquidity < (type(uint256).max / 2) / amountInB);
         vm.assume(reservoirB < (type(uint256).max - poolB) - poolB);
 
-        uint256 liquidityOut = PairMath2.getDualSidedMintLiquidityOutAmount(
+        uint256 liquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
             totalLiquidity, amountInA, amountInB, poolA, poolB, 0, reservoirB
         );
         uint256 expectedLiquidityOut = (totalLiquidity * 2 * amountInB) / (poolB + poolB + reservoirB);
@@ -82,7 +82,7 @@ contract PairMath2Test is Test {
         vm.assume(poolB < type(uint256).max / (poolA + poolA + reservoirA));
 
         uint256 liquidityOut =
-            PairMath2.getSingleSidedMintLiquidityOutAmount(totalLiquidity, mintAmountB, poolA, poolB, reservoirA);
+            PairMath.getSingleSidedMintLiquidityOutAmount(totalLiquidity, mintAmountB, poolA, poolB, reservoirA);
         uint256 expectedLiquidityOut = (totalLiquidity * mintAmountB * poolA) / (poolB * (poolA + poolA + reservoirA));
         assertEq(liquidityOut, expectedLiquidityOut, "liquidityOut does not match expectedLiquidityOut");
     }
@@ -101,7 +101,7 @@ contract PairMath2Test is Test {
         vm.assume(liquidityIn == 0 || totalB < type(uint256).max / liquidityIn);
 
         (uint256 amountOutA, uint256 amountOutB) =
-            PairMath2.getDualSidedBurnOutputAmounts(totalLiquidity, liquidityIn, totalA, totalB);
+            PairMath.getDualSidedBurnOutputAmounts(totalLiquidity, liquidityIn, totalA, totalB);
 
         uint256 expectedAmountOutA = (totalA * liquidityIn) / totalLiquidity;
         uint256 expectedAmountOutB = (totalB * liquidityIn) / totalLiquidity;
@@ -132,7 +132,7 @@ contract PairMath2Test is Test {
         vm.assume((reservoirA + poolA + poolA) == 0 || burnAmount < type(uint256).max / (reservoirA + poolA + poolA));
 
         (uint256 amountOutA, uint256 amountOutB) =
-            PairMath2.getSingleSidedBurnOutputAmounts(totalLiquidity, burnAmount, poolA, poolB, reservoirA, 0);
+            PairMath.getSingleSidedBurnOutputAmounts(totalLiquidity, burnAmount, poolA, poolB, reservoirA, 0);
 
         uint256 expectedAmountOutA = (burnAmount * (reservoirA + poolA + poolA)) / totalLiquidity;
         uint256 expectedAmountOutB = 0;
@@ -162,7 +162,7 @@ contract PairMath2Test is Test {
         vm.assume((reservoirB + poolB + poolB) == 0 || burnAmount < type(uint256).max / (reservoirB + poolB + poolB));
 
         (uint256 amountOutA, uint256 amountOutB) =
-            PairMath2.getSingleSidedBurnOutputAmounts(totalLiquidity, burnAmount, poolA, poolB, 0, reservoirB);
+            PairMath.getSingleSidedBurnOutputAmounts(totalLiquidity, burnAmount, poolA, poolB, 0, reservoirB);
 
         uint256 expectedAmountOutA = 0;
         uint256 expectedAmountOutB = (burnAmount * (reservoirB + poolB + poolB)) / totalLiquidity;
@@ -183,7 +183,7 @@ contract PairMath2Test is Test {
         vm.assume(inputAmount == 0 || inputAmount < type(uint256).max / 997);
         vm.assume(inputAmount == 0 || poolOutput == 0 || inputAmount < type(uint256).max / (poolOutput * 997));
 
-        uint256 outputAmount = PairMath2.getSwapOutputAmount(inputAmount, poolInput, poolOutput);
+        uint256 outputAmount = PairMath.getSwapOutputAmount(inputAmount, poolInput, poolOutput);
         uint256 expectedOutputAmount = (poolOutput * inputAmount * 997) / ((poolInput * 1000) + (inputAmount * 997));
 
         assertEq(outputAmount, expectedOutputAmount, "outputAmount does not match expectedOutputAmount");
@@ -199,7 +199,7 @@ contract PairMath2Test is Test {
         // Ensuring we don't overflow (rootK - rootKLast will be bounded by 2^128)
         vm.assume(totalLiquidity < type(uint128).max);
 
-        uint256 liquidityOut = PairMath2.getProtocolFeeLiquidityMinted(totalLiquidity, kLast, k);
+        uint256 liquidityOut = PairMath.getProtocolFeeLiquidityMinted(totalLiquidity, kLast, k);
 
         uint256 rootKLast = Math.sqrt(kLast);
         uint256 rootK = Math.sqrt(k);
