@@ -132,33 +132,17 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @dev TODO
      */
-    function _getDelta(uint256 a, uint256 b) internal pure returns (uint256) {
-        if (a > b) {
-            return a - b;
-        }
-        return b - a;
-    }
-
-    /**
-     * @dev TODO
-     */
     function _closestBound(uint256 poolALower, uint256 poolB, uint256 _poolALast, uint256 _poolBLast)
         internal
         pure
         returns (uint256)
     {
-        uint256 poolANewUpper = poolALower + 1;
-        // Our poolANew is rounded, so we want to find which integer bound is closest to the ideal fractional value
-        // poolANew/poolB == _poolALast/_poolBLast => poolANew * _poolBLast == _poolALast * poolB
-        // poolB is fixed, so we can compare deltas between the two sides across each bound
-        // The lowest delta represents the bound that is closest
-        uint256 targetProduct = _poolALast * poolB;
-        uint256 lowerDelta = _getDelta(poolALower * _poolBLast, targetProduct);
-        uint256 upperDelta = _getDelta(poolANewUpper * _poolBLast, targetProduct);
-        if (lowerDelta < upperDelta) {
-            return poolALower;
+        // If upperProdDiff is negative, then upperProdDiff is too and further from 0
+        // If upperProdDiff is positive but less than poolBLast/2, then lowerProdDiff is negative and further from 0 (because they're poolBLast apart)
+        if (poolALower * _poolBLast + _poolBLast < _poolALast * poolB + _poolBLast / 2) {
+            return poolALower + 1;
         }
-        return poolANewUpper;
+        return poolALower;
     }
 
     /**
