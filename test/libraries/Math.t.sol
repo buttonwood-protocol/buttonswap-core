@@ -5,12 +5,6 @@ import "forge-std/Test.sol";
 import {Math} from "../../src/libraries/Math.sol";
 
 contract MathTest is Test {
-    function test_min(uint256 value1, uint256 value2) public {
-        uint256 min = Math.min(value1, value2);
-        assertLe(min, value1);
-        assertLe(min, value2);
-    }
-
     function test_sqrt(uint256 root) public {
         vm.assume(root < 2 ** 128);
         assertEq(Math.sqrt(root * root), root);

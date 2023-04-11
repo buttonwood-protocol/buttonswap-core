@@ -40,18 +40,4 @@ interface IButtonswapPairEvents is IButtonswapERC20Events {
         uint256 amount1Out,
         address indexed to
     );
-
-    /**
-     * @notice Emitted when the Pair is synced.
-     * @param pool0 The new active token0 liquidity
-     * @param pool1 The new active token1 liquidity
-     */
-    event Sync(uint112 pool0, uint112 pool1);
-
-    /**
-     * @notice Emitted when the Pair is synced.
-     * @param reservoir0 The new inactive token0 liquidity
-     * @param reservoir1 The new inactive token1 liquidity
-     */
-    event SyncReservoir(uint112 reservoir0, uint112 reservoir1);
 }
