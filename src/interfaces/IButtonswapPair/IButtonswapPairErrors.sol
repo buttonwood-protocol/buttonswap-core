@@ -10,11 +10,6 @@ interface IButtonswapPairErrors is IButtonswapERC20Errors {
     error Locked();
 
     /**
-     * @notice Token transfer failed
-     */
-    error TransferFailed();
-
-    /**
      * @notice User does not have permission for the attempted operation
      */
     error Forbidden();
@@ -25,34 +20,14 @@ interface IButtonswapPairErrors is IButtonswapERC20Errors {
     error Overflow();
 
     /**
-     * @notice At least one reservoir should always be empty
-     */
-    error ReservoirInvariant();
-
-    /**
      * @notice Initial deposit not yet made
      */
     error Uninitialized();
 
     /**
-     * @notice The internal balances don't match the actual balance for token0
-     */
-    error Token0BalanceMismatch();
-
-    /**
-     * @notice The internal balances don't match the actual balance for token1
-     */
-    error Token1BalanceMismatch();
-
-    /**
      * @notice Mint was attempted with mismatched value on each side
      */
     error UnequalMint();
-
-    /**
-     * @notice Can't reservoir mint liquidity with both tokens
-     */
-    error TwoSidedReservoirMint();
 
     /**
      * @notice There was not enough liquidity in the reservoir
