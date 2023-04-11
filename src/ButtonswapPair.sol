@@ -130,16 +130,14 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @dev TODO
+     * @dev Refer to `\notes\closest-bound-math.md`
      */
     function _closestBound(uint256 poolALower, uint256 poolB, uint256 _poolALast, uint256 _poolBLast)
         internal
         pure
         returns (uint256)
     {
-        // If upperProdDiff is negative, then upperProdDiff is too and further from 0
-        // If upperProdDiff is positive but less than poolBLast/2, then lowerProdDiff is negative and further from 0 (because they're poolBLast apart)
-        if (poolALower * _poolBLast + _poolBLast < _poolALast * poolB + _poolBLast / 2) {
+        if ((poolALower * _poolBLast) + (_poolBLast / 2) < _poolALast * poolB) {
             return poolALower + 1;
         }
         return poolALower;
