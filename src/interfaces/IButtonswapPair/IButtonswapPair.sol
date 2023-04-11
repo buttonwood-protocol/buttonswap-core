@@ -37,20 +37,17 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     function token1() external view returns (address token1);
 
     /**
-     * @notice Get the current active liquidity values.
-     * The ratio of these two values is the current price of the Pair.
+     * @notice Get the current liquidity values.
      * @return _pool0 The active `token0` liquidity
      * @return _pool1 The active `token1` liquidity
-     * @return _blockTimestampLast The timestamp of when the price was last updated
-     */
-    function getPools() external view returns (uint112 _pool0, uint112 _pool1, uint32 _blockTimestampLast);
-
-    /**
-     * @notice Get the current inactive liquidity values.
      * @return _reservoir0 The inactive `token0` liquidity
      * @return _reservoir1 The inactive `token1` liquidity
+     * @return _blockTimestampLast The timestamp of when the price was last updated
      */
-    function getReservoirs() external view returns (uint112 _reservoir0, uint112 _reservoir1);
+    function getLiquidityBalances()
+        external
+        view
+        returns (uint112 _pool0, uint112 _pool1, uint112 _reservoir0, uint112 _reservoir1, uint32 _blockTimestampLast);
 
     /**
      * @notice The time-weighted average price of the Pair.
@@ -75,72 +72,74 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     function price1CumulativeLast() external view returns (uint256 price1CumulativeLast);
 
     /**
-     * @notice TODO
-     * @dev TODO
-     * @return kLast TODO
-     */
-    function kLast() external view returns (uint256 kLast);
-
-    /**
-     * @notice Mints new liquidity tokens to `to` based on how much `token0` and `token1` has been deposited.
+     * @notice Mints new liquidity tokens to `to` based on `amountIn0` of `token0` and `amountIn1  of`token1` deposited.
      * Expects both tokens to be deposited in a ratio that matches the current Pair price.
-     * @dev The token deposits are deduced to be the delta between the current Pair contract token balances and the last stored balances.
+     * @dev The token deposits are deduced to be the delta between token balance before and after the transfers in order to account for unusual tokens.
      * Refer to [mint-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/mint-math.md#dual-sided-mint) for more detail.
+     * @param amountIn0 The amount of `token0` that should be transferred in from the user
+     * @param amountIn1 The amount of `token1` that should be transferred in from the user
      * @param to The account that receives the newly minted liquidity tokens
-     * @return liquidity THe amount of liquidity tokens minted
+     * @return liquidityOut THe amount of liquidity tokens minted
      */
-    function mint(address to) external returns (uint256 liquidity);
+    function mint(uint256 amountIn0, uint256 amountIn1, address to) external returns (uint256 liquidityOut);
 
     /**
-     * @notice Mints new liquidity tokens to `to` based on how much `token0` and `token1` has been deposited.
+     * @notice Mints new liquidity tokens to `to` based on how much `token0` or `token1` has been deposited.
+     * The token transferred is the one that the Pair does not have a non-zero inactive liquidity balance for.
      * Expects only one token to be deposited, so that it can be paired with the other token's inactive liquidity.
-     * @dev The token deposits are deduced to be the delta between the current Pair contract token balances and the last stored balances.
+     * @dev The token deposits are deduced to be the delta between token balance before and after the transfers in order to account for unusual tokens.
      * Refer to [mint-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/mint-math.md#single-sided-mint) for more detail.
+     * @param amountIn The amount of tokens that should be transferred in from the user
      * @param to The account that receives the newly minted liquidity tokens
-     * @return liquidity THe amount of liquidity tokens minted
+     * @return liquidityOut THe amount of liquidity tokens minted
      */
-    function mintWithReservoir(address to) external returns (uint256 liquidity);
+    function mintWithReservoir(uint256 amountIn, address to) external returns (uint256 liquidityOut);
 
     /**
-     * @notice Burns deposited liquidity tokens to redeem to `to` the corresponding `amount0` of `token0` and `amount1` of `token1`.
-     * @dev The token deposit is deduced to be the current Pair contract liquidity token balance, as this is the only time the contract should own liquidity tokens.
-     * Refer to [burn-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/burn-math.md#dual-sided-burn) for more detail.
+     * @notice Burns `liquidityIn` liquidity tokens to redeem to `to` the corresponding `amountOut0` of `token0` and `amountOut1` of `token1`.
+     * @dev Refer to [burn-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/burn-math.md#dual-sided-burn) for more detail.
+     * @param liquidityIn The amount of liquidity tokens to burn
      * @param to The account that receives the redeemed tokens
-     * @return amount0 The amount of `token0` that the liquidity tokens are redeemed for
-     * @return amount1 The amount of `token1` that the liquidity tokens are redeemed for
+     * @return amountOut0 The amount of `token0` that the liquidity tokens are redeemed for
+     * @return amountOut1 The amount of `token1` that the liquidity tokens are redeemed for
      */
-    function burn(address to) external returns (uint256 amount0, uint256 amount1);
+    function burn(uint256 liquidityIn, address to) external returns (uint256 amountOut0, uint256 amountOut1);
 
     /**
-     * @notice Burns deposited liquidity tokens to redeem to `to` the corresponding `amount0` of `token0` and `amount1` of `token1`.
-     * Only returns tokens from the non-zero inactive liquidity balance, meaning one of `amount0` and `amount1` will be zero.
-     * @dev The token deposit is deduced to be the current Pair contract liquidity token balance, as this is the only time the contract should own liquidity tokens.
-     * Refer to [burn-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/burn-math.md#single-sided-burn) for more detail.
+     * @notice Burns `liquidityIn` liquidity tokens to redeem to `to` the corresponding `amountOut0` of `token0` and `amountOut1` of `token1`.
+     * Only returns tokens from the non-zero inactive liquidity balance, meaning one of `amountOut0` and `amountOut1` will be zero.
+     * @dev Refer to [burn-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/burn-math.md#single-sided-burn) for more detail.
+     * @param liquidityIn The amount of liquidity tokens to burn
      * @param to The account that receives the redeemed tokens
-     * @return amount0 The amount of `token0` that the liquidity tokens are redeemed for
-     * @return amount1 The amount of `token1` that the liquidity tokens are redeemed for
+     * @return amountOut0 The amount of `token0` that the liquidity tokens are redeemed for
+     * @return amountOut1 The amount of `token1` that the liquidity tokens are redeemed for
      */
-    function burnFromReservoir(address to) external returns (uint256 amount0, uint256 amount1);
+    function burnFromReservoir(uint256 liquidityIn, address to)
+        external
+        returns (uint256 amountOut0, uint256 amountOut1);
 
     /**
-     * @notice Swaps one token for the other, sending `amount0Out` of `token0` and `amount1Out` of `token1` to `to`.
+     * @notice Swaps one token for the other, taking `amountIn0` of `token0` and `amountIn1` of `token1` from the sender and sending `amountOut0` of `token0` and `amountOut1` of `token1` to `to`.
      * The price of the swap is determined by maintaining the "K Invariant".
      * A 0.3% fee is collected to distribute between liquidity providers and the protocol.
      * @dev The token deposits are deduced to be the delta between the current Pair contract token balances and the last stored balances.
      * Optional calldata can be passed to `data`, which will be used to confirm the output token transfer with `to` if `to` is a contract that implements the {IButtonswapCallee} interface.
      * Refer to [mint-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/swap-math.md) for more detail.
-     * @param amount0Out The amount of `token0` that the recipient receives
-     * @param amount1Out The amount of `token1` that the recipient receives
+     * @param amountIn0 The amount of `token0` that the sender sends
+     * @param amountIn1 The amount of `token1` that the sender sends
+     * @param amountOut0 The amount of `token0` that the recipient receives
+     * @param amountOut1 The amount of `token1` that the recipient receives
      * @param to The account that receives the swap output
      * @param data Optional calldata that can be used to confirm the token transfer with `to`
      */
-    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external;
-
-    /**
-     * @notice TODO
-     * @dev TODO
-     */
-    function sync() external;
+    function swap(
+        uint256 amountIn0,
+        uint256 amountIn1,
+        uint256 amountOut0,
+        uint256 amountOut1,
+        address to,
+        bytes calldata data
+    ) external;
 
     /**
      * @notice Called during Pair deployment to initialize the new instance.

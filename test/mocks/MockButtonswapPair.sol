@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {ButtonswapPair2} from "../../src/ButtonswapPair2.sol";
+import {ButtonswapPair} from "../../src/ButtonswapPair.sol";
 
-contract MockButtonswapPair2 is ButtonswapPair2 {
+contract MockButtonswapPair is ButtonswapPair {
     function mockSetPoolsLast(uint112 _pool0Last, uint112 _pool1Last) public {
         pool0Last = _pool0Last;
         pool1Last = _pool1Last;
