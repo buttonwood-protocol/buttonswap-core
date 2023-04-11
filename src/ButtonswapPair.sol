@@ -4,25 +4,20 @@ pragma solidity ^0.8.13;
 import {IButtonswapPair} from "./interfaces/IButtonswapPair/IButtonswapPair.sol";
 import {ButtonswapERC20} from "./ButtonswapERC20.sol";
 import {Math} from "./libraries/Math.sol";
-import {SafeMath} from "./libraries/SafeMath.sol";
+import {PairMath} from "./libraries/PairMath.sol";
 import {UQ112x112} from "./libraries/UQ112x112.sol";
 import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import {IButtonswapFactory} from "./interfaces/IButtonswapFactory/IButtonswapFactory.sol";
 import {IButtonswapCallee} from "./interfaces/IButtonswapCallee.sol";
 
 contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
-    using SafeMath for uint256;
     using UQ112x112 for uint224;
 
     /**
      * @inheritdoc IButtonswapPair
      */
     uint256 public constant MINIMUM_LIQUIDITY = 10 ** 3;
-
-    /**
-     * @dev TODO
-     */
-    bytes4 private constant SELECTOR = bytes4(keccak256(bytes("transfer(address,uint256)")));
 
     /**
      * @inheritdoc IButtonswapPair
@@ -42,27 +37,17 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @dev TODO
      */
-    uint112 private pool0; // uses single storage slot, accessible via getPools
+    uint112 internal pool0Last;
 
     /**
      * @dev TODO
      */
-    uint112 private pool1; // uses single storage slot, accessible via getPools
+    uint112 internal pool1Last;
 
     /**
      * @dev TODO
      */
-    uint112 private reservoir0; // uses single storage slot, accessible via getReservoirs
-
-    /**
-     * @dev TODO
-     */
-    uint112 private reservoir1; // uses single storage slot, accessible via getReservoirs
-
-    /**
-     * @dev TODO
-     */
-    uint32 private blockTimestampLast; // uses single storage slot, accessible via getPools
+    uint32 internal blockTimestampLast;
 
     /**
      * @inheritdoc IButtonswapPair
@@ -73,11 +58,6 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      * @inheritdoc IButtonswapPair
      */
     uint256 public price1CumulativeLast;
-
-    /**
-     * @inheritdoc IButtonswapPair
-     */
-    uint256 public kLast; // pool0 * pool1, as of immediately after the most recent liquidity event
 
     /**
      * @dev TODO
@@ -96,43 +76,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         unlocked = 1;
     }
 
-    /**
-     * @inheritdoc IButtonswapPair
-     */
-    function getPools() public view returns (uint112 _pool0, uint112 _pool1, uint32 _blockTimestampLast) {
-        _pool0 = pool0;
-        _pool1 = pool1;
-        _blockTimestampLast = blockTimestampLast;
-    }
-
-    /**
-     * @inheritdoc IButtonswapPair
-     */
-    function getReservoirs() public view returns (uint112 _reservoir0, uint112 _reservoir1) {
-        _reservoir0 = reservoir0;
-        _reservoir1 = reservoir1;
-    }
-
-    /**
-     * @dev TODO
-     * @param token TODO
-     * @param to TODO
-     * @param value TODO
-     */
-    function _safeTransfer(address token, address to, uint256 value) private {
-        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(SELECTOR, to, value));
-        if (!success || (data.length != 0 && !abi.decode(data, (bool)))) {
-            revert TransferFailed();
-        }
-    }
-
     constructor() {
         factory = msg.sender;
     }
 
     /**
      * @inheritdoc IButtonswapPair
-     * @dev Called once by the factory at time of deployment
      */
     function initialize(address _token0, address _token1) external {
         // sufficient check
@@ -144,474 +93,383 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @dev Update pools and, on the first call per block, price accumulators
-     * @param balance0 TODO
-     * @param balance1 TODO
-     * @param _pool0 TODO
-     * @param _pool1 TODO
+     * @dev TODO
+     * if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
      */
-    function _update(uint256 balance0, uint256 balance1, uint112 _pool0, uint112 _pool1) private {
-        if (balance0 > type(uint112).max || balance1 > type(uint112).max) {
-            revert Overflow();
+    function _mintFee(uint256 pool0, uint256 pool1, uint256 pool0New, uint256 pool1New) internal {
+        address feeTo = IButtonswapFactory(factory).feeTo();
+        if (feeTo != address(0)) {
+            uint256 liquidityOut =
+                PairMath.getProtocolFeeLiquidityMinted(totalSupply, pool0 * pool1, pool0New * pool1New);
+            if (liquidityOut > 0) {
+                _mint(feeTo, liquidityOut);
+            }
         }
+    }
+
+    /**
+     * @dev TODO
+     */
+    function _updatePriceCumulative(uint256 pool0, uint256 pool1) internal {
+        uint112 _pool0 = uint112(pool0);
+        uint112 _pool1 = uint112(pool1);
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
         uint32 timeElapsed;
         unchecked {
-            timeElapsed = blockTimestamp - blockTimestampLast; // overflow is desired
+            // overflow is desired
+            timeElapsed = blockTimestamp - blockTimestampLast;
         }
-        if (timeElapsed > 0 && _pool0 != 0 && _pool1 != 0) {
+        if (timeElapsed > 0 && pool0 != 0 && pool1 != 0) {
             // * never overflows, and + overflow is desired
             unchecked {
                 price0CumulativeLast += uint256(UQ112x112.encode(_pool1).uqdiv(_pool0)) * timeElapsed;
                 price1CumulativeLast += uint256(UQ112x112.encode(_pool0).uqdiv(_pool1)) * timeElapsed;
             }
+            blockTimestampLast = blockTimestamp;
         }
-        pool0 = uint112(balance0);
-        pool1 = uint112(balance1);
-        blockTimestampLast = blockTimestamp;
-        emit Sync(pool0, pool1);
     }
 
     /**
-     * @dev Update pools and reservoirs to the given values
-     * @param previousPool0 TODO
-     * @param previousPool1 TODO
-     * @param newPool0 TODO
-     * @param newPool1 TODO
-     * @param newReservoir0 TODO
-     * @param newReservoir1 TODO
+     * @dev Refer to `\notes\closest-bound-math.md`
      */
-    function _updateReservoirs(
-        uint112 previousPool0,
-        uint112 previousPool1,
-        uint256 newPool0,
-        uint256 newPool1,
-        uint256 newReservoir0,
-        uint256 newReservoir1
-    ) private {
-        if (
-            newPool0 > type(uint112).max || newPool1 > type(uint112).max || newReservoir0 > type(uint112).max
-                || newReservoir1 > type(uint112).max
-        ) {
-            revert Overflow();
+    function _closestBound(uint256 poolALower, uint256 poolB, uint256 _poolALast, uint256 _poolBLast)
+        internal
+        pure
+        returns (uint256)
+    {
+        if ((poolALower * _poolBLast) + (_poolBLast / 2) < _poolALast * poolB) {
+            return poolALower + 1;
         }
-
-        // invariant should always hold: at least one of reservoir0 and reservoir1 is equal to 0
-        if (newReservoir0 != 0 && newReservoir1 != 0) {
-            revert ReservoirInvariant();
-        }
-
-        reservoir0 = uint112(newReservoir0);
-        reservoir1 = uint112(newReservoir1);
-        _update(newPool0, newPool1, previousPool0, previousPool1);
-        emit SyncReservoir(reservoir0, reservoir1);
+        return poolALower;
     }
 
     /**
-     * @dev Get the pool and reservoir updates given the new balance and previous pools and reservoirs.
-     * New updated values should include the full balance in (pool + reservoir) and maintain the same marginal price as before.
-     * @param balance TODO
-     * @param pool TODO
-     * @param otherPool TODO
-     * @param reservoir TODO
-     * @param otherReservoir TODO
-     * @return newPool TODO
-     * @return newReservoir TODO
-     * @return newOtherPool TODO
-     * @return newOtherReservoir TODO
+     * @dev TODO
+     * @dev This method lacks proper checks and should not be called directly
      */
-    function _getNewStoredBalances(
-        uint256 balance,
-        uint256 pool,
-        uint256 otherPool,
-        uint256 reservoir,
-        uint256 otherReservoir
-    ) private pure returns (uint256 newPool, uint256 newReservoir, uint256 newOtherPool, uint256 newOtherReservoir) {
-        newPool = pool;
-        newReservoir = reservoir;
-        newOtherPool = otherPool;
-        newOtherReservoir = otherReservoir;
-        uint256 totalStored = newPool.add(newReservoir);
-        if (balance == totalStored) {
-            return (newPool, newReservoir, newOtherPool, newOtherReservoir);
-        }
-
-        if (balance > totalStored) {
-            // balance increased, so we send the extra tokens to the reservoir
-            newReservoir = newReservoir.add(balance.sub(totalStored));
+    function _getLiquidityBalancesUnsafe(uint256 total0, uint256 total1, uint256 _pool0Last, uint256 _pool1Last)
+        internal
+        pure
+        returns (uint256 pool0, uint256 pool1)
+    {
+        if (total0 < 1000 || total1 < 1000) {
+            // Scale total{0,1} up to over 1000 to avoid precision issues with extremely low values
+            // With, for example, _pool1Last=1 and total1=1 and a token0 rebase of x1.5 we would otherwise try and
+            //   succeed trying the first way, however new pool0 would be x1.5 what it was before without pool1
+            //   changing, with the effect of the price ratio changing drastically in an undesired way.
+            (pool0, pool1) = _getLiquidityBalancesUnsafe(total0 * 10, total1 * 10, _pool0Last, _pool1Last);
+            // Now scale output values back down again
+            pool0 /= 10;
+            pool1 /= 10;
         } else {
-            uint256 delta = totalStored.sub(balance);
-            // balance decreased, and we have enough in the reservoir to cover it
-            if (reservoir > delta) {
-                newReservoir = newReservoir.sub(delta);
-            } else {
-                if (reservoir > 0) {
-                    delta = delta.sub(reservoir);
-                    newReservoir = 0;
-                }
-
-                if (delta > 0) {
-                    // balance decreased, so we send some of the other token to the reservoir make up for it
-                    uint256 offset = (otherPool.mul(delta)) / newPool;
-
-                    newPool = balance;
-                    newOtherPool = newOtherPool.sub(offset);
-                    newOtherReservoir = newOtherReservoir.add(offset);
-                }
+            // Try it one way
+            pool0 = total0;
+            // pool0Last/pool1Last == pool0/pool1 => pool1 == (pool0*pool1Last)/pool0Last
+            // pool1Last/pool0Last == pool1/pool0 => pool1 == (pool0*pool1Last)/pool0Last
+            pool1 = (pool0 * _pool1Last) / _pool0Last;
+            pool1 = _closestBound(pool1, pool0, _pool1Last, _pool0Last);
+            if (pool1 > total1) {
+                // Try the other way
+                pool1 = total1;
+                // pool0Last/pool1Last == pool0/pool1 => pool0 == (pool1*pool0Last)/pool1Last
+                // pool1Last/pool0Last == pool1/pool0 => pool0 == (pool1*pool0Last)/pool1Last
+                pool0 = (pool1 * _pool0Last) / _pool1Last;
+                pool0 = _closestBound(pool0, pool1, _pool0Last, _pool1Last);
             }
         }
     }
 
     /**
-     * @dev Update pools and reservoirs, ensuring that the marginal price remains the same.
-     * The updated values should have the following invariants:
-     * - (pool + reservoir) == balance for each token.
-     * - At least one of the reservoirs should have 0 tokens. In other words we maximize the number of tokens in the pools.
-     * - The marginal prices should be the same before the updates as after
-     * @param balance0 TODO
-     * @param balance1 TODO
-     * @param _pool0 TODO
-     * @param _pool1 TODO
-     * @param _reservoir0 TODO
-     * @param _reservoir1 TODO
+     * @dev TODO
      */
-    function _syncReservoirs(
-        uint256 balance0,
-        uint256 balance1,
-        uint112 _pool0,
-        uint112 _pool1,
-        uint112 _reservoir0,
-        uint112 _reservoir1
-    ) private {
-        if (_pool0 == uint112(0) || _pool1 == uint112(0)) {
-            revert Uninitialized();
-        }
-        uint256 newPool0 = uint256(_pool0);
-        uint256 newPool1 = uint256(_pool1);
-        uint256 newReservoir0 = uint256(_reservoir0);
-        uint256 newReservoir1 = uint256(_reservoir1);
-
-        (newPool0, newReservoir0, newPool1, newReservoir1) =
-            _getNewStoredBalances(balance0, newPool0, newPool1, newReservoir0, newReservoir1);
-        (newPool1, newReservoir1, newPool0, newReservoir0) =
-            _getNewStoredBalances(balance1, newPool1, newPool0, newReservoir1, newReservoir0);
-
-        if (newReservoir0 > 0 && newReservoir1 > 0) {
-            // both reservoirs have funds, so we can move some from each back to the main pool
-            uint256 reservoir0InTermsOf1 = (newPool1.mul(newReservoir0)) / newPool0;
-            uint256 reservoir1InTermsOf0 = (newPool0.mul(newReservoir1)) / newPool1;
-
-            if (reservoir0InTermsOf1 <= newReservoir1) {
-                // then we can drain reservoir0 and have some (or none) remaining in reservoir1
-                newPool0 = newPool0.add(newReservoir0);
-                newPool1 = newPool1.add(reservoir0InTermsOf1);
-                newReservoir0 = 0;
-                newReservoir1 = newReservoir1.sub(reservoir0InTermsOf1);
-            } else {
-                // then we can drain reservoir1 and have some remaining in reservoir0
-                newPool1 = newPool1.add(newReservoir1);
-                newPool0 = newPool0.add(reservoir1InTermsOf0);
-                newReservoir1 = 0;
-                newReservoir0 = newReservoir0.sub(reservoir1InTermsOf0);
+    function _getLiquidityBalances(uint256 total0, uint256 total1)
+        internal
+        view
+        returns (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1)
+    {
+        uint256 _pool0Last = uint256(pool0Last);
+        uint256 _pool1Last = uint256(pool1Last);
+        if (_pool0Last == 0 || _pool1Last == 0) {
+            // Before Pair is initialized by first dual mint just return zeroes
+        } else if (total0 == 0 || total1 == 0) {
+            // Return zeroes, _getLiquidityBalancesUnsafe will get stuck in an infinite loop if called
+        } else {
+            (pool0, pool1) = _getLiquidityBalancesUnsafe(total0, total1, _pool0Last, _pool1Last);
+            // Either pool0 is set to total0 or pool1 is set to total1 in _getLiquidityBalancesUnsafe
+            // This means that one of the reservoir values will definitely be zero, and we don't need to check for it
+            reservoir0 = total0 - pool0;
+            reservoir1 = total1 - pool1;
+            // TODO could scale pool to fit instead, transferring excess to reservoir?
+            if (pool0 > type(uint112).max || pool1 > type(uint112).max) {
+                revert Overflow();
             }
-        }
-
-        if (newPool0.add(newReservoir0) != balance0) {
-            revert Token0BalanceMismatch();
-        }
-        if (newPool1.add(newReservoir1) != balance1) {
-            revert Token1BalanceMismatch();
-        }
-        _updateReservoirs(pool0, _pool1, newPool0, newPool1, newReservoir0, newReservoir1);
-    }
-
-    /**
-     * @dev If fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
-     * @param _pool0 TODO
-     * @param _pool1 TODO
-     * @return feeOn TODO
-     */
-    function _mintFee(uint112 _pool0, uint112 _pool1) private returns (bool feeOn) {
-        address feeTo = IButtonswapFactory(factory).feeTo();
-        feeOn = feeTo != address(0);
-        uint256 _kLast = kLast; // gas savings
-        if (feeOn) {
-            if (_kLast != 0) {
-                uint256 rootK = Math.sqrt(uint256(_pool0).mul(_pool1));
-                uint256 rootKLast = Math.sqrt(_kLast);
-                if (rootK > rootKLast) {
-                    uint256 numerator = totalSupply.mul(rootK.sub(rootKLast));
-                    uint256 denominator = rootK.mul(5).add(rootKLast);
-                    uint256 liquidity = numerator / denominator;
-                    if (liquidity > 0) _mint(feeTo, liquidity);
-                }
-            }
-        } else if (_kLast != 0) {
-            kLast = 0;
         }
     }
 
     /**
      * @inheritdoc IButtonswapPair
-     * @dev This low-level function should be called from a contract which performs important safety checks.
      */
-    function mint(address to) external lock returns (uint256 liquidity) {
-        (uint256 _pool0, uint256 _pool1,) = getPools(); // gas savings
-        (uint256 _reservoir0, uint256 _reservoir1) = getReservoirs(); // gas savings
-        uint256 amount0 = IERC20(token0).balanceOf(address(this)).sub(_pool0).sub(_reservoir0);
-        uint256 amount1 = IERC20(token1).balanceOf(address(this)).sub(_pool1).sub(_reservoir1);
-        bool feeOn = _mintFee(uint112(_pool0), uint112(_pool1));
+    function getLiquidityBalances()
+        external
+        view
+        returns (uint112 _pool0, uint112 _pool1, uint112 _reservoir0, uint112 _reservoir1, uint32 _blockTimestampLast)
+    {
+        uint256 total0 = IERC20(token0).balanceOf(address(this));
+        uint256 total1 = IERC20(token1).balanceOf(address(this));
+        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
+        _pool0 = uint112(pool0);
+        _pool1 = uint112(pool1);
+        _reservoir0 = uint112(reservoir0);
+        _reservoir1 = uint112(reservoir1);
+        _blockTimestampLast = blockTimestampLast;
+    }
 
-        uint256 _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
+    /**
+     * @inheritdoc IButtonswapPair
+     */
+    function mint(uint256 amountIn0, uint256 amountIn1, address to) external lock returns (uint256 liquidityOut) {
+        uint256 _totalSupply = totalSupply;
+        address _token0 = token0;
+        address _token1 = token1;
+        uint256 total0 = IERC20(_token0).balanceOf(address(this));
+        uint256 total1 = IERC20(_token1).balanceOf(address(this));
+        // Determine current pool liquidity
+        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
+        SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn0);
+        SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn1);
+        // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
+        amountIn0 = IERC20(_token0).balanceOf(address(this)) - total0;
+        amountIn1 = IERC20(_token1).balanceOf(address(this)) - total1;
 
         if (_totalSupply == 0) {
-            liquidity = Math.sqrt(amount0.mul(amount1)).sub(MINIMUM_LIQUIDITY);
-            _mint(address(0), MINIMUM_LIQUIDITY); // permanently lock the first MINIMUM_LIQUIDITY tokens
+            liquidityOut = Math.sqrt(amountIn0 * amountIn1) - MINIMUM_LIQUIDITY;
+            // permanently lock the first MINIMUM_LIQUIDITY tokens
+            _mint(address(0), MINIMUM_LIQUIDITY);
+            // Initialize Pair last swap price
+            pool0Last = uint112(amountIn0);
+            pool1Last = uint112(amountIn1);
+            // Initialize timestamp so first price update is accurate
+            blockTimestampLast = uint32(block.timestamp % 2 ** 32);
         } else {
-            // Check that value0AddedInTermsOf1 == amount1 or value1AddedInTermsOf0 == amount0
-            uint256 value0AddedInTermsOf1 = (_pool1.mul(amount0)) / _pool0;
-            if (value0AddedInTermsOf1 != amount1) {
-                uint256 value1AddedInTermsOf0 = (_pool0.mul(amount1)) / _pool1;
-                if (value1AddedInTermsOf0 != amount0) {
+            if (pool0 == 0 || pool1 == 0) {
+                revert InsufficientLiquidity();
+            }
+            // Check that value0AddedInTermsOf1 == amountIn1 or value1AddedInTermsOf0 == amountIn0
+            uint256 value0AddedInTermsOf1 = (amountIn0 * pool1) / pool0;
+            if (value0AddedInTermsOf1 != amountIn1) {
+                uint256 value1AddedInTermsOf0 = (amountIn1 * pool0) / pool1;
+                if (value1AddedInTermsOf0 != amountIn0) {
                     revert UnequalMint();
                 }
             }
-            uint256 reservoir0InTermsOf1 = (_pool1.mul(_reservoir0)) / _pool0;
-
-            // liquidity minted in proportion to the total value added in terms of token1
-            // divided by the total value in the pools + reservoirs in terms of 1
-            // note: we could calculate this in terms of token0 and get the same result
-            liquidity =
-                _totalSupply.mul(amount1.add(amount1)) / (_pool1.add(_pool1).add(reservoir0InTermsOf1).add(_reservoir1));
+            liquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
+                _totalSupply, amountIn0, amountIn1, pool0, pool1, reservoir0, reservoir1
+            );
         }
 
-        if (liquidity == 0) {
+        if (liquidityOut == 0) {
             revert InsufficientLiquidityMinted();
         }
-        _mint(to, liquidity);
-
-        _update(_pool0.add(amount0), _pool1.add(amount1), uint112(_pool0), uint112(_pool1));
-        if (feeOn) kLast = uint256(pool0).mul(pool1); // pool0 and pool1 are up-to-date
-        emit Mint(msg.sender, amount0, amount1);
+        _mint(to, liquidityOut);
+        emit Mint(msg.sender, amountIn0, amountIn1);
     }
 
     /**
      * @inheritdoc IButtonswapPair
-     * @dev This low-level function should be called from a contract which performs important safety checks.
      */
-    function mintWithReservoir(address to) external lock returns (uint256 liquidity) {
-        (uint112 _pool0, uint112 _pool1,) = getPools(); // gas savings
-        (uint256 newReservoir0, uint256 newReservoir1) = getReservoirs(); // gas savings
-        uint256 newPool0 = uint256(_pool0);
-        uint256 newPool1 = uint256(_pool1);
-        uint256 amount0 = IERC20(token0).balanceOf(address(this)).sub(newPool0).sub(newReservoir0);
-        uint256 amount1 = IERC20(token1).balanceOf(address(this)).sub(newPool1).sub(newReservoir1);
-        if (amount0 != 0 && amount1 != 0) {
-            revert TwoSidedReservoirMint();
-        }
-        if (amount0 == 0 && amount1 == 0) {
+    function mintWithReservoir(uint256 amountIn, address to) external lock returns (uint256 liquidityOut) {
+        if (amountIn == 0) {
             revert InsufficientLiquidityAdded();
         }
+        uint256 _totalSupply = totalSupply;
+        if (_totalSupply == 0) {
+            revert Uninitialized();
+        }
+        address _token0 = token0;
+        address _token1 = token1;
+        uint256 total0 = IERC20(_token0).balanceOf(address(this));
+        uint256 total1 = IERC20(_token1).balanceOf(address(this));
+        // Determine current pool liquidity
+        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
+        if (pool0 == 0 || pool1 == 0) {
+            revert InsufficientLiquidity();
+        }
+        if (reservoir0 == 0) {
+            // If reservoir0 is empty then we're adding token0 to pair with token1 liquidity
+            SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn);
+            // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
+            amountIn = IERC20(_token0).balanceOf(address(this)) - total0;
 
-        bool feeOn = _mintFee(_pool0, _pool1);
-
-        {
-            uint256 _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
-            if (_totalSupply == 0) {
-                revert Uninitialized();
+            // Check there's enough reservoir liquidity to pair with the amountIn
+            if ((amountIn * pool1) / pool0 > reservoir1) {
+                revert InsufficientReservoir();
             }
 
-            // Depending on which token liquidity was added for,
-            // try to pull funds out of the other token's reservoir to match
-            if (amount0 > 0) {
-                // liquidity is a proportion of value added over existing pool value
-                liquidity =
-                    _totalSupply.mul(newPool1.mul(amount0)) / (newPool1.add(newPool1).add(newReservoir1).mul(newPool0));
+            liquidityOut =
+                PairMath.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, pool1, pool0, reservoir1);
+        } else {
+            // If reservoir1 is empty then we're adding token1 to pair with token0 liquidity
+            SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn);
+            // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
+            amountIn = IERC20(_token1).balanceOf(address(this)) - total1;
 
-                uint256 value0AddedInTermsOf1 = (newPool1.mul(amount0)) / newPool0;
-                if (value0AddedInTermsOf1 > newReservoir1) {
-                    revert InsufficientReservoir();
-                }
-
-                // take from reservoir1 to make up for the missing value added
-                newReservoir1 = newReservoir1.sub(value0AddedInTermsOf1);
-                newPool1 = newPool1.add(value0AddedInTermsOf1);
-            } else {
-                // liquidity is a proportion of value added over existing pool value
-                liquidity =
-                    _totalSupply.mul(newPool0.mul(amount1)) / (newPool0.add(newPool0).add(newReservoir0).mul(newPool1));
-
-                uint256 value1AddedInTermsOf0 = (newPool0.mul(amount1)) / newPool1;
-                if (value1AddedInTermsOf0 > newReservoir0) {
-                    revert InsufficientReservoir();
-                }
-
-                // take from reservoir0 to make up for the missing value added
-                newReservoir0 = newReservoir0.sub(value1AddedInTermsOf0);
-                newPool0 = newPool0.add(value1AddedInTermsOf0);
+            // Check there's enough reservoir liquidity to pair with the amountIn
+            if ((amountIn * pool0) / pool1 > reservoir0) {
+                revert InsufficientReservoir();
             }
+
+            liquidityOut =
+                PairMath.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, pool0, pool1, reservoir0);
         }
 
-        if (liquidity == 0) {
+        if (liquidityOut == 0) {
             revert InsufficientLiquidityMinted();
         }
-        _mint(to, liquidity);
-
-        _updateReservoirs(
-            _pool0,
-            _pool1,
-            uint112(newPool0.add(amount0)),
-            uint112(newPool1.add(amount1)),
-            uint112(newReservoir0),
-            uint112(newReservoir1)
-        );
-        if (feeOn) kLast = uint256(pool0).mul(pool1); // pool0 and pool1 are up-to-date
-        emit Mint(msg.sender, amount0, amount1);
+        _mint(to, liquidityOut);
+        if (reservoir0 == 0) {
+            emit Mint(msg.sender, amountIn, 0);
+        } else {
+            emit Mint(msg.sender, 0, amountIn);
+        }
     }
 
     /**
      * @inheritdoc IButtonswapPair
-     * @dev This low-level function should be called from a contract which performs important safety checks.
      */
-    function burn(address to) external lock returns (uint256 amount0, uint256 amount1) {
-        (uint112 _pool0, uint112 _pool1,) = getPools(); // gas savings
-        (uint256 newReservoir0, uint256 newReservoir1) = getReservoirs(); // gas savings
-        uint256 newPool0 = uint256(_pool0);
-        uint256 newPool1 = uint256(_pool1);
-        uint256 liquidity = balanceOf[address(this)];
-        bool feeOn = _mintFee(_pool0, _pool1);
-        uint256 _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
+    function burn(uint256 liquidityIn, address to) external lock returns (uint256 amountOut0, uint256 amountOut1) {
+        uint256 _totalSupply = totalSupply;
+        address _token0 = token0;
+        address _token1 = token1;
+        uint256 total0 = IERC20(_token0).balanceOf(address(this));
+        uint256 total1 = IERC20(_token1).balanceOf(address(this));
 
-        {
-            // withdraw from both pools in proportion to the total value of each token held by this contract
-            uint256 amountReservoir0 = liquidity.mul(newReservoir0) / _totalSupply;
-            uint256 amountReservoir1 = liquidity.mul(newReservoir1) / _totalSupply;
-            newReservoir0 = newReservoir0.sub(amountReservoir0);
-            newReservoir1 = newReservoir1.sub(amountReservoir1);
+        (amountOut0, amountOut1) = PairMath.getDualSidedBurnOutputAmounts(_totalSupply, liquidityIn, total0, total1);
 
-            uint256 amountPool0 = liquidity.mul(newPool0) / _totalSupply;
-            uint256 amountPool1 = liquidity.mul(newPool1) / _totalSupply;
-            newPool0 = newPool0.sub(amountPool0);
-            newPool1 = newPool1.sub(amountPool1);
-
-            amount0 = amountPool0.add(amountReservoir0);
-            amount1 = amountPool1.add(amountReservoir1);
-        }
-
-        if (amount0 == 0 || amount1 == 0) {
+        if (amountOut0 == 0 || amountOut1 == 0) {
             revert InsufficientLiquidityBurned();
         }
-        _burn(address(this), liquidity);
-        _safeTransfer(token0, to, amount0);
-        _safeTransfer(token1, to, amount1);
-
-        _updateReservoirs(_pool0, _pool1, newPool0, newPool1, newReservoir0, newReservoir1);
-        if (feeOn) kLast = uint256(pool0).mul(pool1); // pool0 and pool1 are up-to-date
-        emit Burn(msg.sender, amount0, amount1, to);
+        _burn(msg.sender, liquidityIn);
+        SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
+        SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
+        emit Burn(msg.sender, amountOut0, amountOut1, to);
     }
 
     /**
      * @inheritdoc IButtonswapPair
-     * @dev This low-level function should be called from a contract which performs important safety checks.
      */
-    function burnFromReservoir(address to) external lock returns (uint256 amount0, uint256 amount1) {
-        (uint112 _pool0, uint112 _pool1,) = getPools(); // gas savings
-        (uint256 newReservoir0, uint256 newReservoir1) = getReservoirs(); // gas savings
-        uint256 liquidity = balanceOf[address(this)];
-        bool feeOn = _mintFee(_pool0, _pool1);
-        uint256 _totalSupply = totalSupply; // gas savings, must be defined here since totalSupply can update in _mintFee
-
-        // calculate the amount to withdraw, purely from the reservoir
-        // amount withdrawn is calculated as a proportion of the total value held by this contract,
-        // for both tokens, but in terms of the token being withdrawn. Since by definition the value
-        // of each pool is the same, 2 * (# of tokens in poolX) = the total value held in the pools, in terms of X
-        if (newReservoir0 > 0) {
-            amount0 = liquidity.mul(newReservoir0.add(_pool0).add(_pool0)) / _totalSupply;
-        } else if (newReservoir1 > 0) {
-            amount1 = liquidity.mul(newReservoir1.add(_pool1).add(_pool1)) / _totalSupply;
-        }
-
-        if (amount0 == 0 && amount1 == 0) {
-            revert InsufficientLiquidityBurned();
-        }
-        if (amount0 != 0 && amount1 != 0) {
-            revert ReservoirInvariant();
-        }
-        if (amount0 > newReservoir0 || amount1 > newReservoir1) {
-            revert InsufficientReservoir();
-        }
-        _burn(address(this), liquidity);
-        if (amount0 > 0) {
-            _safeTransfer(token0, to, amount0);
-        } else if (amount1 > 0) {
-            _safeTransfer(token1, to, amount1);
-        }
-
-        _updateReservoirs(_pool0, _pool1, _pool0, _pool1, newReservoir0.sub(amount0), newReservoir1.sub(amount1));
-        if (feeOn) kLast = uint256(pool0).mul(pool1); // pool0 and pool1 are up-to-date
-        emit Burn(msg.sender, amount0, amount1, to);
-    }
-
-    /**
-     * @inheritdoc IButtonswapPair
-     * @dev This low-level function should be called from a contract which performs important safety checks.
-     */
-    function swap(uint256 amount0Out, uint256 amount1Out, address to, bytes calldata data) external lock {
-        if (amount0Out == 0 && amount1Out == 0) {
-            revert InsufficientOutputAmount();
-        }
-
-        (uint112 _pool0, uint112 _pool1,) = getPools(); // gas savings
-        if (amount0Out >= _pool0 || amount1Out >= _pool1) {
+    function burnFromReservoir(uint256 liquidityIn, address to)
+        external
+        lock
+        returns (uint256 amountOut0, uint256 amountOut1)
+    {
+        uint256 _totalSupply = totalSupply;
+        address _token0 = token0;
+        address _token1 = token1;
+        uint256 total0 = IERC20(_token0).balanceOf(address(this));
+        uint256 total1 = IERC20(_token1).balanceOf(address(this));
+        // Determine current pool liquidity
+        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
+        if (pool0 == 0 || pool1 == 0) {
             revert InsufficientLiquidity();
         }
 
-        uint256 balance0;
-        uint256 balance1;
-        {
-            // scope for _token{0,1}, avoids stack too deep errors
-            address _token0 = token0;
-            address _token1 = token1;
-            if (to == _token0 || to == _token1) {
-                revert InvalidRecipient();
-            }
-            if (amount0Out > 0) _safeTransfer(_token0, to, amount0Out); // optimistically transfer tokens
-            if (amount1Out > 0) _safeTransfer(_token1, to, amount1Out); // optimistically transfer tokens
-            if (data.length > 0) IButtonswapCallee(to).buttonswapCall(msg.sender, amount0Out, amount1Out, data);
-            (uint112 _reservoir0, uint112 _reservoir1) = getReservoirs(); // gas savings
-            balance0 = IERC20(_token0).balanceOf(address(this)).sub(_reservoir0);
-            balance1 = IERC20(_token1).balanceOf(address(this)).sub(_reservoir1);
-        }
-        uint256 amount0In = balance0 > _pool0 - amount0Out ? balance0 - (_pool0 - amount0Out) : 0;
-        uint256 amount1In = balance1 > _pool1 - amount1Out ? balance1 - (_pool1 - amount1Out) : 0;
-        if (amount0In == 0 && amount1In == 0) {
-            revert InsufficientInputAmount();
-        }
-        {
-            // scope for pool{0,1}Adjusted, avoids stack too deep errors
-            uint256 balance0Adjusted = balance0.mul(1000).sub(amount0In.mul(3));
-            uint256 balance1Adjusted = balance1.mul(1000).sub(amount1In.mul(3));
-            if (balance0Adjusted.mul(balance1Adjusted) < uint256(_pool0).mul(_pool1).mul(1000 ** 2)) {
-                revert KInvariant();
-            }
-        }
+        (amountOut0, amountOut1) =
+            PairMath.getSingleSidedBurnOutputAmounts(_totalSupply, liquidityIn, pool0, pool1, reservoir0, reservoir1);
 
-        _update(balance0, balance1, _pool0, _pool1);
-        emit Swap(msg.sender, amount0In, amount1In, amount0Out, amount1Out, to);
+        if (amountOut0 > reservoir0 || amountOut1 > reservoir1) {
+            revert InsufficientReservoir();
+        }
+        _burn(msg.sender, liquidityIn);
+        if (amountOut0 > 0) {
+            SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
+        } else if (amountOut1 > 0) {
+            SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
+        } else {
+            revert InsufficientLiquidityBurned();
+        }
+        emit Burn(msg.sender, amountOut0, amountOut1, to);
     }
 
     /**
      * @inheritdoc IButtonswapPair
-     * @dev Force reserves to match balances.
      */
-    function sync() external lock {
-        _syncReservoirs(
-            IERC20(token0).balanceOf(address(this)),
-            IERC20(token1).balanceOf(address(this)),
-            pool0,
-            pool1,
-            reservoir0,
-            reservoir1
-        );
+    function swap(
+        uint256 amountIn0,
+        uint256 amountIn1,
+        uint256 amountOut0,
+        uint256 amountOut1,
+        address to,
+        bytes calldata data
+    ) external lock {
+        if (amountOut0 == 0 && amountOut1 == 0) {
+            revert InsufficientOutputAmount();
+        }
+        address _token0 = token0;
+        address _token1 = token1;
+        if (to == _token0 || to == _token1) {
+            revert InvalidRecipient();
+        }
+        uint256 total0 = IERC20(_token0).balanceOf(address(this));
+        uint256 total1 = IERC20(_token1).balanceOf(address(this));
+        // Determine current pool liquidity
+        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
+        if (amountOut0 >= pool0 || amountOut1 >= pool1) {
+            revert InsufficientLiquidity();
+        }
+        // Transfer in the specified input
+        if (amountIn0 > 0) {
+            SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn0);
+        }
+        if (amountIn1 > 0) {
+            SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn1);
+        }
+        // Optimistically transfer output
+        if (amountOut0 > 0) {
+            SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
+        }
+        if (amountOut1 > 0) {
+            SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
+        }
+        if (data.length > 0) {
+            IButtonswapCallee(to).buttonswapCall(msg.sender, amountOut0, amountOut1, data);
+        }
+        // Refresh balances
+        total0 = IERC20(_token0).balanceOf(address(this));
+        total1 = IERC20(_token1).balanceOf(address(this));
+        // The reservoir balances must remain unchanged during a swap, so all balance changes impact the pool balances
+        uint256 pool0New = total0 - reservoir0;
+        uint256 pool1New = total1 - reservoir1;
+        if (pool0New == 0 || pool1New == 0) {
+            revert InvalidFinalPrice();
+        }
+        // Update to the actual amount of tokens the user sent in based on the delta between old and new pool balances
+        if (pool0New > pool0) {
+            amountIn0 = pool0New - pool0;
+        } else {
+            amountIn0 = 0;
+        }
+        if (pool1New > pool1) {
+            amountIn1 = pool1New - pool1;
+        } else {
+            amountIn1 = 0;
+        }
+        // If after accounting for input and output cancelling one another out, fee on transfer, etc there is no
+        //   input tokens in real terms then revert.
+        if (amountIn0 == 0 && amountIn1 == 0) {
+            revert InsufficientInputAmount();
+        }
+        uint256 pool0NewAdjusted = (pool0New * 1000) - (amountIn0 * 3);
+        uint256 pool1NewAdjusted = (pool1New * 1000) - (amountIn1 * 3);
+        // After account for 0.3% fees, the new K must not be less than the old K
+        if (pool0NewAdjusted * pool1NewAdjusted < (pool0 * pool1 * 1000 ** 2)) {
+            revert KInvariant();
+        }
+        _mintFee(pool0, pool1, pool0New, pool1New);
+        _updatePriceCumulative(pool0, pool1);
+        // Update Pair last swap price
+        pool0Last = uint112(pool0New);
+        pool1Last = uint112(pool1New);
+
+        emit Swap(msg.sender, amountIn0, amountIn1, amountOut0, amountOut1, to);
     }
 }

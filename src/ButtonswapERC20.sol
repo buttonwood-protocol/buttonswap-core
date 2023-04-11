@@ -2,11 +2,8 @@
 pragma solidity ^0.8.13;
 
 import {IButtonswapERC20} from "./interfaces/IButtonswapERC20/IButtonswapERC20.sol";
-import {SafeMath} from "./libraries/SafeMath.sol";
 
 contract ButtonswapERC20 is IButtonswapERC20 {
-    using SafeMath for uint256;
-
     /**
      * @inheritdoc IButtonswapERC20
      */
@@ -77,8 +74,8 @@ contract ButtonswapERC20 is IButtonswapERC20 {
      * @param value The amount of tokens being created
      */
     function _mint(address to, uint256 value) internal {
-        totalSupply = totalSupply.add(value);
-        balanceOf[to] = balanceOf[to].add(value);
+        totalSupply = totalSupply + value;
+        balanceOf[to] = balanceOf[to] + value;
         emit Transfer(address(0), to, value);
     }
 
@@ -90,8 +87,8 @@ contract ButtonswapERC20 is IButtonswapERC20 {
      * @param value The amount of tokens being destroyed
      */
     function _burn(address from, uint256 value) internal {
-        balanceOf[from] = balanceOf[from].sub(value);
-        totalSupply = totalSupply.sub(value);
+        balanceOf[from] = balanceOf[from] - value;
+        totalSupply = totalSupply - value;
         emit Transfer(from, address(0), value);
     }
 
@@ -117,8 +114,8 @@ contract ButtonswapERC20 is IButtonswapERC20 {
      * @param value The amount of tokens being sent
      */
     function _transfer(address from, address to, uint256 value) private {
-        balanceOf[from] = balanceOf[from].sub(value);
-        balanceOf[to] = balanceOf[to].add(value);
+        balanceOf[from] = balanceOf[from] - value;
+        balanceOf[to] = balanceOf[to] + value;
         emit Transfer(from, to, value);
     }
 
@@ -143,7 +140,7 @@ contract ButtonswapERC20 is IButtonswapERC20 {
      */
     function transferFrom(address from, address to, uint256 value) external returns (bool success) {
         if (allowance[from][msg.sender] != type(uint256).max) {
-            allowance[from][msg.sender] = allowance[from][msg.sender].sub(value);
+            allowance[from][msg.sender] = allowance[from][msg.sender] - value;
         }
         _transfer(from, to, value);
         success = true;
