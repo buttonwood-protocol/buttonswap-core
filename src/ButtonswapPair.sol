@@ -164,6 +164,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 // pool1Last/pool0Last == pool1/pool0 => pool1 == (pool0*pool1Last)/pool0Last
                 pool1 = (pool0 * _pool1Last) / _pool0Last;
                 pool1 = _closestBound(pool1, pool0, _pool1Last, _pool0Last);
+                // reservoir0 is zero, so no need to set it
+                reservoir1 = total1 - pool1;
             } else {
                 // Try the other way
                 pool1 = total1;
@@ -171,11 +173,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 // pool1Last/pool0Last == pool1/pool0 => pool0 == (pool1*pool0Last)/pool1Last
                 pool0 = (pool1 * _pool0Last) / _pool1Last;
                 pool0 = _closestBound(pool0, pool1, _pool0Last, _pool1Last);
+                // reservoir1 is zero, so no need to set it
+                reservoir0 = total0 - pool0;
             }
 
-            // One of the pools is equal to the corresponding total, so at least one of these reservoirs must be zero (no check necessary)
-            reservoir0 = total0 - pool0;
-            reservoir1 = total1 - pool1;
             if (pool0 > type(uint112).max || pool1 > type(uint112).max) {
                 revert Overflow();
             }

@@ -98,7 +98,6 @@ library PriceAssertion {
         uint112 poolA,
         uint112 poolB
     ) public pure returns (bool) {
-        // Accept the optimal new pool value to be up to 1 away from the value the contract computed
         uint112 tolerance = 0;
         bool withinTolerance;
         if (reservoirA == 0) {
