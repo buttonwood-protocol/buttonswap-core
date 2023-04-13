@@ -151,48 +151,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @dev TODO
-     * @dev This method lacks proper checks and should not be called directly
-     */
-    function _getLiquidityBalancesUnsafe(uint256 total0, uint256 total1, uint256 _pool0Last, uint256 _pool1Last)
-        internal
-        pure
-        returns (uint256 pool0, uint256 pool1)
-    {
-        if (total0 < 1000 || total1 < 1000) {
-            // Scale total{0,1} up to over 1000 to avoid precision issues with extremely low values
-            // With, for example, _pool1Last=1 and total1=1 and a token0 rebase of x1.5 we would otherwise try and
-            //   succeed trying the first way, however new pool0 would be x1.5 what it was before without pool1
-            //   changing, with the effect of the price ratio changing drastically in an undesired way.
-            (pool0, pool1) = _getLiquidityBalancesUnsafe(total0 * 10, total1 * 10, _pool0Last, _pool1Last);
-            // Now scale output values back down again
-            pool0 /= 10;
-            pool1 /= 10;
-        } else {
-            // Try it one way
-            pool0 = total0;
-            // pool0Last/pool1Last == pool0/pool1 => pool1 == (pool0*pool1Last)/pool0Last
-            // pool1Last/pool0Last == pool1/pool0 => pool1 == (pool0*pool1Last)/pool0Last
-            pool1 = (pool0 * _pool1Last) / _pool0Last;
-            pool1 = _closestBound(pool1, pool0, _pool1Last, _pool0Last);
-            if (pool1 > total1) {
-                // Try the other way
-                pool1 = total1;
-                // pool0Last/pool1Last == pool0/pool1 => pool0 == (pool1*pool0Last)/pool1Last
-                // pool1Last/pool0Last == pool1/pool0 => pool0 == (pool1*pool0Last)/pool1Last
-                pool0 = (pool1 * _pool0Last) / _pool1Last;
-                pool0 = _closestBound(pool0, pool1, _pool0Last, _pool1Last);
-            }
-        }
-    }
-
-    /**
-     * @dev TODO
+     * @dev Refer to `\notes\liquidity-balances-math.md`
      */
     function _getLiquidityBalances(uint256 total0, uint256 total1)
         internal
         view
-        returns (LiquidityBalances memory lb)
+    returns (LiquidityBalances memory lb)
     {
         uint256 _pool0Last = uint256(pool0Last);
         uint256 _pool1Last = uint256(pool1Last);
@@ -201,12 +165,25 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         } else if (total0 == 0 || total1 == 0) {
             // Return zeroes, _getLiquidityBalancesUnsafe will get stuck in an infinite loop if called
         } else {
-            (lb.pool0, lb.pool1) = _getLiquidityBalancesUnsafe(total0, total1, _pool0Last, _pool1Last);
-            // Either pool0 is set to total0 or pool1 is set to total1 in _getLiquidityBalancesUnsafe
-            // This means that one of the reservoir values will definitely be zero, and we don't need to check for it
-            lb.reservoir0 = total0 - lb.pool0;
-            lb.reservoir1 = total1 - lb.pool1;
-            // TODO could scale pool to fit instead, transferring excess to reservoir?
+            if (total0 * _pool1Last < total1 * _pool0Last) {
+                lb.pool0 = total0;
+                // pool0Last/pool1Last == pool0/pool1 => pool1 == (pool0*pool1Last)/pool0Last
+                // pool1Last/pool0Last == pool1/pool0 => pool1 == (pool0*pool1Last)/pool0Last
+                lb.pool1 = (lb.pool0 * _pool1Last) / _pool0Last;
+                lb.pool1 = _closestBound(lb.pool1, lb.pool0, _pool1Last, _pool0Last);
+                // reservoir0 is zero, so no need to set it
+                lb.reservoir1 = total1 - lb.pool1;
+            } else {
+                // Try the other way
+                lb.pool1 = total1;
+                // pool0Last/pool1Last == pool0/pool1 => pool0 == (pool1*pool0Last)/pool1Last
+                // pool1Last/pool0Last == pool1/pool0 => pool0 == (pool1*pool0Last)/pool1Last
+                lb.pool0 = (lb.pool1 * _pool0Last) / _pool1Last;
+                lb.pool0 = _closestBound(lb.pool0, lb.pool1, _pool0Last, _pool1Last);
+                // reservoir1 is zero, so no need to set it
+                lb.reservoir0 = total0 - lb.pool0;
+            }
+
             if (lb.pool0 > type(uint112).max || lb.pool1 > type(uint112).max) {
                 revert Overflow();
             }
