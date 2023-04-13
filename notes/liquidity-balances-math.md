@@ -13,9 +13,9 @@ Thus, to calculate the updated pool balances there are two options for determini
 The choice depends on whichever won't cause a PoolA to exceed $A_{T}$ and PoolB to exceed $B_{T}$.
 
 We can thus break this down into 3 cases by looking at the balance ratios:
-- $\frac{A_{T}}B_{T}} < \frac{A_{L}}B_{L}}$: Relative amount of A has decreased
-- $\frac{A_{T}}B_{T}} > \frac{A_{L}}B_{L}}$: Relative amount of B has decreased
-- $\frac{A_{T}}B_{T}} = \frac{A_{L}}B_{L}}$: The price ratio has not changed
+- $\frac{A_{T}}{B_{T}} < \frac{A_{L}}{B_{L}}$: Relative amount of A has decreased
+- $\frac{A_{T}}{B_{T}} > \frac{A_{L}}{B_{L}}$: Relative amount of B has decreased
+- $\frac{A_{T}}{B_{T}} = \frac{A_{L}}{B_{L}}$: The price ratio has not changed
 
 What's more, is that this math can be simplified to avoid rounding-errors by using cross-multiplication:
 ```math
