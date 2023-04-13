@@ -15,7 +15,11 @@ contract MockButtonswapPair is ButtonswapPair {
         returns (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1)
     {
         if (total0 > 0 && total1 > 0) {
-            (pool0, pool1, reservoir0, reservoir1) = _getLiquidityBalances(total0, total1);
+            LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
+            pool0 = lb.pool0;
+            pool1 = lb.pool1;
+            reservoir0 = lb.reservoir0;
+            reservoir1 = lb.reservoir1;
         }
     }
 }

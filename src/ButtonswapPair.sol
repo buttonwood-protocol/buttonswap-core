@@ -14,6 +14,13 @@ import {IButtonswapCallee} from "./interfaces/IButtonswapCallee.sol";
 contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     using UQ112x112 for uint224;
 
+    struct LiquidityBalances {
+        uint256 pool0;
+        uint256 pool1;
+        uint256 reservoir0;
+        uint256 reservoir1;
+    }
+
     /**
      * @inheritdoc IButtonswapPair
      */
@@ -185,7 +192,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     function _getLiquidityBalances(uint256 total0, uint256 total1)
         internal
         view
-        returns (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1)
+        returns (LiquidityBalances memory lb)
     {
         uint256 _pool0Last = uint256(pool0Last);
         uint256 _pool1Last = uint256(pool1Last);
@@ -194,13 +201,13 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         } else if (total0 == 0 || total1 == 0) {
             // Return zeroes, _getLiquidityBalancesUnsafe will get stuck in an infinite loop if called
         } else {
-            (pool0, pool1) = _getLiquidityBalancesUnsafe(total0, total1, _pool0Last, _pool1Last);
+            (lb.pool0, lb.pool1) = _getLiquidityBalancesUnsafe(total0, total1, _pool0Last, _pool1Last);
             // Either pool0 is set to total0 or pool1 is set to total1 in _getLiquidityBalancesUnsafe
             // This means that one of the reservoir values will definitely be zero, and we don't need to check for it
-            reservoir0 = total0 - pool0;
-            reservoir1 = total1 - pool1;
+            lb.reservoir0 = total0 - lb.pool0;
+            lb.reservoir1 = total1 - lb.pool1;
             // TODO could scale pool to fit instead, transferring excess to reservoir?
-            if (pool0 > type(uint112).max || pool1 > type(uint112).max) {
+            if (lb.pool0 > type(uint112).max || lb.pool1 > type(uint112).max) {
                 revert Overflow();
             }
         }
@@ -216,11 +223,11 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     {
         uint256 total0 = IERC20(token0).balanceOf(address(this));
         uint256 total1 = IERC20(token1).balanceOf(address(this));
-        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
-        _pool0 = uint112(pool0);
-        _pool1 = uint112(pool1);
-        _reservoir0 = uint112(reservoir0);
-        _reservoir1 = uint112(reservoir1);
+        LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
+        _pool0 = uint112(lb.pool0);
+        _pool1 = uint112(lb.pool1);
+        _reservoir0 = uint112(lb.reservoir0);
+        _reservoir1 = uint112(lb.reservoir1);
         _blockTimestampLast = blockTimestampLast;
     }
 
@@ -234,7 +241,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         uint256 total0 = IERC20(_token0).balanceOf(address(this));
         uint256 total1 = IERC20(_token1).balanceOf(address(this));
         // Determine current pool liquidity
-        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
+        LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
         SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn0);
         SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn1);
         // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
@@ -251,19 +258,19 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             // Initialize timestamp so first price update is accurate
             blockTimestampLast = uint32(block.timestamp % 2 ** 32);
         } else {
-            if (pool0 == 0 || pool1 == 0) {
+            if (lb.pool0 == 0 || lb.pool1 == 0) {
                 revert InsufficientLiquidity();
             }
             // Check that value0AddedInTermsOf1 == amountIn1 or value1AddedInTermsOf0 == amountIn0
-            uint256 value0AddedInTermsOf1 = (amountIn0 * pool1) / pool0;
+            uint256 value0AddedInTermsOf1 = (amountIn0 * lb.pool1) / lb.pool0;
             if (value0AddedInTermsOf1 != amountIn1) {
-                uint256 value1AddedInTermsOf0 = (amountIn1 * pool0) / pool1;
+                uint256 value1AddedInTermsOf0 = (amountIn1 * lb.pool0) / lb.pool1;
                 if (value1AddedInTermsOf0 != amountIn0) {
                     revert UnequalMint();
                 }
             }
             liquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
-                _totalSupply, amountIn0, amountIn1, pool0, pool1, reservoir0, reservoir1
+                _totalSupply, amountIn0, amountIn1, lb.pool0, lb.pool1, lb.reservoir0, lb.reservoir1
             );
         }
 
@@ -290,23 +297,23 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         uint256 total0 = IERC20(_token0).balanceOf(address(this));
         uint256 total1 = IERC20(_token1).balanceOf(address(this));
         // Determine current pool liquidity
-        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
-        if (pool0 == 0 || pool1 == 0) {
+        LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
+        if (lb.pool0 == 0 || lb.pool1 == 0) {
             revert InsufficientLiquidity();
         }
-        if (reservoir0 == 0) {
+        if (lb.reservoir0 == 0) {
             // If reservoir0 is empty then we're adding token0 to pair with token1 liquidity
             SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn);
             // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
             amountIn = IERC20(_token0).balanceOf(address(this)) - total0;
 
             // Check there's enough reservoir liquidity to pair with the amountIn
-            if ((amountIn * pool1) / pool0 > reservoir1) {
+            if ((amountIn * lb.pool1) / lb.pool0 > lb.reservoir1) {
                 revert InsufficientReservoir();
             }
 
             liquidityOut =
-                PairMath.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, pool1, pool0, reservoir1);
+                PairMath.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, lb.pool1, lb.pool0, lb.reservoir1);
         } else {
             // If reservoir1 is empty then we're adding token1 to pair with token0 liquidity
             SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn);
@@ -314,19 +321,19 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             amountIn = IERC20(_token1).balanceOf(address(this)) - total1;
 
             // Check there's enough reservoir liquidity to pair with the amountIn
-            if ((amountIn * pool0) / pool1 > reservoir0) {
+            if ((amountIn * lb.pool0) / lb.pool1 > lb.reservoir0) {
                 revert InsufficientReservoir();
             }
 
             liquidityOut =
-                PairMath.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, pool0, pool1, reservoir0);
+                PairMath.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, lb.pool0, lb.pool1, lb.reservoir0);
         }
 
         if (liquidityOut == 0) {
             revert InsufficientLiquidityMinted();
         }
         _mint(to, liquidityOut);
-        if (reservoir0 == 0) {
+        if (lb.reservoir0 == 0) {
             emit Mint(msg.sender, amountIn, 0);
         } else {
             emit Mint(msg.sender, 0, amountIn);
@@ -368,15 +375,16 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         uint256 total0 = IERC20(_token0).balanceOf(address(this));
         uint256 total1 = IERC20(_token1).balanceOf(address(this));
         // Determine current pool liquidity
-        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
-        if (pool0 == 0 || pool1 == 0) {
+        LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
+        if (lb.pool0 == 0 || lb.pool1 == 0) {
             revert InsufficientLiquidity();
         }
 
-        (amountOut0, amountOut1) =
-            PairMath.getSingleSidedBurnOutputAmounts(_totalSupply, liquidityIn, pool0, pool1, reservoir0, reservoir1);
+        (amountOut0, amountOut1) = PairMath.getSingleSidedBurnOutputAmounts(
+            _totalSupply, liquidityIn, lb.pool0, lb.pool1, lb.reservoir0, lb.reservoir1
+        );
 
-        if (amountOut0 > reservoir0 || amountOut1 > reservoir1) {
+        if (amountOut0 > lb.reservoir0 || amountOut1 > lb.reservoir1) {
             revert InsufficientReservoir();
         }
         _burn(msg.sender, liquidityIn);
@@ -401,75 +409,76 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         address to,
         bytes calldata data
     ) external lock {
-        if (amountOut0 == 0 && amountOut1 == 0) {
-            revert InsufficientOutputAmount();
+        {
+            if (amountOut0 == 0 && amountOut1 == 0) {
+                revert InsufficientOutputAmount();
+            }
+            address _token0 = token0;
+            address _token1 = token1;
+            if (to == _token0 || to == _token1) {
+                revert InvalidRecipient();
+            }
+            uint256 total0 = IERC20(_token0).balanceOf(address(this));
+            uint256 total1 = IERC20(_token1).balanceOf(address(this));
+            // Determine current pool liquidity
+            LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
+            if (amountOut0 >= lb.pool0 || amountOut1 >= lb.pool1) {
+                revert InsufficientLiquidity();
+            }
+            // Transfer in the specified input
+            if (amountIn0 > 0) {
+                SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn0);
+            }
+            if (amountIn1 > 0) {
+                SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn1);
+            }
+            // Optimistically transfer output
+            if (amountOut0 > 0) {
+                SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
+            }
+            if (amountOut1 > 0) {
+                SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
+            }
+            if (data.length > 0) {
+                IButtonswapCallee(to).buttonswapCall(msg.sender, amountOut0, amountOut1, data);
+            }
+            // Refresh balances
+            total0 = IERC20(_token0).balanceOf(address(this));
+            total1 = IERC20(_token1).balanceOf(address(this));
+            // The reservoir balances must remain unchanged during a swap, so all balance changes impact the pool balances
+            uint256 pool0New = total0 - lb.reservoir0;
+            uint256 pool1New = total1 - lb.reservoir1;
+            if (pool0New == 0 || pool1New == 0) {
+                revert InvalidFinalPrice();
+            }
+            // Update to the actual amount of tokens the user sent in based on the delta between old and new pool balances
+            if (pool0New > lb.pool0) {
+                amountIn0 = pool0New - lb.pool0;
+            } else {
+                amountIn0 = 0;
+            }
+            if (pool1New > lb.pool1) {
+                amountIn1 = pool1New - lb.pool1;
+            } else {
+                amountIn1 = 0;
+            }
+            // If after accounting for input and output cancelling one another out, fee on transfer, etc there is no
+            //   input tokens in real terms then revert.
+            if (amountIn0 == 0 && amountIn1 == 0) {
+                revert InsufficientInputAmount();
+            }
+            uint256 pool0NewAdjusted = (pool0New * 1000) - (amountIn0 * 3);
+            uint256 pool1NewAdjusted = (pool1New * 1000) - (amountIn1 * 3);
+            // After account for 0.3% fees, the new K must not be less than the old K
+            if (pool0NewAdjusted * pool1NewAdjusted < (lb.pool0 * lb.pool1 * 1000 ** 2)) {
+                revert KInvariant();
+            }
+            _mintFee(lb.pool0, lb.pool1, pool0New, pool1New);
+            _updatePriceCumulative(lb.pool0, lb.pool1);
+            // Update Pair last swap price
+            pool0Last = uint112(pool0New);
+            pool1Last = uint112(pool1New);
         }
-        address _token0 = token0;
-        address _token1 = token1;
-        if (to == _token0 || to == _token1) {
-            revert InvalidRecipient();
-        }
-        uint256 total0 = IERC20(_token0).balanceOf(address(this));
-        uint256 total1 = IERC20(_token1).balanceOf(address(this));
-        // Determine current pool liquidity
-        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) = _getLiquidityBalances(total0, total1);
-        if (amountOut0 >= pool0 || amountOut1 >= pool1) {
-            revert InsufficientLiquidity();
-        }
-        // Transfer in the specified input
-        if (amountIn0 > 0) {
-            SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn0);
-        }
-        if (amountIn1 > 0) {
-            SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn1);
-        }
-        // Optimistically transfer output
-        if (amountOut0 > 0) {
-            SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
-        }
-        if (amountOut1 > 0) {
-            SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
-        }
-        if (data.length > 0) {
-            IButtonswapCallee(to).buttonswapCall(msg.sender, amountOut0, amountOut1, data);
-        }
-        // Refresh balances
-        total0 = IERC20(_token0).balanceOf(address(this));
-        total1 = IERC20(_token1).balanceOf(address(this));
-        // The reservoir balances must remain unchanged during a swap, so all balance changes impact the pool balances
-        uint256 pool0New = total0 - reservoir0;
-        uint256 pool1New = total1 - reservoir1;
-        if (pool0New == 0 || pool1New == 0) {
-            revert InvalidFinalPrice();
-        }
-        // Update to the actual amount of tokens the user sent in based on the delta between old and new pool balances
-        if (pool0New > pool0) {
-            amountIn0 = pool0New - pool0;
-        } else {
-            amountIn0 = 0;
-        }
-        if (pool1New > pool1) {
-            amountIn1 = pool1New - pool1;
-        } else {
-            amountIn1 = 0;
-        }
-        // If after accounting for input and output cancelling one another out, fee on transfer, etc there is no
-        //   input tokens in real terms then revert.
-        if (amountIn0 == 0 && amountIn1 == 0) {
-            revert InsufficientInputAmount();
-        }
-        uint256 pool0NewAdjusted = (pool0New * 1000) - (amountIn0 * 3);
-        uint256 pool1NewAdjusted = (pool1New * 1000) - (amountIn1 * 3);
-        // After account for 0.3% fees, the new K must not be less than the old K
-        if (pool0NewAdjusted * pool1NewAdjusted < (pool0 * pool1 * 1000 ** 2)) {
-            revert KInvariant();
-        }
-        _mintFee(pool0, pool1, pool0New, pool1New);
-        _updatePriceCumulative(pool0, pool1);
-        // Update Pair last swap price
-        pool0Last = uint112(pool0New);
-        pool1Last = uint112(pool1New);
-
         emit Swap(msg.sender, amountIn0, amountIn1, amountOut0, amountOut1, to);
     }
 }
