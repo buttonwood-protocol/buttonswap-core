@@ -98,14 +98,7 @@ library PriceAssertion {
         uint112 poolA,
         uint112 poolB
     ) public pure returns (bool) {
-        // Accept the optimal new pool value to be up to 1 away from the value the contract computed
-        // TODO change this to 0 when fully switching to Pair2
-        uint112 tolerance = 1;
-        if (poolA < 1000 || poolB < 1000) {
-            // Pair2 active liquidity calculations are slightly less accurate when values are extremely small, due to the
-            //   need to scale them up to avoid precision related errors.
-            tolerance = 1;
-        }
+        uint112 tolerance = 0;
         bool withinTolerance;
         if (reservoirA == 0) {
             // If reservoirA is zero then poolA is a fixed value, being the full token balance available
