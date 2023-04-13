@@ -13,9 +13,9 @@ Thus, to calculate the updated pool balances there are two options for determini
 The choice depends on whichever won't cause a PoolA to exceed $A_{T}$ and PoolB to exceed $B_{T}$.
 
 We can thus break this down into 3 cases by looking at the balance ratios:
-- $\frac{A_{T}/B_{T}} < \frac{A_{L}/B_{L}}$: Relative amount of A has decreased
-- $\frac{A_{T}/B_{T}} > \frac{A_{L}/B_{L}}$: Relative amount of B has decreased
-- $\frac{A_{T}/B_{T}} = \frac{A_{L}/B_{L}}$: The price ratio has not changed
+- $\frac{A_{T}}B_{T}} < \frac{A_{L}}B_{L}}$: Relative amount of A has decreased
+- $\frac{A_{T}}B_{T}} > \frac{A_{L}}B_{L}}$: Relative amount of B has decreased
+- $\frac{A_{T}}B_{T}} = \frac{A_{L}}B_{L}}$: The price ratio has not changed
 
 What's more, is that this math can be simplified to avoid rounding-errors by using cross-multiplication:
 ```math
@@ -38,13 +38,13 @@ Thus, there are two sub-cases:
 
 ### Scaled Up:
 If this is the case, then using either of the above methods will result in the same pool balances and no precision errors.
-Choosing the first method will result in the following:
+As an example, choosing the first method will result in the original totals (same with the latter method):
 - PoolA: $A_{T} = C * A_{L}$
 - PoolB: $A_{T} * \frac{B_{L}}{A_{L}} = (A_{L} * C) * \frac{B_{L}}{A_{L}} = C * B_{L} = B_{T}$
 
 ### Scaled Down:
 If this is the case, then using either of the above methods will result in the same pool balances and no (additional) precision errors.
-Choosing the first method will result in the following:
+As an example, choosing the first method will result in the original totals (same with the latter method):
 - PoolA: $A_{T} = A_{L} / C$ 
 - PoolB: $A_{T} * \frac{B_{L}}{A_{L}} = A_{T} * \frac{B_{L}}{A_{T} * C} = B_{L} / C = B_{T}$  
 
