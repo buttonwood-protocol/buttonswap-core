@@ -156,7 +156,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     function _getLiquidityBalances(uint256 total0, uint256 total1)
         internal
         view
-    returns (LiquidityBalances memory lb)
+        returns (LiquidityBalances memory lb)
     {
         uint256 _pool0Last = uint256(pool0Last);
         uint256 _pool1Last = uint256(pool1Last);
@@ -183,7 +183,6 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 // reservoir1 is zero, so no need to set it
                 lb.reservoir0 = total0 - lb.pool0;
             }
-
             if (lb.pool0 > type(uint112).max || lb.pool1 > type(uint112).max) {
                 revert Overflow();
             }
