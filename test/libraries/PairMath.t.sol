@@ -18,18 +18,22 @@ contract PairMathTest is Test {
         vm.assume(poolA < type(uint112).max);
         vm.assume(poolB < type(uint112).max);
 
-        // Ensuring we use reservoirA
-        vm.assume(reservoirA > 0);
+        // Function reverts with div by zero if either of these are zero
+        vm.assume(poolA > 0 && poolB > 0);
 
         // Ensuring we don't overflow
-        vm.assume(totalLiquidity < (type(uint256).max / 2));
-        vm.assume(amountInA == 0 || totalLiquidity < (type(uint256).max / 2) / amountInA);
-        vm.assume(reservoirA < (type(uint256).max - poolA) - poolA);
+        if (amountInA > 0) {
+            vm.assume(totalLiquidity < (type(uint256).max / amountInA));
+        }
+        if (amountInB > 0) {
+            vm.assume(totalLiquidity < (type(uint256).max / amountInB));
+        }
+        vm.assume(reservoirA < (type(uint256).max - poolA));
 
-        uint256 liquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
-            totalLiquidity, amountInA, amountInB, poolA, poolB, reservoirA, 0
-        );
-        uint256 expectedLiquidityOut = (totalLiquidity * 2 * amountInA) / (poolA + poolA + reservoirA);
+        uint256 liquidityOut =
+            PairMath.getDualSidedMintLiquidityOutAmount(totalLiquidity, amountInA, amountInB, poolA + reservoirA, poolB);
+        uint256 expectedLiquidityOut =
+            Math.min((totalLiquidity * amountInA) / (poolA + reservoirA), (totalLiquidity * amountInB) / poolB);
         assertEq(liquidityOut, expectedLiquidityOut, "liquidityOut does not match expectedLiquidityOut");
     }
 
@@ -45,18 +49,22 @@ contract PairMathTest is Test {
         vm.assume(poolA < type(uint112).max);
         vm.assume(poolB < type(uint112).max);
 
-        // Will use reservoirB if both are empty, but don't want to test the empty pool, empty reservoir case (throws error)
-        vm.assume(reservoirB > 0 || poolB > 0);
+        // Function reverts with div by zero if either of these are zero
+        vm.assume(poolA > 0 && poolB > 0);
 
         // Ensuring we don't overflow
-        vm.assume(totalLiquidity < (type(uint256).max / 2));
-        vm.assume(amountInB == 0 || totalLiquidity < (type(uint256).max / 2) / amountInB);
-        vm.assume(reservoirB < (type(uint256).max - poolB) - poolB);
+        if (amountInA > 0) {
+            vm.assume(totalLiquidity < (type(uint256).max / amountInA));
+        }
+        if (amountInB > 0) {
+            vm.assume(totalLiquidity < (type(uint256).max / amountInB));
+        }
+        vm.assume(reservoirB < (type(uint256).max - poolB));
 
-        uint256 liquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
-            totalLiquidity, amountInA, amountInB, poolA, poolB, 0, reservoirB
-        );
-        uint256 expectedLiquidityOut = (totalLiquidity * 2 * amountInB) / (poolB + poolB + reservoirB);
+        uint256 liquidityOut =
+            PairMath.getDualSidedMintLiquidityOutAmount(totalLiquidity, amountInA, amountInB, poolA, poolB + reservoirB);
+        uint256 expectedLiquidityOut =
+            Math.min((totalLiquidity * amountInA) / poolA, (totalLiquidity * amountInB) / (poolB + reservoirB));
         assertEq(liquidityOut, expectedLiquidityOut, "liquidityOut does not match expectedLiquidityOut");
     }
 

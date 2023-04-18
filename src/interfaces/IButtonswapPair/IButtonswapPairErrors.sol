@@ -25,11 +25,6 @@ interface IButtonswapPairErrors is IButtonswapERC20Errors {
     error Uninitialized();
 
     /**
-     * @notice Mint was attempted with mismatched value on each side
-     */
-    error UnequalMint();
-
-    /**
      * @notice There was not enough liquidity in the reservoir
      */
     error InsufficientReservoir();
