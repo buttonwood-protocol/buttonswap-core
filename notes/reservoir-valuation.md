@@ -28,7 +28,7 @@ Our approach is to use a similar time weighted moving average, however instead o
 S_{j} = \frac{\sum_{i \le j} P_{i} \cdot W_{i}}{\sum_{i \le j} W_{i}}
 ```
 ```math
-S_{j} = \frac{P_{j} \cdot W_{j} + S_{j-1} \cdot \left((\sum_{i} W_{i \le j}) - W_{j}\right)}{\sum_{i \le j} W_{i}}
+S_{j} = \frac{P_{j} \cdot W_{j} + S_{j-1} \cdot \left((\sum_{i \le j} W_{i}) - W_{j}\right)}{\sum_{i \le j} W_{i}}
 ```
 ```math
 S_{j} = \frac{P_{j} \cdot W_{j} + S_{j-1} \cdot \left((24 hrs) - W_{j}\right)}{24 hrs}
