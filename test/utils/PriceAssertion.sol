@@ -98,7 +98,7 @@ library PriceAssertion {
         uint112 poolA,
         uint112 poolB
     ) public pure returns (bool) {
-        uint112 tolerance = 0;
+        uint112 tolerance = 1;
         bool withinTolerance;
         if (reservoirA == 0) {
             // If reservoirA is zero then poolA is a fixed value, being the full token balance available
