@@ -42,11 +42,33 @@ TODO: FILL IN IMPLEMENTATION DETAILS (i.e, only need to store 3 values and rest 
 
 ## Risk Mitigation
 
-### Time-Lock
-TODO: Fill in how the time lock works (For Socks)
-
 ### Smoothed Reservoir Pricing
-TODO: Why we use TWAP price and not the reservoir price (for Fids)
+
+The use of a TWAP to valuate the reservoir tokens when doing single-sided operations goes a lot way to protect it from exploitation, but it is not ironclad.
+The biggest drawback is that it remains a lagging price indicator (due to its time-based component) and consequently provides some arbitrage opportunity between a past value and the current one if there's rapid price movement.
+
+As such, we apply a few more mechanisms which almost entirely mitigate this.
+
+### Time-Lock
+
+This is a mechanism whereby the single-sided operations can effectively be disabled automatically at times - eg. if someone were to try calling them, they would revert.
+This would be done in response to price volatility.
+If there's been a sudden change in price recently, then users must wait before they can use that price whilst interacting with the reservoir.
+
+This is triggered during every swap, by calculating the difference between the new price and the TWAP price.
+That difference is then mapped to a time delay, and the timestamp of when this delay expires is determined.
+If the new timestamp exceeds the current stored value then update it to the new one, else leave untouched.
+
+This ensures that the TWAP is fairly stable before being used, giving users the opportunity to trade against it if it's thought to not be representative of market value.
+This has the effect of reducing the impact of the TWAP lagging behind live price.
 
 ### Chunking
-TODO: What chunking is and what it accomplishes
+
+This is a mechanism that limits how much of the reservoir can be used in a single sided operation.
+In an extreme scenario we can imagine the reservoir being larger than the active liquidity.
+In this case it doesn't make sense to allow the entire reservoir to be valuated using a price derived from a small liquidity pool.
+
+As such this works by restricting the amount used based on time since last single sided operation.
+This would be done by mapping the time elapsed to a fraction of the pool balance, up to a maximum.
+
+This also ensures that if there was still any price mismatching it would have limited impact.  
