@@ -65,66 +65,39 @@ value(B_{amount}) = B_{amount} \cdot p
 
 ### Dual-sided Mint
 
-A dual-sided mint refers to when the user deposits both $A$ and $B$ in a ratio that matches the current price:
+A dual-sided mint refers to when the user deposits both $A$ and $B$ in a ratio that matches the current total token balances:
 
 ```math
-{A_{user} \over B_{user}} = p
+{A_{user} \over B_{user}} = {A_{total} \over B_{total}}
 ```
 
-This operation leaves the reservoir balances untouched.
+Which we can rearranged as follows:
 
 ```math
-L_{user} = L_{total} \cdot {value(A_{user}) + value(B_{user}) \over value(A_{total}) + value(B_{total})}
-```
-```math
-L_{user} = L_{total} \cdot {value(A_{user}) + value(B_{user}) \over value(A_{pool}) + value(A_{reservoir}) + value(B_{pool}) + value(B_{reservoir})}
-```
-```math
-L_{user} = L_{total} \cdot {A_{user} + B_{user} \cdot p \over A_{pool} + A_{reservoir} + B_{pool} \cdot p + B_{reservoir} \cdot p}
+{A_{user} \over A_{total}} = {B_{user} \over B_{total}}
 ```
 
-Rearrange an earlier equation to get:
-```math
-B_{user} = {A_{user} \over p} 
-```
-
-Thus:
+Liquidity tokens are minted to match this ratio.
+This is a very simple way to ensure that existing $L$ holders can redeem their $L$ tokens after a new user mints for at least as many $A$ and $B$ tokens as they could before:
 
 ```math
-L_{user} = L_{total} \cdot {A_{user} + {A_{user} \over p} \cdot p \over A_{pool} + A_{reservoir} + B_{pool} \cdot {A_{pool} \over B_{pool}} + B_{reservoir} \cdot p}
+{L_{user} \over L_{total}} = {A_{user} \over A_{total}} = {B_{user} \over B_{total}}
 ```
 ```math
-L_{user} = L_{total} \cdot {A_{user} + A_{user} \over A_{pool} + A_{reservoir} + A_{pool} + B_{reservoir} \cdot {A_{pool} \over B_{pool}}}
-```
-```math
-L_{user} = {L_{total} \cdot 2 \cdot A_{user} \over 2 \cdot A_{pool} + A_{reservoir} + {B_{reservoir} \cdot A_{pool} \over B_{pool}}}
+L_{user} = L_{total} \cdot {A_{user} \over A_{total}} = L_{total} \cdot {B_{user} \over B_{total}}
 ```
 
-It is also worth mentioning that we know that one reservoir must be zero, and this allows us to further simplify the calculation:
+When this is done, any existing reservoir balances will grow too.
+As shown, we actually have two ways of calculating $L_{user}$ by using either values in terms of $A$ or values in terms of $B$.
+This assumes that $A$ and $B$ are deposited in a ratio that matches the existing balances, but in reality integer rounding makes this imperfect.
+The code implementation also skips enforcing that the deposited tokens are in the correct ratio to save on gas as well.
+Instead, we calculate $L_{user}$ both ways and then use the smallest of the two values:
 
 ```math
-B_{reservoir} = 0
-```
-```math
-L_{user} = {L_{total} \cdot 2 \cdot A_{user} \over 2 \cdot A_{pool} + A_{reservoir} + {0 \cdot A_{pool} \over B_{pool}}}
-```
-```math
-L_{user} = {L_{total} \cdot 2 \cdot A_{user} \over 2 \cdot A_{pool} + A_{reservoir}}
+L_{user} = \min\{L_{total} \cdot {A_{user} \over A_{total}}, L_{total} \cdot {B_{user} \over B_{total}}\}
 ```
 
-This expression works for both tokens, simply set $A$ to be the token with non-zero reservoir.
-
-Naturally, if both reservoirs are zero then we can simplify further, ultimately arriving at the expression used in the original Uniswap V2 implementation:
-
-```math
-A_{reservoir} = 0
-```
-```math
-L_{user} = {L_{total} \cdot 2 \cdot A_{user} \over 2 \cdot A_{pool} + 0}
-```
-```math
-L_{user} = {L_{total} \cdot A_{user} \over A_{pool}}
-```
+With this, any tokens that exceed the ${A_{total} \over B_{total}}$ ratio are effectively donated, benefiting pre-existing $L$ holders.
 
 ### Single-sided Mint
 
