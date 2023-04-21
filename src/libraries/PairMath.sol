@@ -9,17 +9,10 @@ library PairMath {
         uint256 totalLiquidity,
         uint256 amountInA,
         uint256 amountInB,
-        uint256 poolA,
-        uint256 poolB,
-        uint256 reservoirA,
-        uint256 reservoirB
+        uint256 totalA,
+        uint256 totalB
     ) public pure returns (uint256 liquidityOut) {
-        // We know at least one side has no inactive liquidity, and this simplifies the liquidity calculation
-        if (reservoirA == 0) {
-            liquidityOut = (totalLiquidity * 2 * amountInB) / (poolB + poolB + reservoirB);
-        } else {
-            liquidityOut = (totalLiquidity * 2 * amountInA) / (poolA + poolA + reservoirA);
-        }
+        liquidityOut = Math.min((totalLiquidity * amountInA) / totalA, (totalLiquidity * amountInB) / totalB);
     }
 
     /// @dev Refer to `/notes/mint-math.md`

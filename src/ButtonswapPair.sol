@@ -216,8 +216,6 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         address _token1 = token1;
         uint256 total0 = IERC20(_token0).balanceOf(address(this));
         uint256 total1 = IERC20(_token1).balanceOf(address(this));
-        // Determine current pool liquidity
-        LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
         SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn0);
         SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn1);
         // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
@@ -234,20 +232,11 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             // Initialize timestamp so first price update is accurate
             blockTimestampLast = uint32(block.timestamp % 2 ** 32);
         } else {
-            if (lb.pool0 == 0 || lb.pool1 == 0) {
-                revert InsufficientLiquidity();
-            }
-            // Check that value0AddedInTermsOf1 == amountIn1 or value1AddedInTermsOf0 == amountIn0
-            uint256 value0AddedInTermsOf1 = (amountIn0 * lb.pool1) / lb.pool0;
-            if (value0AddedInTermsOf1 != amountIn1) {
-                uint256 value1AddedInTermsOf0 = (amountIn1 * lb.pool0) / lb.pool1;
-                if (value1AddedInTermsOf0 != amountIn0) {
-                    revert UnequalMint();
-                }
-            }
-            liquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
-                _totalSupply, amountIn0, amountIn1, lb.pool0, lb.pool1, lb.reservoir0, lb.reservoir1
-            );
+            // Don't need to check that amountIn{0,1} are in the right ratio because the least generous ratio is used
+            //   to determine the liquidityOut value, meaning any tokens that exceed that ratio are donated.
+            // If total0 or total1 are zero (eg. due to negative rebases) then the function call reverts with div by zero
+            liquidityOut =
+                PairMath.getDualSidedMintLiquidityOutAmount(_totalSupply, amountIn0, amountIn1, total0, total1);
         }
 
         if (liquidityOut == 0) {
