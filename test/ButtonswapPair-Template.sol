@@ -778,8 +778,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
         vm.assume(Math.sqrt(amount00 * amount01) > 1000);
         // Keep rebase factor in sensible range
-        vm.assume(rebaseNumerator > 0 && rebaseNumerator < 1000);
-        vm.assume(rebaseDenominator > 0 && rebaseDenominator < 1000);
+        rebaseNumerator = bound(rebaseNumerator, 1, 999);
+        rebaseDenominator = bound(rebaseDenominator, 1, 999);
 
         TestVariables memory vars;
         vars.feeToSetter = userA;
@@ -984,8 +984,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
         vm.assume(Math.sqrt(amount00 * amount01) > 1000);
         // Keep rebase factor in sensible range
-        vm.assume(rebaseNumerator > 0 && rebaseNumerator < 1000);
-        vm.assume(rebaseDenominator > 0 && rebaseDenominator < 1000);
+        rebaseNumerator = bound(rebaseNumerator, 1, 999);
+        rebaseDenominator = bound(rebaseDenominator, 1, 999);
 
         TestVariables memory vars;
         vars.feeToSetter = userA;
