@@ -173,6 +173,8 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
 
         vm.prank(spender);
         vm.expectEmit(true, true, true, true);
+        emit Approval(sender, spender, 0);
+        vm.expectEmit(true, true, true, true);
         emit Transfer(sender, recipient, amount);
         bool success = mockButtonswapERC20.transferFrom(sender, recipient, amount);
 
@@ -204,6 +206,7 @@ contract ButtonswapERC20Test is Test, IButtonswapERC20Events, IButtonswapERC20Er
         assertEq(mockButtonswapERC20.allowance(sender, spender), type(uint256).max);
 
         vm.prank(spender);
+        // No approval event expected to be emitted
         vm.expectEmit(true, true, true, true);
         emit Transfer(sender, recipient1, amount1);
         bool success1 = mockButtonswapERC20.transferFrom(sender, recipient1, amount1);

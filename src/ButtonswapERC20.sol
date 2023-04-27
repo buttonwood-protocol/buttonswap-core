@@ -140,7 +140,7 @@ contract ButtonswapERC20 is IButtonswapERC20 {
      */
     function transferFrom(address from, address to, uint256 value) external returns (bool success) {
         if (allowance[from][msg.sender] != type(uint256).max) {
-            allowance[from][msg.sender] = allowance[from][msg.sender] - value;
+            emit Approval(from, msg.sender, allowance[from][msg.sender] = allowance[from][msg.sender] - value);
         }
         _transfer(from, to, value);
         success = true;
