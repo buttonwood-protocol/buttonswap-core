@@ -29,7 +29,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    address public factory;
+    address public immutable factory;
 
     /**
      * @inheritdoc IButtonswapPair
