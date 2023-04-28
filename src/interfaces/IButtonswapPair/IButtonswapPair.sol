@@ -140,11 +140,4 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
         address to,
         bytes calldata data
     ) external;
-
-    /**
-     * @notice Called during Pair deployment to initialize the new instance.
-     * @param _token0 The address for `token0`
-     * @param _token1 The address for `token1`
-     */
-    function initialize(address _token0, address _token1) external;
 }
