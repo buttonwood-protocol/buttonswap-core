@@ -397,16 +397,18 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             if (amountIn1 > 0) {
                 SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn1);
             }
-            // Optimistically transfer output
+            // Execute callback
+            if (data.length > 0) {
+                IButtonswapCallee(to).buttonswapCall(msg.sender, amountOut0, amountOut1, data);
+            }
+            // Transfer output
             if (amountOut0 > 0) {
                 SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
             }
             if (amountOut1 > 0) {
                 SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
             }
-            if (data.length > 0) {
-                IButtonswapCallee(to).buttonswapCall(msg.sender, amountOut0, amountOut1, data);
-            }
+
             // Refresh balances
             total0 = IERC20(_token0).balanceOf(address(this));
             total1 = IERC20(_token1).balanceOf(address(this));
