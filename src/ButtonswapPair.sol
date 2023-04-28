@@ -27,6 +27,26 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     uint256 public constant MINIMUM_LIQUIDITY = 10 ** 3;
 
     /**
+     * @dev Denominator for basis points.
+     */
+    uint256 private constant BPS = 10_000;
+
+    /**
+     * @dev Numerator for when price volatility triggers maximum single-sided timelock duration
+     */
+    uint256 private constant maxVolatilityBps = 700;
+
+    /**
+     * @dev How long the minimum singled-sided timelock lasts for
+     */
+    uint256 private constant minTimelockDuration = 24 seconds;
+
+    /**
+     * @dev How long the maximum singled-sided timelock lasts for
+     */
+    uint256 private constant maxTimelockDuration = 24 hours;
+
+    /**
      * @inheritdoc IButtonswapPair
      */
     address public factory;
@@ -69,7 +89,17 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @dev TODO
      */
-    uint256 private unlocked = 1;
+    uint256 internal movingAveragePrice0Last;
+
+    /**
+     * @dev TODO
+     */
+    uint128 internal singleSidedTimelockDeadline;
+
+    /**
+     * @dev TODO
+     */
+    uint128 private unlocked = 1;
 
     /**
      * @dev TODO
@@ -81,6 +111,16 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         unlocked = 0;
         _;
         unlocked = 1;
+    }
+
+    /**
+     * @dev TODO
+     */
+    modifier singleSidedTimelock() {
+        if (block.timestamp < singleSidedTimelockDeadline) {
+            revert SingleSidedTimelock();
+        }
+        _;
     }
 
     constructor() {
@@ -190,6 +230,29 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
+     * @dev TODO
+     */
+    function _updateSingleSidedTimelock(uint256 _movingAveragePrice0, uint112 pool0New, uint112 pool1New) internal {
+        uint256 newPrice0 = uint256(UQ112x112.encode(pool1New).uqdiv(pool0New));
+        uint256 priceDifference;
+        if (newPrice0 > _movingAveragePrice0) {
+            priceDifference = newPrice0 - _movingAveragePrice0;
+        } else {
+            priceDifference = _movingAveragePrice0 - newPrice0;
+        }
+        // priceDifference / ((_movingAveragePrice0 * maxVolatilityBps)/BPS)
+        uint256 timelock = Math.min(
+            minTimelockDuration
+                + ((priceDifference * BPS * maxTimelockDuration) / (_movingAveragePrice0 * maxVolatilityBps)),
+            maxTimelockDuration
+        );
+        uint128 timelockDeadline = uint128(block.timestamp + timelock);
+        if (timelockDeadline > singleSidedTimelockDeadline) {
+            singleSidedTimelockDeadline = timelockDeadline;
+        }
+    }
+
+    /**
      * @inheritdoc IButtonswapPair
      */
     function getLiquidityBalances()
@@ -205,6 +268,27 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         _reservoir0 = uint112(lb.reservoir0);
         _reservoir1 = uint112(lb.reservoir1);
         _blockTimestampLast = blockTimestampLast;
+    }
+
+    /**
+     * @notice TODO
+     */
+    function movingAveragePrice0() public view returns (uint256 _movingAveragePrice0) {
+        uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
+        uint32 timeElapsed;
+        unchecked {
+            // overflow is desired
+            timeElapsed = blockTimestamp - blockTimestampLast;
+        }
+        uint256 currentPrice0 = uint256(UQ112x112.encode(pool1Last).uqdiv(pool0Last));
+        if (timeElapsed == 0) {
+            _movingAveragePrice0 = movingAveragePrice0Last;
+        } else if (timeElapsed >= 24 hours) {
+            _movingAveragePrice0 = currentPrice0;
+        } else {
+            _movingAveragePrice0 =
+                ((movingAveragePrice0Last * (24 hours - timeElapsed)) + (currentPrice0 * timeElapsed)) / 24 hours;
+        }
     }
 
     /**
@@ -231,6 +315,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             pool1Last = uint112(amountIn1);
             // Initialize timestamp so first price update is accurate
             blockTimestampLast = uint32(block.timestamp % 2 ** 32);
+            // Initialize moving average
+            movingAveragePrice0Last = uint256(UQ112x112.encode(pool1Last).uqdiv(pool0Last));
         } else {
             // Don't need to check that amountIn{0,1} are in the right ratio because the least generous ratio is used
             //   to determine the liquidityOut value, meaning any tokens that exceed that ratio are donated.
@@ -249,7 +335,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function mintWithReservoir(uint256 amountIn, address to) external lock returns (uint256 liquidityOut) {
+    function mintWithReservoir(uint256 amountIn, address to)
+        external
+        lock
+        singleSidedTimelock
+        returns (uint256 liquidityOut)
+    {
         if (amountIn == 0) {
             revert InsufficientLiquidityAdded();
         }
@@ -266,32 +357,42 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         if (lb.pool0 == 0 || lb.pool1 == 0) {
             revert InsufficientLiquidity();
         }
+        uint256 _pool0Last = pool0Last;
+        uint256 _pool1Last = pool1Last;
         if (lb.reservoir0 == 0) {
-            // If reservoir0 is empty then we're adding token0 to pair with token1 liquidity
+            // If reservoir0 is empty then we're adding token0 to pair with token1 reservoir liquidity
             SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn);
             // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
             amountIn = IERC20(_token0).balanceOf(address(this)) - total0;
 
-            // Check there's enough reservoir liquidity to pair with the amountIn
-            if ((amountIn * lb.pool1) / lb.pool0 > lb.reservoir1) {
+            uint256 token0ToSwap;
+            uint256 equivalentToken1;
+            (liquidityOut, token0ToSwap, equivalentToken1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
+                _totalSupply, amountIn, total0, total1, _pool0Last, _pool1Last, movingAveragePrice0()
+            );
+
+            // Ensure there's enough reservoir1 liquidity to do this without growing reservoir0
+            // Refer to `/notes/mint-math.md`
+            if ((token0ToSwap * _pool1Last) / _pool0Last > lb.reservoir1 - equivalentToken1) {
                 revert InsufficientReservoir();
             }
-
-            liquidityOut =
-                PairMath.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, lb.pool1, lb.pool0, lb.reservoir1);
         } else {
-            // If reservoir1 is empty then we're adding token1 to pair with token0 liquidity
+            // If reservoir1 is empty then we're adding token1 to pair with token0 reservoir liquidity
             SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn);
             // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
             amountIn = IERC20(_token1).balanceOf(address(this)) - total1;
 
-            // Check there's enough reservoir liquidity to pair with the amountIn
-            if ((amountIn * lb.pool0) / lb.pool1 > lb.reservoir0) {
+            uint256 token1ToSwap;
+            uint256 equivalentToken0;
+            (liquidityOut, token1ToSwap, equivalentToken0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
+                _totalSupply, amountIn, total0, total1, _pool0Last, _pool1Last, movingAveragePrice0()
+            );
+
+            // Ensure there's enough reservoir0 liquidity to do this without growing reservoir1
+            // Refer to `/notes/mint-math.md`
+            if ((token1ToSwap * _pool0Last) / _pool1Last > lb.reservoir0 - equivalentToken0) {
                 revert InsufficientReservoir();
             }
-
-            liquidityOut =
-                PairMath.getSingleSidedMintLiquidityOutAmount(_totalSupply, amountIn, lb.pool0, lb.pool1, lb.reservoir0);
         }
 
         if (liquidityOut == 0) {
@@ -332,6 +433,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     function burnFromReservoir(uint256 liquidityIn, address to)
         external
         lock
+        singleSidedTimelock
         returns (uint256 amountOut0, uint256 amountOut1)
     {
         uint256 _totalSupply = totalSupply;
@@ -344,13 +446,26 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         if (lb.pool0 == 0 || lb.pool1 == 0) {
             revert InsufficientLiquidity();
         }
-
-        (amountOut0, amountOut1) = PairMath.getSingleSidedBurnOutputAmounts(
-            _totalSupply, liquidityIn, lb.pool0, lb.pool1, lb.reservoir0, lb.reservoir1
-        );
-
-        if (amountOut0 > lb.reservoir0 || amountOut1 > lb.reservoir1) {
-            revert InsufficientReservoir();
+        if (lb.reservoir0 == 0) {
+            // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
+            (amountOut0, amountOut1) = PairMath.getSingleSidedBurnOutputAmountsB(
+                _totalSupply, liquidityIn, total0, total1, movingAveragePrice0()
+            );
+            // Check there's enough reservoir liquidity to withdraw from
+            // If `amountOut1` exceeds reservoir1 then it will result in reservoir0 growing from excess token0
+            if (amountOut1 > lb.reservoir1) {
+                revert InsufficientReservoir();
+            }
+        } else {
+            // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
+            (amountOut0, amountOut1) = PairMath.getSingleSidedBurnOutputAmountsA(
+                _totalSupply, liquidityIn, total0, total1, movingAveragePrice0()
+            );
+            // Check there's enough reservoir liquidity to withdraw from
+            // If `amountOut0` exceeds reservoir0 then it will result in reservoir1 growing from excess token1
+            if (amountOut0 > lb.reservoir0) {
+                revert InsufficientReservoir();
+            }
         }
         _burn(msg.sender, liquidityIn);
         if (amountOut0 > 0) {
@@ -438,8 +553,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             if (pool0NewAdjusted * pool1NewAdjusted < (lb.pool0 * lb.pool1 * 1000 ** 2)) {
                 revert KInvariant();
             }
+            // Update moving average before `_updatePriceCumulative` updates `blockTimestampLast` and the new `poolXLast` values are set
+            uint256 _movingAveragePrice0 = movingAveragePrice0();
+            movingAveragePrice0Last = _movingAveragePrice0;
             _mintFee(lb.pool0, lb.pool1, pool0New, pool1New);
             _updatePriceCumulative(lb.pool0, lb.pool1);
+            _updateSingleSidedTimelock(_movingAveragePrice0, uint112(pool0New), uint112(pool1New));
             // Update Pair last swap price
             pool0Last = uint112(pool0New);
             pool1Last = uint112(pool1New);

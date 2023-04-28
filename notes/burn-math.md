@@ -43,20 +43,42 @@ A_{reservoir} \gt 0
 ```math
 B_{reservoir} = 0
 ```
+
+We start with a dual sided burn:
 ```math
-value(A_{user}) = (value(A_{total}) + value(B_{total})) \cdot {L_{user} \over L_{total}}
+A_{x} = A_{total} \cdot {L_{user} \over L_{total}}
 ```
 ```math
-A_{user} = (A_{pool} + A_{reservoir} + value(B_{pool} + B_{reservoir})) \cdot {L_{user} \over L_{total}}
-```
-```math
-A_{user} = (A_{pool} + A_{reservoir} + value(B_{pool})) \cdot {L_{user} \over L_{total}}
-```
-```math
-A_{user} = (A_{pool} + A_{reservoir} + B_{pool} \cdot {A_{pool} \over B_{pool}}) \cdot {L_{user} \over L_{total}}
-```
-```math
-A_{user} = (2 \cdot A_{pool} + A_{reservoir}) \cdot {L_{user} \over L_{total}}
+B_{y} = B_{total} \cdot {L_{user} \over L_{total}}
 ```
 
-(Please note - this is only permitted when $value(A_{user}) \leq value(A_{reservoir})$ )
+And then swap $B_{y}$ for $A$ using the reservoir.
+Let $p_{ma}$ be the moving average price of $A$ in terms of $B$.
+$A_{y}$ is the $A$ tokens swapped out of the reservoir in exchange for $B_{y}$, with the swap being priced at the moving average price:
+```math
+A_{y} = {B_{y} \over p_{ma}}
+```
+
+The final output $A_{user}$ is the sum of these amounts:
+```math
+A_{user} = A_{x} + A_{y}
+```
+
+### Validation
+
+A key objective for the single sided operation is to ensure that reservoirs shrink or stay the same when executing the operation.
+This imposes a limit on how much can be burned in this fashion.
+The dual sided burn removes a proportional fraction of $A_{pool}$, $B_{pool}$, $A_{reservoir}$ and $B_{reservoir}$ (though one of the reservoirs is zero).
+The removed amount for the zero reservoir token is then swapped for the other, using the reservoir to supply those tokens.
+
+This leaves the zero reservoir pool balance identical to how it started, assuming the other token total balance hasn't reduced so much that it shrinks active liquidity.
+This means that the non-zero reservoir pool balance must _also_ remain unchanged, which in turn means that all tokens being removed must sum to less than the reservoir.
+```math
+A_{reservoir} > 0
+```
+```math
+B_{reservoir} = 0
+```
+```math
+A_{user} \leq A_{reservoir}
+```

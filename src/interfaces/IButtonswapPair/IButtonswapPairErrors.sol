@@ -73,4 +73,9 @@ interface IButtonswapPairErrors is IButtonswapERC20Errors {
      * @notice The new price ratio after a swap is invalid (one or more of the price terms are zero)
      */
     error InvalidFinalPrice();
+
+    /**
+     * @notice
+     */
+    error SingleSidedTimelock();
 }

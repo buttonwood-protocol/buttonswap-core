@@ -21,47 +21,6 @@ A_{user} = A_{total} \cdot {L_{user} \over L_{total}}
 ## Minting
 
 When a user deposits liquidity and receives $L$ tokens we must calculate the amount they receive such that it preserves their claim to $A$ and $B$.
-That is to say, the ratio of the user's new $L$ tokens to the previous total supply $L_{total}$ must be equal to the value of the user's $A$ and $B$ deposits to the previous total value of $A$ and $B$ held by the pool:
-
-```math
-{L_{user} \over L_{total}} = {value(A_{user}) + value(B_{user}) \over value(A_{total}) + value(B_{total})}
-```
-
-### A note about $value$
-It is important to understand that $A_{user}$ is an amount denominated in $A$ tokens and $B_{user}$ is an amount denominated in $B$ tokens.
-
-For example, the following expression is valid because of consistent denomination:
-
-```math
-value(A_{total}) = value(A_{pool} + A_{reservoir}) = value(A_{pool}) + value(A_{reservoir})
-```
-
-Whilst this next expression is invalid because the token amounts are denominated in different tokens:
-
-```math
-value(A_{total}) + value(B_{total}) \neq value(A_{total} + B_{total})
-```
-
-Instead we must convert them into a common denomination in order to then do arithmetic with them.
-The common denomination used can be arbitrary, but for simplicity we will henceforth treat $value$ as a function that converts an amount into one that is denominated in terms of $A$ tokens.
-
-We will also define $p$ to be the price of $B$ tokens in terms of $A$ tokens, which is derived from the ratio of active liquidity balances:
-```math
-p = {A_{pool} \over B_{pool}}
-```
-
-Thus:
-
-```math
-value(A_{amount}) = A_{amount}
-```
-(Since $A_{amount}$ is already denominated in $A$, it is a 1:1 conversion)
-
-And:
-
-```math
-value(B_{amount}) = B_{amount} \cdot p
-```
 
 ### Dual-sided Mint
 
@@ -102,32 +61,60 @@ With this, any tokens that exceed the ${A_{total} \over B_{total}}$ ratio are ef
 ### Single-sided Mint
 
 A single-sided mint refers to when the user deposits only one of $A$ or $B$, with the pool reservoir supplying the required counterpart in a ratio that matches the current price.
-For this example let us assume that $B$ reservoir is empty, and thus we deposit $B$ tokens to mint liquidity using $A$ tokens from the $A$ reservoir:
-
+For this example let us assume that $A$ reservoir is empty, and thus we deposit $A$ tokens to mint liquidity using $B$ tokens from the $B$ reservoir.
+The amount $A_{user}$ that a user deposits consists of $A_{x}$, the amount of $A$ to be used for minting dual sided liquidity, and $A_{y}$, the amount of $A$ to be exchanged for reservoir $B$ tokens that pair with $A_{x}$ for the dual sided mint:
 ```math
-B_{reservoir} = 0
+A_{user} = A_{x} + A_{y}
+```
+Let $p_{ma}$ be the moving average price of $A$ in terms of $B$.
+$B_{y}$ is the $B$ tokens swapped out of the reservoir in exchange for $A_{y}$, with the swap being priced at the moving average price:
+```math
+B_{y} = A_{y} \cdot p_{ma}
+```
+The ratio of tokens for a new dual sided mint should match the price ratio of the pair:
+```math
+{A_{x} \over B_{y}} = {A_{pool} \over B_{pool}}
+```
+
+Now with some substitution:
+```math
+{A_{user} - A_{y} \over A_{y} \cdot p_{ma}} = {A_{pool} \over B_{pool}}
 ```
 ```math
-A_{user} = 0
+A_{user} - A_{y}  = A_{y} \cdot p_{ma} \cdot {A_{pool} \over B_{pool}}
+```
+```math
+A_{user} = A_{y} \cdot (1 + p_{ma} \cdot {A_{pool} \over B_{pool}})
+```
+```math
+{A_{user} \over (1 + p_{ma} \cdot {A_{pool} \over B_{pool}})} = A_{y}
 ```
 
+Further rearrangement to minimise premature rounding:
+```math
+A_{y} = {A_{user} \over ({B_{pool} \over B_{pool}} + p_{ma} \cdot {A_{pool} \over B_{pool}})}
+```
+```math
+A_{y} = {A_{user} \over {B_{pool} + p_{ma} \cdot A_{pool} \over B_{pool}}}
+```
+```math
+A_{y} = {A_{user} \cdot B_{pool} \over B_{pool} + p_{ma} \cdot A_{pool}}
+```
+
+From here we do a dual sided mint using the new values we computed:
+
+```math
+L_{user} = \min\{L_{total} \cdot {A_{x} \over A_{total}}, L_{total} \cdot {B_{y} \over B_{total}}\}
+```
+
+### Validation
+
+A key objective for the single sided operation is to ensure that reservoirs shrink or stay the same when executing the operation.
+This imposes a limit on how much can be minted in this fashion.
+From the user's perspective, we exchanged $A_{y}$ for $B_{y}$ and then calculated what amounts are required to do this and the subsequent dual mint optimally.
+From the perspective of the Pair, however, we have now gained $A_{y}$.
+In order to avoid growing $A_{reservoir}$ from zero we need $B_{reservoir}$ to supply enough $B$ to match $A_{y}$ at the current Pair price.
 Thus:
-
 ```math
-L_{user} = L_{total} \cdot {value(A_{user}) + value(B_{user}) \over value(A_{pool}) + value(A_{reservoir}) + value(B_{pool}) + value(B_{reservoir})}
-```
-```math
-L_{user} = L_{total} \cdot {value(B_{user}) \over value(A_{pool}) + value(A_{reservoir}) + value(B_{pool})}
-```
-```math
-L_{user} = L_{total} \cdot {B_{user} \cdot p \over A_{pool} + A_{reservoir} + B_{pool} \cdot p}
-```
-```math
-L_{user} = L_{total} \cdot {B_{user} \cdot {A_{pool} \over B_{pool}} \over A_{pool} + A_{reservoir} + B_{pool} \cdot {A_{pool} \over B_{pool}}}
-```
-```math
-L_{user} = L_{total} \cdot {{B_{user} \cdot A_{pool} \over B_{pool}} \over A_{pool} + A_{reservoir} + A_{pool}}
-```
-```math
-L_{user} = {L_{total} \cdot B_{user} \cdot A_{pool} \over B_{pool} \cdot (2 \cdot A_{pool} + A_{reservoir})}
+A_{y} \cdot {B_{pool} \over A_{pool}} \leq B_{reservoir} - B_{y}
 ```
