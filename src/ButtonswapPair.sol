@@ -123,7 +123,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
         uint32 timeElapsed;
         unchecked {
-            // overflow is desired
+            // underflow is desired
             timeElapsed = blockTimestamp - blockTimestampLast;
         }
         if (timeElapsed > 0 && pool0 != 0 && pool1 != 0) {
