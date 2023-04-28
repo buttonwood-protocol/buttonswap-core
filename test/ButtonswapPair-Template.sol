@@ -2064,10 +2064,9 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         unchecked {
             timeElapsed = warpTime - blockTimestampLast;
         }
-        uint256 expectedPrice0CumulativeLast =
-            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount01)), uint112(mintAmount00))) * timeElapsed;
-        uint256 expectedPrice1CumulativeLast =
-            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount00)), uint112(mintAmount01))) * timeElapsed;
+
+        uint256 expectedPrice0CumulativeLast = ((uint256(mintAmount01) * 2 ** 112) * timeElapsed) / mintAmount00;
+        uint256 expectedPrice1CumulativeLast = ((uint256(mintAmount00) * 2 ** 112) * timeElapsed) / mintAmount01;
 
         // Move time forward so that price can accrue
         vm.warp(warpTime);
