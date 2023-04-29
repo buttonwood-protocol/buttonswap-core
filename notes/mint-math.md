@@ -61,50 +61,64 @@ With this, any tokens that exceed the ${A_{total} \over B_{total}}$ ratio are ef
 ### Single-sided Mint
 
 A single-sided mint refers to when the user deposits only one of $A$ or $B$, with the pool reservoir supplying the required counterpart in a ratio that matches the current price.
+We can model this as the composition of two operations: a fixed-price swap (using the moving average price) that exchanges some deposited tokens for tokens from the non-zero reservoir, followed by a dual sided mint using the fixed-price swap output and what's left of the deposited tokens.
+
 For this example let us assume that $A$ reservoir is empty, and thus we deposit $A$ tokens to mint liquidity using $B$ tokens from the $B$ reservoir.
 The amount $A_{user}$ that a user deposits consists of $A_{x}$, the amount of $A$ to be used for minting dual sided liquidity, and $A_{y}$, the amount of $A$ to be exchanged for reservoir $B$ tokens that pair with $A_{x}$ for the dual sided mint:
 ```math
 A_{user} = A_{x} + A_{y}
 ```
+
 Let $p_{ma}$ be the moving average price of $A$ in terms of $B$.
 $B_{y}$ is the $B$ tokens swapped out of the reservoir in exchange for $A_{y}$, with the swap being priced at the moving average price:
 ```math
 B_{y} = A_{y} \cdot p_{ma}
 ```
-The ratio of tokens for a new dual sided mint should match the price ratio of the pair:
+
+After conducting the fixed-price swap we have effectively altered the total balances for the pair:
 ```math
-{A_{x} \over B_{y}} = {A_{pool} \over B_{pool}}
+A_{total}' = A_{total} + A_{y}
+```
+```math
+B_{total}' = B_{total} - B_{y}
+```
+
+The ratio of tokens for a new dual sided mint should match the ratio of the new totals of the pair:
+```math
+{A_{x} \over B_{y}} = {A_{total}' \over B_{total}'}
 ```
 
 Now with some substitution:
 ```math
-{A_{user} - A_{y} \over A_{y} \cdot p_{ma}} = {A_{pool} \over B_{pool}}
+{A_{x} \over B_{y}} = {A_{total} + A_{y} \over B_{total} - B_{y}}
 ```
 ```math
-A_{user} - A_{y}  = A_{y} \cdot p_{ma} \cdot {A_{pool} \over B_{pool}}
-```
-```math
-A_{user} = A_{y} \cdot (1 + p_{ma} \cdot {A_{pool} \over B_{pool}})
-```
-```math
-{A_{user} \over (1 + p_{ma} \cdot {A_{pool} \over B_{pool}})} = A_{y}
+{A_{user} - A_{y} \over A_{y} \cdot p_{ma}} = {A_{total} + A_{y} \over B_{total} - A_{y} \cdot p_{ma}}
 ```
 
-Further rearrangement to minimise premature rounding:
+Rearrange to solve for $A_{y}$:
 ```math
-A_{y} = {A_{user} \over ({B_{pool} \over B_{pool}} + p_{ma} \cdot {A_{pool} \over B_{pool}})}
+(A_{user} - A_{y}) \cdot (B_{total} - A_{y} \cdot p_{ma}) = (A_{total} + A_{y}) \cdot (A_{y} \cdot p_{ma})
 ```
 ```math
-A_{y} = {A_{user} \over {B_{pool} + p_{ma} \cdot A_{pool} \over B_{pool}}}
+A_{user} \cdot B_{total} - A_{y} \cdot B_{total} - A_{user} \cdot A_{y} \cdot p_{ma} + {A_{y}}^2 \cdot p_{ma} = A_{total} \cdot A_{y} \cdot p_{ma} + {A_{y}}^2 \cdot p_{ma}
 ```
 ```math
-A_{y} = {A_{user} \cdot B_{pool} \over B_{pool} + p_{ma} \cdot A_{pool}}
+A_{user} \cdot B_{total} = A_{total} \cdot A_{y} \cdot p_{ma} + A_{y} \cdot B_{total} + A_{user} \cdot A_{y} \cdot p_{ma}
+```
+```math
+A_{user} \cdot B_{total} = A_{y} \cdot (A_{total}  \cdot p_{ma} + B_{total} + A_{user} \cdot p_{ma})
+```
+```math
+A_{y} = {A_{user} \cdot B_{total} \over A_{total}  \cdot p_{ma} + B_{total} + A_{user} \cdot p_{ma}}
+```
+```math
+A_{y} = {A_{user} \cdot B_{total} \over p_{ma} \cdot (A_{total} + A_{user}) + B_{total}}
 ```
 
 From here we do a dual sided mint using the new values we computed:
-
 ```math
-L_{user} = \min\{L_{total} \cdot {A_{x} \over A_{total}}, L_{total} \cdot {B_{y} \over B_{total}}\}
+L_{user} = \min\{L_{total} \cdot {A_{x} \over A_{total}'}, L_{total} \cdot {B_{y} \over B_{total}'}\}
 ```
 
 ### Validation
