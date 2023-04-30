@@ -368,12 +368,15 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             uint256 token0ToSwap;
             uint256 equivalentToken1;
             (liquidityOut, token0ToSwap, equivalentToken1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
-                _totalSupply, amountIn, total0, total1, _pool0Last, _pool1Last, movingAveragePrice0()
+                _totalSupply, amountIn, total0, total1, movingAveragePrice0()
             );
 
             // Ensure there's enough reservoir1 liquidity to do this without growing reservoir0
             // Refer to `/notes/mint-math.md`
-            if ((token0ToSwap * _pool1Last) / _pool0Last > lb.reservoir1 - equivalentToken1) {
+            if (
+                equivalentToken1 > lb.reservoir1
+                    || (token0ToSwap * _pool1Last) / _pool0Last > lb.reservoir1 - equivalentToken1
+            ) {
                 revert InsufficientReservoir();
             }
         } else {
@@ -385,12 +388,15 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             uint256 token1ToSwap;
             uint256 equivalentToken0;
             (liquidityOut, token1ToSwap, equivalentToken0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
-                _totalSupply, amountIn, total0, total1, _pool0Last, _pool1Last, movingAveragePrice0()
+                _totalSupply, amountIn, total0, total1, movingAveragePrice0()
             );
 
             // Ensure there's enough reservoir0 liquidity to do this without growing reservoir1
             // Refer to `/notes/mint-math.md`
-            if ((token1ToSwap * _pool0Last) / _pool1Last > lb.reservoir0 - equivalentToken0) {
+            if (
+                equivalentToken0 > lb.reservoir0
+                    || (token1ToSwap * _pool0Last) / _pool1Last > lb.reservoir0 - equivalentToken0
+            ) {
                 revert InsufficientReservoir();
             }
         }

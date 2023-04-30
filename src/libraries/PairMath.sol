@@ -21,22 +21,21 @@ library PairMath {
         uint256 mintAmountA,
         uint256 totalA,
         uint256 totalB,
-        uint256 poolALast,
-        uint256 poolBLast,
         uint256 movingAveragePriceA
     ) public pure returns (uint256 liquidityOut, uint256 tokenAToSwap, uint256 equivalentTokenB) {
         // movingAveragePriceA is a UQ112x112 and so is a uint224 that needs to be divided by 2^112 after being multiplied.
-        // Here we risk `movingAveragePriceA * poolALast` overflowing since we multiple a uin224 by a uint112, however
-        //   if the price hasn't suddenly changed massively then movingAveragePriceA is roughly equal to `poolBLast / poolALast`
-        //   which means that multiplying by `poolALast` will not overflow.
+        // Here we risk `movingAveragePriceA * (totalA + mintAmountA)` overflowing since we multiple a uint224 by the sum
+        //   of two uint112s, however TODO
         // Conversely, if this does overflow, then it means the price is highly volatile which would be grounds for having triggered
         //   the timelock in the first place to prevent single-sided operations being undertaken.
         // As such we can get away with not using a muldiv that supports phantom overflow.
-        tokenAToSwap = (mintAmountA * poolBLast) / (poolBLast + ((movingAveragePriceA * poolALast) / 2 ** 112));
-        // Here we don't risk undesired overflow because if `tokenAToSwap * movingAveragePriceA` exceeded 2^256 then
-        //   it would necessarily mean `equivalentTokenB` exceeded 2^112, which would result in breaking the poolX unit112 limits.
+        tokenAToSwap = (mintAmountA * totalB) / (((movingAveragePriceA * (totalA + mintAmountA)) / 2 ** 112) + totalB);
+        // Here we don't risk undesired overflow because if `tokenAToSwap * movingAveragePriceA` exceeded 2^256 then it
+        //   would necessarily mean `equivalentTokenB` exceeded 2^112, which would result in breaking the poolX unit112 limits.
         equivalentTokenB = (tokenAToSwap * movingAveragePriceA) / 2 ** 112;
-
+        // Update totals to account for the fixed price swap
+        totalA += tokenAToSwap;
+        totalB -= equivalentTokenB;
         uint256 tokenARemaining = mintAmountA - tokenAToSwap;
         liquidityOut =
             getDualSidedMintLiquidityOutAmount(totalLiquidity, tokenARemaining, equivalentTokenB, totalA, totalB);
@@ -48,17 +47,17 @@ library PairMath {
         uint256 mintAmountB,
         uint256 totalA,
         uint256 totalB,
-        uint256 poolALast,
-        uint256 poolBLast,
         uint256 movingAveragePriceA
     ) public pure returns (uint256 liquidityOut, uint256 tokenBToSwap, uint256 equivalentTokenA) {
-        // movingAveragePriceA is a UQ112x112 and so is a uint224 that needs to be divided by 2^112 after being multiplied.
+        // `movingAveragePriceA` is a UQ112x112 and so is a uint224 that needs to be divided by 2^112 after being multiplied.
         // Here we need to use the inverse price however, which means we multiply the numerator by 2^112 and then divide that
         //   by movingAveragePriceA to get the result, all without risk of overflow.
-        tokenBToSwap = (mintAmountB * poolALast) / (poolALast + ((poolBLast * (2 ** 112)) / movingAveragePriceA));
+        tokenBToSwap = (mintAmountB * totalA) / (((2 ** 112 * (totalB + mintAmountB)) / movingAveragePriceA) + totalA);
         // Inverse price so again we can use it without overflow risk
         equivalentTokenA = (tokenBToSwap * (2 ** 112)) / movingAveragePriceA;
-
+        // Update totals to account for the fixed price swap
+        totalA -= equivalentTokenA;
+        totalB += tokenBToSwap;
         uint256 tokenBRemaining = mintAmountB - tokenBToSwap;
         liquidityOut =
             getDualSidedMintLiquidityOutAmount(totalLiquidity, equivalentTokenA, tokenBRemaining, totalA, totalB);
