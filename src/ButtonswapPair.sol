@@ -362,30 +362,30 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
             amountIn = IERC20(_token0).balanceOf(address(this)) - total0;
 
-            liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountA(
-                _totalSupply, amountIn, total0, total1, movingAveragePrice0()
-            );
-
             // Ensure there's enough reservoir1 liquidity to do this without growing reservoir0
             LiquidityBalances memory lbNew = _getLiquidityBalances(total0 + amountIn, total1);
             if (lbNew.reservoir0 > 0) {
                 revert InsufficientReservoir();
             }
+
+            liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountA(
+                _totalSupply, amountIn, total0, total1, movingAveragePrice0()
+            );
         } else {
             // If reservoir1 is empty then we're adding token1 to pair with token0 reservoir liquidity
             SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn);
             // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
             amountIn = IERC20(_token1).balanceOf(address(this)) - total1;
 
-            liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountB(
-                _totalSupply, amountIn, total0, total1, movingAveragePrice0()
-            );
-
             // Ensure there's enough reservoir0 liquidity to do this without growing reservoir1
             LiquidityBalances memory lbNew = _getLiquidityBalances(total0, total1 + amountIn);
             if (lbNew.reservoir1 > 0) {
                 revert InsufficientReservoir();
             }
+
+            liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountB(
+                _totalSupply, amountIn, total0, total1, movingAveragePrice0()
+            );
         }
 
         if (liquidityOut == 0) {
@@ -441,7 +441,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
         if (lb.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            (amountOut1) = PairMath.getSingleSidedBurnOutputAmountB(
+            amountOut1 = PairMath.getSingleSidedBurnOutputAmountB(
                 _totalSupply, liquidityIn, total0, total1, movingAveragePrice0()
             );
             // Check there's enough reservoir liquidity to withdraw from
@@ -451,7 +451,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             }
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            (amountOut0) = PairMath.getSingleSidedBurnOutputAmountA(
+            amountOut0 = PairMath.getSingleSidedBurnOutputAmountA(
                 _totalSupply, liquidityIn, total0, total1, movingAveragePrice0()
             );
             // Check there's enough reservoir liquidity to withdraw from
