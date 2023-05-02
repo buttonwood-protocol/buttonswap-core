@@ -214,7 +214,6 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 // reservoir0 is zero, so no need to set it
                 lb.reservoir1 = total1 - lb.pool1;
             } else {
-                // Try the other way
                 lb.pool1 = total1;
                 // pool0Last/pool1Last == pool0/pool1 => pool0 == (pool1*pool0Last)/pool1Last
                 // pool1Last/pool0Last == pool1/pool0 => pool0 == (pool1*pool0Last)/pool1Last
@@ -357,26 +356,19 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         if (lb.pool0 == 0 || lb.pool1 == 0) {
             revert InsufficientLiquidity();
         }
-        uint256 _pool0Last = pool0Last;
-        uint256 _pool1Last = pool1Last;
         if (lb.reservoir0 == 0) {
             // If reservoir0 is empty then we're adding token0 to pair with token1 reservoir liquidity
             SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn);
             // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
             amountIn = IERC20(_token0).balanceOf(address(this)) - total0;
 
-            uint256 token0ToSwap;
-            uint256 equivalentToken1;
-            (liquidityOut, token0ToSwap, equivalentToken1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
+            liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountA(
                 _totalSupply, amountIn, total0, total1, movingAveragePrice0()
             );
 
             // Ensure there's enough reservoir1 liquidity to do this without growing reservoir0
-            // Refer to `/notes/mint-math.md`
-            if (
-                equivalentToken1 > lb.reservoir1
-                    || (token0ToSwap * _pool1Last) / _pool0Last > lb.reservoir1 - equivalentToken1
-            ) {
+            LiquidityBalances memory lbNew = _getLiquidityBalances(total0 + amountIn, total1);
+            if (lbNew.reservoir0 > 0) {
                 revert InsufficientReservoir();
             }
         } else {
@@ -385,18 +377,13 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
             amountIn = IERC20(_token1).balanceOf(address(this)) - total1;
 
-            uint256 token1ToSwap;
-            uint256 equivalentToken0;
-            (liquidityOut, token1ToSwap, equivalentToken0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
+            liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountB(
                 _totalSupply, amountIn, total0, total1, movingAveragePrice0()
             );
 
             // Ensure there's enough reservoir0 liquidity to do this without growing reservoir1
-            // Refer to `/notes/mint-math.md`
-            if (
-                equivalentToken0 > lb.reservoir0
-                    || (token1ToSwap * _pool0Last) / _pool1Last > lb.reservoir0 - equivalentToken0
-            ) {
+            LiquidityBalances memory lbNew = _getLiquidityBalances(total0, total1 + amountIn);
+            if (lbNew.reservoir1 > 0) {
                 revert InsufficientReservoir();
             }
         }
@@ -454,7 +441,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
         if (lb.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            (amountOut0, amountOut1) = PairMath.getSingleSidedBurnOutputAmountsB(
+            (amountOut1) = PairMath.getSingleSidedBurnOutputAmountB(
                 _totalSupply, liquidityIn, total0, total1, movingAveragePrice0()
             );
             // Check there's enough reservoir liquidity to withdraw from
@@ -464,7 +451,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             }
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            (amountOut0, amountOut1) = PairMath.getSingleSidedBurnOutputAmountsA(
+            (amountOut0) = PairMath.getSingleSidedBurnOutputAmountA(
                 _totalSupply, liquidityIn, total0, total1, movingAveragePrice0()
             );
             // Check there's enough reservoir liquidity to withdraw from
