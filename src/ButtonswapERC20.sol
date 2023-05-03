@@ -37,7 +37,7 @@ contract ButtonswapERC20 is IButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapERC20
      */
-    bytes32 public DOMAIN_SEPARATOR;
+    bytes32 public immutable DOMAIN_SEPARATOR;
 
     /**
      * @inheritdoc IButtonswapERC20
