@@ -4,7 +4,6 @@ pragma solidity ^0.8.13;
 import {Test} from "forge-std/Test.sol";
 import {PairMath} from "../../src/libraries/PairMath.sol";
 import {Math} from "../../src/libraries/Math.sol";
-import "forge-std/console.sol";
 
 contract PairMathTest is Test {
     function test_getDualSidedMintLiquidityOutAmount_usingReservoirA(
