@@ -94,7 +94,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @dev TODO
      */
-    uint128 internal singleSidedTimelockDeadline;
+    uint128 public singleSidedTimelockDeadline;
 
     /**
      * @dev TODO

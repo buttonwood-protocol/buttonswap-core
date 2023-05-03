@@ -3091,4 +3091,271 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // movingAveragePrice0 remains fully new price beyond 24 hours
         assertEq(vars.pair.movingAveragePrice0(), newPrice, "post-swap t>24hours");
     }
+
+    function test_timelock_DelayWithinRange(
+        uint256 mintAmount0,
+        uint256 mintAmount1,
+        uint256 inputAmount,
+        bool inputToken0
+    ) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(mintAmount0 < (2 ** 112) / 2);
+        vm.assume(mintAmount1 < (2 ** 112) / 2);
+        vm.assume(inputAmount < mintAmount0 && inputAmount < mintAmount1);
+        // Amounts must be non-zero, and must exceed minimum liquidity
+        vm.assume(mintAmount0 > 1000);
+        vm.assume(mintAmount1 > 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.swapper1 = userD;
+        vars.receiver = userE;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, mintAmount0);
+        vars.token1.mint(vars.minter1, mintAmount1);
+
+        uint256 timestampStart = block.timestamp;
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
+        vm.stopPrank();
+
+        // Output amount must be non-zero
+        if (inputToken0) {
+            vars.amount0In = inputAmount;
+            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vm.assume(vars.amount1Out > 0);
+        } else {
+            vars.amount1In = inputAmount;
+            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vm.assume(vars.amount0Out > 0);
+        }
+        vars.token0.mint(vars.swapper1, vars.amount0In);
+        vars.token1.mint(vars.swapper1, vars.amount1In);
+
+        // Do the swap
+        vm.startPrank(vars.swapper1);
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vm.stopPrank();
+
+        // Confirm new state is as expected
+        assertGe(vars.pair.singleSidedTimelockDeadline() - timestampStart, 24 seconds, "delay greater than min delay");
+        assertLe(vars.pair.singleSidedTimelockDeadline() - timestampStart, 24 hours, "delay less than max delay");
+    }
+
+    function test_timelock_DeadlineUpdatesCorrectly(
+        uint256 mintAmount0,
+        uint256 mintAmount1,
+        uint256 inputAmount,
+        bool inputToken0
+    ) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(mintAmount0 < (2 ** 112) / 2);
+        vm.assume(mintAmount1 < (2 ** 112) / 2);
+        vm.assume(inputAmount < mintAmount0 && inputAmount < mintAmount1);
+        // Amounts must be non-zero, and must exceed minimum liquidity
+        vm.assume(mintAmount0 > 1000);
+        vm.assume(mintAmount1 > 1000);
+
+        TestVariables memory vars;
+        if (inputToken0) {
+            vars.amount0In = inputAmount;
+        } else {
+            vars.amount1In = inputAmount;
+        }
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.swapper1 = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, mintAmount0);
+        vars.token1.mint(vars.minter1, mintAmount1);
+        vars.token0.mint(vars.swapper1, vars.amount0In);
+        vars.token1.mint(vars.swapper1, vars.amount1In);
+
+        uint256 singleSidedTimelockDeadlineLast = vars.pair.singleSidedTimelockDeadline();
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
+        vm.stopPrank();
+
+        // Output amount must be non-zero
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        if (inputToken0) {
+            vars.amount0In = inputAmount / 3;
+            vars.amount1In = 0;
+            vars.amount0Out = 0;
+            vars.amount1Out = PairMath.getSwapOutputAmount(vars.amount0In, vars.pool0, vars.pool1);
+            vm.assume(vars.amount1Out > 0);
+        } else {
+            vars.amount0In = 0;
+            vars.amount1In = inputAmount / 3;
+            vars.amount0Out = PairMath.getSwapOutputAmount(vars.amount1In, vars.pool1, vars.pool0);
+            vars.amount1Out = 0;
+            vm.assume(vars.amount0Out > 0);
+        }
+
+        // Do the first swap
+        vm.startPrank(vars.swapper1);
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1, new bytes(0));
+        vm.stopPrank();
+
+        assertGe(
+            vars.pair.singleSidedTimelockDeadline(), singleSidedTimelockDeadlineLast, "Deadline increased by first swap"
+        );
+        singleSidedTimelockDeadlineLast = vars.pair.singleSidedTimelockDeadline();
+
+        // Output amount must be non-zero
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        // Swap back the other way to get a reduced price difference
+        if (inputToken0) {
+            vars.amount0In = 0;
+            vars.amount1In = vars.amount1Out / 2;
+            vars.amount0Out = PairMath.getSwapOutputAmount(vars.amount1In, vars.pool1, vars.pool0);
+            vars.amount1Out = 0;
+            vm.assume(vars.amount0Out > 0);
+        } else {
+            vars.amount0In = vars.amount0Out / 2;
+            vars.amount1In = 0;
+            vars.amount0Out = 0;
+            vars.amount1Out = PairMath.getSwapOutputAmount(vars.amount0In, vars.pool0, vars.pool1);
+            vm.assume(vars.amount1Out > 0);
+        }
+
+        // Do the second smaller swap
+        vm.startPrank(vars.swapper1);
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1, new bytes(0));
+        vm.stopPrank();
+
+        assertEq(
+            vars.pair.singleSidedTimelockDeadline(),
+            singleSidedTimelockDeadlineLast,
+            "Deadline unchanged by second smaller swap"
+        );
+        singleSidedTimelockDeadlineLast = vars.pair.singleSidedTimelockDeadline();
+
+        // Output amount must be non-zero
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        if (inputToken0) {
+            vars.amount0In = inputAmount * 2 / 3;
+            vars.amount1In = 0;
+            vars.amount0Out = 0;
+            vars.amount1Out = PairMath.getSwapOutputAmount(vars.amount0In, vars.pool0, vars.pool1);
+            vm.assume(vars.amount1Out > 0);
+        } else {
+            vars.amount0In = 0;
+            vars.amount1In = inputAmount * 2 / 3;
+            vars.amount0Out = PairMath.getSwapOutputAmount(vars.amount1In, vars.pool1, vars.pool0);
+            vars.amount1Out = 0;
+            vm.assume(vars.amount0Out > 0);
+        }
+
+        // Do the third larger swap
+        vm.startPrank(vars.swapper1);
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1, new bytes(0));
+        vm.stopPrank();
+
+        assertGe(
+            vars.pair.singleSidedTimelockDeadline(),
+            singleSidedTimelockDeadlineLast,
+            "Deadline increased by third larger swap"
+        );
+    }
+
+    function test_timelock_ActiveLockPreventsSingleSidedOperations(
+        uint256 mintAmount0,
+        uint256 mintAmount1,
+        uint256 inputAmount,
+        bool inputToken0
+    ) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(mintAmount0 < (2 ** 112) / 2);
+        vm.assume(mintAmount1 < (2 ** 112) / 2);
+        vm.assume(inputAmount < mintAmount0 && inputAmount < mintAmount1);
+        // Amounts must be non-zero, and must exceed minimum liquidity
+        vm.assume(mintAmount0 > 1000);
+        vm.assume(mintAmount1 > 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.swapper1 = userD;
+        vars.receiver = userE;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, mintAmount0);
+        vars.token1.mint(vars.minter1, mintAmount1);
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
+        vm.stopPrank();
+
+        // Output amount must be non-zero
+        if (inputToken0) {
+            vars.amount0In = inputAmount;
+            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vm.assume(vars.amount1Out > 0);
+        } else {
+            vars.amount1In = inputAmount;
+            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vm.assume(vars.amount0Out > 0);
+        }
+        vars.token0.mint(vars.swapper1, vars.amount0In);
+        vars.token1.mint(vars.swapper1, vars.amount1In);
+
+        // Do the swap
+        vm.startPrank(vars.swapper1);
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vm.stopPrank();
+
+        // Can't call single sided operations whilst lock is active
+        vm.expectRevert(SingleSidedTimelock.selector);
+        vars.pair.mintWithReservoir(0, address(0));
+        vm.expectRevert(SingleSidedTimelock.selector);
+        vars.pair.burnFromReservoir(0, address(0));
+
+        vm.warp(vars.pair.singleSidedTimelockDeadline());
+
+        // After deadline is met calls fail with different errors, meaning the timelock is inactive
+        vm.expectRevert(InsufficientLiquidityAdded.selector);
+        vars.pair.mintWithReservoir(0, address(0));
+        vm.expectRevert(InsufficientLiquidityBurned.selector);
+        vars.pair.burnFromReservoir(0, address(0));
+    }
 }
