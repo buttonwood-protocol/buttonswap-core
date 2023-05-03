@@ -32,8 +32,9 @@ library PairMath {
         // Is 2^32 sufficient? Consider a pair with 1 WBTC (8 decimals) and 30,000 USDX (18 decimals)
         // log2((30000*1e18)/1e8) = 48 and as such a greater price ratio that can be handled.
         // Consequently we require a mulDiv that can handle phantom overflow.
+
         uint256 tokenAToSwap =
-            (mintAmountA * totalB) / (((movingAveragePriceA * (totalA + mintAmountA)) / 2 ** 112) + totalB);
+            (mintAmountA * totalB) / (Math.mulDiv(movingAveragePriceA, (totalA + mintAmountA), 2 ** 112) + totalB);
         // Here we don't risk undesired overflow because if `tokenAToSwap * movingAveragePriceA` exceeded 2^256 then it
         //   would necessarily mean `equivalentTokenB` exceeded 2^112, which would result in breaking the poolX unit112 limits.
         uint256 equivalentTokenB = (tokenAToSwap * movingAveragePriceA) / 2 ** 112;
@@ -91,7 +92,7 @@ library PairMath {
         (amountOutA, amountOutB) = getDualSidedBurnOutputAmounts(totalLiquidity, liquidityIn, totalA, totalB);
 
         // Here we need to use the inverse price however, which means we multiply the numerator by 2^112 and then divide that
-        //   by movingAveragePriceA to get the result, all without risk of overflow.
+        //   by movingAveragePriceA to get the result, all without risk of overflow (because amountOutB must be less than 2*2^112)
         uint256 equivalentTokenA = (amountOutB * (2 ** 112)) / movingAveragePriceA;
         amountOutA = amountOutA + equivalentTokenA;
     }
