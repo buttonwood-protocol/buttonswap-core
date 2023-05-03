@@ -169,8 +169,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         if (timeElapsed > 0 && pool0 != 0 && pool1 != 0) {
             // * never overflows, and + overflow is desired
             unchecked {
-                price0CumulativeLast += uint256(UQ112x112.encode(_pool1).uqdiv(_pool0)) * timeElapsed;
-                price1CumulativeLast += uint256(UQ112x112.encode(_pool0).uqdiv(_pool1)) * timeElapsed;
+                price0CumulativeLast += ((pool1 << 112) * timeElapsed) / _pool0;
+                price1CumulativeLast += ((pool0 << 112) * timeElapsed) / _pool1;
             }
             blockTimestampLast = blockTimestamp;
         }
