@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {IButtonswapFactory} from "../../src/interfaces/IButtonswapFactory/IButtonswapFactory.sol";
 import {IButtonswapPair} from "../../src/interfaces/IButtonswapPair/IButtonswapPair.sol";
-import {ButtonswapPair} from "../../src/ButtonswapPair.sol";
+import {MockButtonswapPair} from "./MockButtonswapPair.sol";
 
 contract MockButtonswapFactory is IButtonswapFactory {
     address public feeTo;
@@ -22,7 +22,7 @@ contract MockButtonswapFactory is IButtonswapFactory {
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
         // Don't sort tokenA and tokenB, this reduces the complexity of ButtonswapPair unit tests
-        bytes memory bytecode = type(ButtonswapPair).creationCode;
+        bytes memory bytecode = type(MockButtonswapPair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(tokenA, tokenB));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)

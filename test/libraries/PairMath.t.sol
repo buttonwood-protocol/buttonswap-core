@@ -68,30 +68,78 @@ contract PairMathTest is Test {
         assertEq(liquidityOut, expectedLiquidityOut, "liquidityOut does not match expectedLiquidityOut");
     }
 
-    function test_getSingleSidedMintLiquidityOutAmount(
+    function test_getSingleSidedMintLiquidityOutAmountA(
         uint256 totalLiquidity,
-        uint256 mintAmountB,
-        uint256 poolA,
-        uint256 poolB,
-        uint256 reservoirA
+        uint112 mintAmountA,
+        uint256 totalA,
+        uint256 totalB,
+        uint256 movingAveragePriceA
     ) public {
-        // Pools will be capped by uint112
-        vm.assume(poolA < type(uint112).max);
-        vm.assume(poolB < type(uint112).max);
+        // Totals will be capped by 2 * type(uint112).max (both pools and res are capped by 2**112) and non-zero
+        totalA = uint112(bound(totalA, 1, uint256(type(uint112).max) * 2));
+        totalB = uint112(bound(totalB, 1, uint256(type(uint112).max) * 2));
 
-        // Ensure we don't divide by zero
-        vm.assume(poolB > 0);
-        vm.assume(poolA > 0 || reservoirA > 0);
+        // Ensuring movingAveragePriceA can't be 0 and must be valid Q112
+        movingAveragePriceA = bound(movingAveragePriceA, 1, type(uint224).max);
 
-        // Ensuring we don't overflow
-        vm.assume(mintAmountB == 0 || totalLiquidity < (type(uint256).max / mintAmountB));
-        vm.assume(poolA == 0 || totalLiquidity * mintAmountB < (type(uint256).max / poolA));
-        vm.assume(reservoirA < type(uint256).max - poolA - poolA);
-        vm.assume(poolB < type(uint256).max / (poolA + poolA + reservoirA));
+        uint256 tokenAToSwap =
+            Math.mulDiv(mintAmountA, totalB, Math.mulDiv(movingAveragePriceA, totalA + mintAmountA, 2 ** 112) + totalB);
+        uint256 equivalentTokenB = Math.mulDiv(tokenAToSwap, movingAveragePriceA, 2 ** 112);
+        uint256 tokenARemaining = mintAmountA - tokenAToSwap;
 
-        uint256 liquidityOut =
-            PairMath.getSingleSidedMintLiquidityOutAmount(totalLiquidity, mintAmountB, poolA, poolB, reservoirA);
-        uint256 expectedLiquidityOut = (totalLiquidity * mintAmountB * poolA) / (poolB * (poolA + poolA + reservoirA));
+        // TotalLiquidity is non-zero
+        vm.assume(totalLiquidity > 0);
+        // Ensuring that we don't trigger an overflow in the intermediate `getDualSidedMintLiquidityOutAmount()` call
+        // amountInA * totalLiquidity < type(uint256).max
+        vm.assume(tokenARemaining < type(uint256).max / totalLiquidity);
+        // amountInB * totalLiquidity < type(uint256).max
+        vm.assume(equivalentTokenB < type(uint256).max / totalLiquidity);
+
+        uint256 expectedLiquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
+            totalLiquidity, tokenARemaining, equivalentTokenB, totalA + tokenAToSwap, totalB - equivalentTokenB
+        );
+
+        uint256 liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountA(
+            totalLiquidity, mintAmountA, totalA, totalB, movingAveragePriceA
+        );
+        assertEq(liquidityOut, expectedLiquidityOut, "liquidityOut does not match expectedLiquidityOut");
+    }
+
+    function test_getSingleSidedMintLiquidityOutAmountB(
+        uint256 totalLiquidity,
+        uint112 mintAmountB,
+        uint256 totalA,
+        uint256 totalB,
+        uint256 movingAveragePriceA
+    ) public {
+        // Totals will be capped by 2 * type(uint112).max (both pools and res are capped by 2**112) and non-zero
+        totalA = uint112(bound(totalA, 1, uint256(type(uint112).max) * 2));
+        totalB = uint112(bound(totalB, 1, uint256(type(uint112).max) * 2));
+
+        // Ensuring movingAveragePriceA can't be 0 and must be valid Q112
+        movingAveragePriceA = bound(movingAveragePriceA, 1, type(uint224).max);
+
+        uint256 tokenBToSwap =
+            (mintAmountB * totalA) / (((2 ** 112 * (totalB + mintAmountB)) / movingAveragePriceA) + totalA);
+        // Inverse price so again we can use it without overflow risk
+        uint256 equivalentTokenA = (tokenBToSwap * (2 ** 112)) / movingAveragePriceA;
+        uint256 tokenBRemaining = mintAmountB - tokenBToSwap;
+
+        // TotalLiquidity is non-zero
+        vm.assume(totalLiquidity > 0);
+        // Ensuring that we don't trigger an overflow in the intermediate `getDualSidedMintLiquidityOutAmount()` call
+        // amountInA * totalLiquidity < type(uint256).max
+        vm.assume(equivalentTokenA < type(uint256).max / totalLiquidity);
+        // amountInB * totalLiquidity < type(uint256).max
+        vm.assume(tokenBRemaining < type(uint256).max / totalLiquidity);
+
+        uint256 expectedLiquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
+            totalLiquidity, equivalentTokenA, tokenBRemaining, totalA - equivalentTokenA, totalB + tokenBToSwap
+        );
+
+        uint256 liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountB(
+            totalLiquidity, mintAmountB, totalA, totalB, movingAveragePriceA
+        );
         assertEq(liquidityOut, expectedLiquidityOut, "liquidityOut does not match expectedLiquidityOut");
     }
 
@@ -118,65 +166,72 @@ contract PairMathTest is Test {
         assertEq(amountOutB, expectedAmountOutB, "amountOutB does not match expectedAmountOutB");
     }
 
-    function test_getSingleSidedBurnOutputAmountsUsingReservoirA(
+    function test_getSingleSidedBurnOutputAmountA(
         uint256 totalLiquidity,
-        uint256 burnAmount,
-        uint256 poolA,
-        uint256 poolB,
-        uint256 reservoirA
+        uint256 liquidityIn,
+        uint256 totalA,
+        uint256 totalB,
+        uint256 movingAveragePriceA
     ) public {
-        // Pools will be capped by uint112
-        vm.assume(poolA < type(uint112).max);
-        vm.assume(poolB < type(uint112).max);
-
-        // Ensuring reservoirA is non-zero
-        vm.assume(reservoirA > 0);
+        // Totals will be capped by 2 * type(uint112).max (both pools and res are capped by 2**112) and non-zero
+        totalA = uint112(bound(totalA, 1, uint256(type(uint112).max) * 2));
+        totalB = uint112(bound(totalB, 1, uint256(type(uint112).max) * 2));
 
         // Ensuring we don't divide by zero
         vm.assume(totalLiquidity > 0);
-
         // Ensuring we don't overflow
-        vm.assume(reservoirA < type(uint256).max - poolA - poolA);
-        vm.assume((reservoirA + poolA + poolA) == 0 || burnAmount < type(uint256).max / (reservoirA + poolA + poolA));
+        vm.assume(liquidityIn == 0 || totalA < type(uint256).max / liquidityIn);
+        vm.assume(liquidityIn == 0 || totalB < type(uint256).max / liquidityIn);
 
-        (uint256 amountOutA, uint256 amountOutB) =
-            PairMath.getSingleSidedBurnOutputAmounts(totalLiquidity, burnAmount, poolA, poolB, reservoirA, 0);
+        // Ensuring movingAveragePriceA can't be 0 and must be valid Q112
+        movingAveragePriceA = bound(movingAveragePriceA, 1, type(uint224).max);
 
-        uint256 expectedAmountOutA = (burnAmount * (reservoirA + poolA + poolA)) / totalLiquidity;
-        uint256 expectedAmountOutB = 0;
+        (uint256 internalAmountOutA, uint256 internalAmountOutB) =
+            PairMath.getDualSidedBurnOutputAmounts(totalLiquidity, liquidityIn, totalA, totalB);
+        // amountOutB must be capped by 2**113 since it is from the bPool and bRes
+        vm.assume(internalAmountOutB < uint256(type(uint112).max) * 2);
+        uint256 equivalentTokenA = (internalAmountOutB * (2 ** 112)) / movingAveragePriceA;
 
-        assertEq(amountOutA, expectedAmountOutA, "amountOutA does not match expectedAmountOutA");
-        assertEq(amountOutB, expectedAmountOutB, "amountOutB does not match expectedAmountOutB");
+        uint256 amountOutA =
+            PairMath.getSingleSidedBurnOutputAmountA(totalLiquidity, liquidityIn, totalA, totalB, movingAveragePriceA);
+
+        // amountOutA == (A from dual-burn) + (A from swap)
+        assertEq(amountOutA, internalAmountOutA + equivalentTokenA, "amountOutA does not match expected amounts");
     }
 
-    function test_getSingleSidedBurnOutputAmountsUsingReservoirB(
+    function test_getSingleSidedBurnOutputAmountB(
         uint256 totalLiquidity,
-        uint256 burnAmount,
-        uint256 poolA,
-        uint256 poolB,
-        uint256 reservoirB
+        uint256 liquidityIn,
+        uint256 totalA,
+        uint256 totalB,
+        uint256 movingAveragePriceA
     ) public {
-        // Pools will be capped by uint112
-        vm.assume(poolA < type(uint112).max);
-        vm.assume(poolB < type(uint112).max);
-
-        // Will default to reservoirB so need to check it's non-zero
+        // Totals will be capped by 2 * type(uint112).max (both pools and res are capped by 2**112) and non-zero
+        totalA = uint112(bound(totalA, 1, uint256(type(uint112).max) * 2));
+        totalB = uint112(bound(totalB, 1, uint256(type(uint112).max) * 2));
 
         // Ensuring we don't divide by zero
         vm.assume(totalLiquidity > 0);
-
         // Ensuring we don't overflow
-        vm.assume(reservoirB < type(uint256).max - poolB - poolB);
-        vm.assume((reservoirB + poolB + poolB) == 0 || burnAmount < type(uint256).max / (reservoirB + poolB + poolB));
+        vm.assume(liquidityIn == 0 || totalA < type(uint256).max / liquidityIn);
+        vm.assume(liquidityIn == 0 || totalB < type(uint256).max / liquidityIn);
 
-        (uint256 amountOutA, uint256 amountOutB) =
-            PairMath.getSingleSidedBurnOutputAmounts(totalLiquidity, burnAmount, poolA, poolB, 0, reservoirB);
+        // Ensuring movingAveragePriceA can't be 0 and must be valid Q112
+        movingAveragePriceA = bound(movingAveragePriceA, 1, type(uint224).max);
 
-        uint256 expectedAmountOutA = 0;
-        uint256 expectedAmountOutB = (burnAmount * (reservoirB + poolB + poolB)) / totalLiquidity;
+        (uint256 internalAmountOutA, uint256 internalAmountOutB) =
+            PairMath.getDualSidedBurnOutputAmounts(totalLiquidity, liquidityIn, totalA, totalB);
+        // amountOutA must be capped by 2**113 since it is from the aPool and aRes
+        vm.assume(internalAmountOutA < uint256(type(uint112).max) * 2);
+        uint256 equivalentTokenB = Math.mulDiv(internalAmountOutA, movingAveragePriceA, 2 ** 112);
+        // equivalentTokenB must be capped by 2**112 since it is from the bRes
+        vm.assume(equivalentTokenB < uint256(type(uint112).max));
 
-        assertEq(amountOutA, expectedAmountOutA, "amountOutA does not match expectedAmountOutA");
-        assertEq(amountOutB, expectedAmountOutB, "amountOutB does not match expectedAmountOutB");
+        uint256 amountOutB =
+            PairMath.getSingleSidedBurnOutputAmountB(totalLiquidity, liquidityIn, totalA, totalB, movingAveragePriceA);
+
+        // amountOutB == (B from dual-burn) + (B from swap)
+        assertEq(amountOutB, internalAmountOutB + equivalentTokenB, "amountOutB does not match expected amounts");
     }
 
     function test_getSwapOutputAmount(uint256 inputAmount, uint256 poolInput, uint256 poolOutput) public {
