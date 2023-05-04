@@ -8,7 +8,7 @@ import {MockButtonswapPair} from "./MockButtonswapPair.sol";
 contract MockButtonswapFactory is IButtonswapFactory {
     address public feeTo;
     address public feeToSetter;
-    bool public lockedCreation;
+    bool public isCreationRestricted;
 
     mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
@@ -39,7 +39,7 @@ contract MockButtonswapFactory is IButtonswapFactory {
         feeToSetter = _feeToSetter;
     }
 
-    function setLockedCreation(bool _lockedCreation) external {
-        lockedCreation = _lockedCreation;
+    function setIsCreationRestricted(bool _isCreationRestricted) external {
+        isCreationRestricted = _isCreationRestricted;
     }
 }

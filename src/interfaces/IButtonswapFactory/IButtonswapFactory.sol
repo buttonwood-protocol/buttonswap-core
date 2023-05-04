@@ -20,11 +20,11 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function feeToSetter() external view returns (address _feeToSetter);
 
     /**
-     * @notice Returns the current state of locked creation.
+     * @notice Returns the current state of restricted creation.
      * If true, then no new pairs, only feeToSetter can create new pairs
-     * @return _lockedCreation The `lockedCreation` state
+     * @return _isCreationRestricted The `isCreationRestricted` state
      */
-    function lockedCreation() external view returns (bool _lockedCreation);
+    function isCreationRestricted() external view returns (bool _isCreationRestricted);
 
     /**
      * @notice Get the (unique) Pair address created for the given combination of `tokenA` and `tokenB`.
@@ -72,9 +72,9 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function setFeeToSetter(address _feeToSetter) external;
 
     /**
-     * @notice Updates the state of locked creation.
+     * @notice Updates the state of restricted creation.
      * This can only be called by the `feeToSetter` address.
-     * @param _lockedCreation The new state
+     * @param _isCreationRestricted The new state
      */
-    function setLockedCreation(bool _lockedCreation) external;
+    function setIsCreationRestricted(bool _isCreationRestricted) external;
 }

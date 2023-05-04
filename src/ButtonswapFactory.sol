@@ -29,7 +29,7 @@ contract ButtonswapFactory is IButtonswapFactory {
     /**
      * @inheritdoc IButtonswapFactory
      */
-    bool public lockedCreation;
+    bool public isCreationRestricted;
 
     /**
      * @dev `feeTo` is not initialised during deployment, and must be set separately by a call to {setFeeTo}.
@@ -50,7 +50,7 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @inheritdoc IButtonswapFactory
      */
     function createPair(address tokenA, address tokenB) external returns (address pair) {
-        if (lockedCreation && msg.sender != feeToSetter) {
+        if (isCreationRestricted && msg.sender != feeToSetter) {
             revert Forbidden();
         }
         if (tokenA == tokenB) {
@@ -99,10 +99,10 @@ contract ButtonswapFactory is IButtonswapFactory {
     /**
      * @inheritdoc IButtonswapFactory
      */
-    function setLockedCreation(bool _lockedCreation) external {
+    function setIsCreationRestricted(bool _isCreationRestricted) external {
         if (msg.sender != feeToSetter) {
             revert Forbidden();
         }
-        lockedCreation = _lockedCreation;
+        isCreationRestricted = _isCreationRestricted;
     }
 }

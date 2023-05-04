@@ -333,7 +333,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
 
         // FeeToSetter locking pair creation
         vm.prank(initialFeeToSetter);
-        buttonswapFactory.setLockedCreation(true);
+        buttonswapFactory.setIsCreationRestricted(true);
 
         // PairCreator attempting to create pair
         vm.startPrank(pairCreator);
@@ -358,7 +358,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
 
         // FeeToSetter locking pair creation
         vm.prank(initialFeeToSetter);
-        buttonswapFactory.setLockedCreation(true);
+        buttonswapFactory.setIsCreationRestricted(true);
 
         // FeeToSetter can create pair
         vm.startPrank(initialFeeToSetter);
