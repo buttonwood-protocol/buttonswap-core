@@ -67,6 +67,10 @@ contract ButtonswapFactory is IButtonswapFactory {
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
+        // Resetting lastToken0/lastToken1 to 0 to refund gas
+        lastToken0 = address(0);
+        lastToken1 = address(0);
+
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);

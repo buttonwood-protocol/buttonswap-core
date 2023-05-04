@@ -32,6 +32,9 @@ contract MockButtonswapFactory is IButtonswapFactory {
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
+        // Resetting lastTokenA/lastTokenB to 0 to refund gas
+        lastTokenA = address(0);
+        lastTokenB = address(0);
     }
 
     function setFeeTo(address _feeTo) external {
