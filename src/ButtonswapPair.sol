@@ -304,7 +304,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function mint(uint256 amountIn0, uint256 amountIn1, address to) external lock returns (uint256 liquidityOut) {
+    function mint(uint256 amountIn0, uint256 amountIn1, address to) external lock sendOrRefundFee returns (uint256 liquidityOut) {
         uint256 _totalSupply = totalSupply;
         address _token0 = token0;
         address _token1 = token1;
@@ -349,6 +349,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         external
         lock
         singleSidedTimelock
+        sendOrRefundFee
         returns (uint256 liquidityOut)
     {
         if (amountIn == 0) {
