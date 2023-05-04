@@ -3008,6 +3008,84 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(vars.pair.balanceOf(vars.feeTo), expectedFeeToBalance);
     }
 
+    function test_mintFee_sameDepositsGetSameTokens(
+        uint256 mintAmount00,
+        uint256 mintAmount01,
+        uint256 lpMintAmountToken0
+    ) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        // Div by 3 to have room for two mints and a swap
+        // Amounts must also be non-zero, and must exceed minimum liquidity
+        mintAmount00 = bound(mintAmount00, 1001, uint256(2 ** 112) / 3);
+        mintAmount01 = bound(mintAmount01, 1001, uint256(2 ** 112) / 3);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.minter2 = userD;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.rebasingToken1 = ICommonMockRebasingERC20(vars.pair.token1());
+
+        // Ensure that mintAmounts don't exceed the maximum mintable balances
+        vm.assume(mintAmount00 < vars.rebasingToken0.mintableBalance() / 3);
+        vm.assume(mintAmount01 < vars.rebasingToken1.mintableBalance() / 3);
+
+        // Mint initial liquidity (to address(this))
+        vars.rebasingToken0.mint(address(this), mintAmount00);
+        vars.rebasingToken0.approve(address(vars.pair), mintAmount00);
+        vars.rebasingToken1.mint(address(this), mintAmount01);
+        vars.rebasingToken1.approve(address(vars.pair), mintAmount01);
+        vars.pair.mint(mintAmount00, mintAmount01, address(this));
+
+        // The subsequent minter must mint a non-zero amount
+        lpMintAmountToken0 = bound(lpMintAmountToken0, mintAmount00 / 10, vars.rebasingToken1.mintableBalance() / 3);
+        uint256 lpMintAmountToken1 = Math.mulDiv(lpMintAmountToken0, mintAmount01, mintAmount00);
+        vm.assume(lpMintAmountToken1 < vars.rebasingToken1.mintableBalance() / 3);
+
+        // Minter 1 generates LP tokens with lpMintAmountToken0 token0 and matching token1 amounts
+        console.log(lpMintAmountToken0);
+        console.log(lpMintAmountToken1);
+
+        vm.startPrank(vars.minter1);
+        vars.rebasingToken0.mint(vars.minter1, lpMintAmountToken0);
+        vars.rebasingToken0.approve(address(vars.pair), lpMintAmountToken0);
+        vars.rebasingToken1.mint(vars.minter1, lpMintAmountToken1);
+        vars.rebasingToken1.approve(address(vars.pair), lpMintAmountToken1);
+        vars.pair.mint(lpMintAmountToken0, lpMintAmountToken1, vars.minter1);
+        vm.stopPrank();
+
+        // Minter 2 generates LP tokens with the same token amounts
+        vm.startPrank(vars.minter2);
+        vars.rebasingToken0.mint(vars.minter2, lpMintAmountToken0);
+        vars.rebasingToken0.approve(address(vars.pair), lpMintAmountToken0);
+        vars.rebasingToken1.mint(vars.minter2, lpMintAmountToken1);
+        vars.rebasingToken1.approve(address(vars.pair), lpMintAmountToken1);
+        vars.pair.mint(lpMintAmountToken0, lpMintAmountToken1, vars.minter2);
+        vm.stopPrank();
+
+        // Confirm both minter1 and minter2 have the same number of LP tokens
+        assertEq(vars.pair.balanceOf(vars.minter1), vars.pair.balanceOf(vars.minter2), "Both minters should have the same LP balance");
+
+        // First minter burns their LP tokens and gets back both tokens
+        vm.startPrank(vars.minter1);
+        (uint256 minter1Out0, uint256 minter1Out1) = vars.pair.burn(vars.pair.balanceOf(vars.minter1), vars.minter1);
+        vm.stopPrank();
+
+        // Second minter burns their LP tokens and gets back both tokens
+        vm.startPrank(vars.minter2);
+        (uint256 minter2Out0, uint256 minter2Out1) = vars.pair.burn(vars.pair.balanceOf(vars.minter2), vars.minter2);
+        vm.stopPrank();
+
+        // Confirm that minter1 and minter2 get back the same amount of tokens (allowing for potential rounding error of 1)
+        assertApproxEqAbs(minter1Out0, minter2Out0, 1);
+        assertApproxEqAbs(minter1Out1, minter2Out1, 1);
+    }
+
     function test_movingAveragePrice0(
         uint256 mintAmount00,
         uint256 mintAmount01,
