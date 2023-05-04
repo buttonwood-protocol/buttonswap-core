@@ -27,6 +27,11 @@ contract ButtonswapFactory is IButtonswapFactory {
     address[] public allPairs;
 
     /**
+     * @inheritdoc IButtonswapFactory
+     */
+    bool public lockedCreation;
+
+    /**
      * @dev `feeTo` is not initialised during deployment, and must be set separately by a call to {setFeeTo}.
      * @param _feeToSetter The account that has the ability to set `feeToSetter` and `feeTo`
      */
@@ -45,6 +50,9 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @inheritdoc IButtonswapFactory
      */
     function createPair(address tokenA, address tokenB) external returns (address pair) {
+        if (lockedCreation && msg.sender != feeToSetter) {
+            revert Forbidden();
+        }
         if (tokenA == tokenB) {
             revert TokenIdenticalAddress();
         }
@@ -86,5 +94,15 @@ contract ButtonswapFactory is IButtonswapFactory {
             revert Forbidden();
         }
         feeToSetter = _feeToSetter;
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setLockedCreation(bool _lockedCreation) external {
+        if (msg.sender != feeToSetter) {
+            revert Forbidden();
+        }
+        lockedCreation = _lockedCreation;
     }
 }
