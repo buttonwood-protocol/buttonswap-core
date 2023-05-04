@@ -130,16 +130,8 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
      * @param amountOut0 The amount of `token0` that the recipient receives
      * @param amountOut1 The amount of `token1` that the recipient receives
      * @param to The account that receives the swap output
-     * @param data Optional calldata that can be used to confirm the token transfer with `to`
      */
-    function swap(
-        uint256 amountIn0,
-        uint256 amountIn1,
-        uint256 amountOut0,
-        uint256 amountOut1,
-        address to,
-        bytes calldata data
-    ) external;
+    function swap(uint256 amountIn0, uint256 amountIn1, uint256 amountOut0, uint256 amountOut1, address to) external;
 
     /**
      * @notice Called during Pair deployment to initialize the new instance.
