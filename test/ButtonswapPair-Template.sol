@@ -2896,6 +2896,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
         vm.stopPrank();
 
+        // First minter burns their LP tokens to trigger platform fee being transferred or burned
+        vm.startPrank(vars.minter1);
+        vars.pair.burn(vars.pair.balanceOf(vars.minter1), vars.minter1);
+        vm.stopPrank();
+
         // Confirm new state is as expected
         assertEq(vars.pair.balanceOf(vars.feeTo), expectedFeeToBalance);
     }
@@ -2992,6 +2997,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.rebasingToken0.approve(address(vars.pair), vars.amount0In);
         vars.rebasingToken1.approve(address(vars.pair), vars.amount1In);
         vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vm.stopPrank();
+
+        // First minter burns their LP tokens to trigger platform fee being transferred or burned
+        vm.startPrank(vars.minter1);
+        vars.pair.burn(vars.pair.balanceOf(vars.minter1), vars.minter1);
         vm.stopPrank();
 
         // Confirm new state is as expected

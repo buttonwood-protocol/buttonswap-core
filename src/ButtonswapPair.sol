@@ -140,18 +140,29 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @dev TODO
-     * if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
+     * @dev Always mints liquidity equivalent to 1/6th of the growth in sqrt(k) and allocates to address(this)
+     * If there isn't a `feeTo` address defined, these LP tokens will get burned this 1/6th gets reallocated to LPs
      */
     function _mintFee(uint256 pool0, uint256 pool1, uint256 pool0New, uint256 pool1New) internal {
+        uint256 liquidityOut = PairMath.getProtocolFeeLiquidityMinted(totalSupply, pool0 * pool1, pool0New * pool1New);
+        if (liquidityOut > 0) {
+            _mint(address(this), liquidityOut);
+        }
+    }
+
+    /**
+     * @dev Called whenever an LP wants to burn their LP tokens to make sure they get their fair share of fees
+     * If feeTo is defined, balanceOf(address(this)) gets transferred to feeTo
+     * If feeTo is not defined, balanceOf(address(this)) gets burned and the LP-tokens all grow in value
+     */
+    modifier sendOrRefundFee() {
         address feeTo = IButtonswapFactory(factory).feeTo();
         if (feeTo != address(0)) {
-            uint256 liquidityOut =
-                PairMath.getProtocolFeeLiquidityMinted(totalSupply, pool0 * pool1, pool0New * pool1New);
-            if (liquidityOut > 0) {
-                _mint(feeTo, liquidityOut);
-            }
+            _transfer(address(this), feeTo, balanceOf[address(this)]);
+        } else {
+            _burn(address(this), balanceOf[address(this)]);
         }
+        _;
     }
 
     /**
@@ -402,7 +413,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function burn(uint256 liquidityIn, address to) external lock returns (uint256 amountOut0, uint256 amountOut1) {
+    function burn(uint256 liquidityIn, address to)
+        external
+        lock
+        sendOrRefundFee
+        returns (uint256 amountOut0, uint256 amountOut1)
+    {
         uint256 _totalSupply = totalSupply;
         address _token0 = token0;
         address _token1 = token1;
@@ -427,6 +443,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         external
         lock
         singleSidedTimelock
+        sendOrRefundFee
         returns (uint256 amountOut0, uint256 amountOut1)
     {
         uint256 _totalSupply = totalSupply;
