@@ -75,7 +75,12 @@ interface IButtonswapPairErrors is IButtonswapERC20Errors {
     error InvalidFinalPrice();
 
     /**
-     * @notice
+     * @notice todo
      */
     error SingleSidedTimelock();
+
+    /**
+     * @notice todo
+     */
+    error SwappableReservoir();
 }

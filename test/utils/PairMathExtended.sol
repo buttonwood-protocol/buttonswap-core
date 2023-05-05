@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.13;
+
+import {Math} from "../../src/libraries/Math.sol";
+
+library PairMathExtended {
+    /// @dev Refer to `/notes/mint-math.md`
+    /// This method inverts `getSingleSidedMintLiquidityOutAmountA` to allow for the calculation of how much can be
+    /// input without breaking the swappable reservoir limit.
+    function getMaximumSingleSidedMintLiquidityMintAmountA(
+        uint256 equivalentTokenB,
+        uint256 totalA,
+        uint256 totalB,
+        uint256 movingAveragePriceA
+    ) public pure returns (uint256 mintAmountA) {
+        uint256 tokenAToSwap = Math.mulDiv(equivalentTokenB, 2 ** 112, movingAveragePriceA);
+        mintAmountA = (Math.mulDiv(tokenAToSwap * totalA, movingAveragePriceA, 2 ** 112) + (tokenAToSwap * totalB))
+            / (totalB - Math.mulDiv(tokenAToSwap, movingAveragePriceA, 2 ** 112));
+    }
+
+    /// @dev Refer to `/notes/mint-math.md`
+    /// This method inverts `getSingleSidedMintLiquidityOutAmountB` to allow for the calculation of how much can be
+    /// input without breaking the swappable reservoir limit.
+    function getMaximumSingleSidedMintLiquidityMintAmountB(
+        uint256 equivalentTokenA,
+        uint256 totalA,
+        uint256 totalB,
+        uint256 movingAveragePriceA
+    ) public pure returns (uint256 mintAmountB) {
+        uint256 tokenBToSwap = Math.mulDiv(equivalentTokenA, movingAveragePriceA, 2 ** 112);
+        mintAmountB = (Math.mulDiv(tokenBToSwap * totalB, 2 ** 112, movingAveragePriceA) + (tokenBToSwap * totalA))
+            / (totalA - Math.mulDiv(tokenBToSwap, 2 ** 112, movingAveragePriceA));
+    }
+}

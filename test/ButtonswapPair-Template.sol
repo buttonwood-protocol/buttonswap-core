@@ -11,6 +11,7 @@ import {ICommonMockRebasingERC20} from "mock-contracts/interfaces/ICommonMockReb
 import {MockButtonswapFactory} from "./mocks/MockButtonswapFactory.sol";
 import {MockButtonswapPair} from "./mocks/MockButtonswapPair.sol";
 import {Utils} from "./utils/Utils.sol";
+import {PairMathExtended} from "./utils/PairMathExtended.sol";
 import {PriceAssertion} from "./utils/PriceAssertion.sol";
 import {UQ112x112} from "../src/libraries/UQ112x112.sol";
 
@@ -832,9 +833,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.rebasingToken0.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountA(
+            uint256 equivalentToken1;
+            (liquidityNew, equivalentToken1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
                 vars.pair.totalSupply(), amount10, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure we don't try to mint more than there's reservoir funds to pair with
             (,, uint256 reservoir0New,) =
@@ -847,9 +852,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.token1.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountB(
+            uint256 equivalentToken0;
+            (liquidityNew, equivalentToken0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
                 vars.pair.totalSupply(), amount11, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure we don't try to mint more than there's reservoir funds to pair with
             (,,, uint256 reservoir1New) =
@@ -960,9 +969,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.rebasingToken0.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountA(
+            uint256 equivalentToken1;
+            (liquidityNew, equivalentToken1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
                 vars.pair.totalSupply(), amount10, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure we don't try to mint more than there's reservoir funds to pair with
             (,, uint256 reservoir0New,) =
@@ -975,9 +988,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.token1.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountB(
+            uint256 equivalentToken0;
+            (liquidityNew, equivalentToken0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
                 vars.pair.totalSupply(), amount11, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure we don't try to mint more than there's reservoir funds to pair with
             (,,, uint256 reservoir1New) =
@@ -1080,9 +1097,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.rebasingToken0.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountA(
+            uint256 equivalentToken1;
+            (liquidityNew, equivalentToken1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
                 vars.pair.totalSupply(), amount10, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure we don't try to mint more than there's reservoir funds to pair with
             (,, uint256 reservoir0New,) =
@@ -1095,9 +1116,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.token1.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountB(
+            uint256 equivalentToken0;
+            (liquidityNew, equivalentToken0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
                 vars.pair.totalSupply(), amount11, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure we don't try to mint more than there's reservoir funds to pair with
             (,,, uint256 reservoir1New) =
@@ -1194,9 +1219,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.rebasingToken0.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountA(
+            uint256 equivalentToken1;
+            (liquidityNew, equivalentToken1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
                 vars.pair.totalSupply(), amount10, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure we don't try to mint more than there's reservoir funds to pair with
             (,, uint256 reservoir0New,) =
@@ -1209,9 +1238,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.token1.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountB(
+            uint256 equivalentToken0;
+            (liquidityNew, equivalentToken0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
                 vars.pair.totalSupply(), amount11, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure we don't try to mint more than there's reservoir funds to pair with
             (,,, uint256 reservoir1New) =
@@ -1345,6 +1378,9 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(amount00 < (uint256(2 ** 112) / 1000));
         vm.assume(amount01 < (uint256(2 ** 112) / 1000));
         vm.assume(amount1X < uint256(2 ** 112));
+        //        amount00 = bound(amount00, 0, uint256(2 ** 112) / 1000);
+        //        amount01 = bound(amount01, 0, uint256(2 ** 112) / 1000);
+        //        amount1X = bound(amount1X, 0, uint256(2 ** 112));
         // Amounts must be non-zero
         // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
         vm.assume(Math.sqrt(amount00 * amount01) > 1000);
@@ -1388,30 +1424,64 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint256 liquidityNew;
         // Prepare the appropriate token for the second mint based on which reservoir has a non-zero balance
         if (vars.reservoir0 == 0) {
+            // Keep amount1X bound within a range that won't violate the swappable reservoir limit due to running
+            //   out of vm.assume retries when handling this restriction more freely
+            amount1X = bound(
+                amount1X,
+                0,
+                PairMathExtended.getMaximumSingleSidedMintLiquidityMintAmountA(
+                    MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir(),
+                    vars.total0,
+                    vars.total1,
+                    vars.pair.movingAveragePrice0()
+                )
+            );
+
             // Mint the tokens
             vm.assume(amount1X < vars.rebasingToken0.mintableBalance());
             amount10 = amount1X;
             vars.rebasingToken0.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountA(
+            uint256 equivalentToken1;
+            (liquidityNew, equivalentToken1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
                 vars.pair.totalSupply(), amount10, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure try to mint more than there's reservoir funds to pair with
             (,, uint256 reservoir0New,) =
                 MockButtonswapPair(address(vars.pair)).mockGetLiquidityBalances(vars.total0 + amount10, vars.total1);
             vm.assume(reservoir0New > 0);
         } else {
+            // Keep amount1X bound within a range that won't violate the swappable reservoir limit due to running
+            //   out of vm.assume retries when handling this restriction more freely
+            amount1X = bound(
+                amount1X,
+                0,
+                PairMathExtended.getMaximumSingleSidedMintLiquidityMintAmountB(
+                    MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir(),
+                    vars.total0,
+                    vars.total1,
+                    vars.pair.movingAveragePrice0()
+                )
+            );
+
             // Mint the tokens
             vm.assume(amount1X < vars.token1.mintableBalance());
             amount11 = amount1X;
             vars.token1.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountB(
+            uint256 equivalentToken0;
+            (liquidityNew, equivalentToken0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
                 vars.pair.totalSupply(), amount11, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure try to mint more than there's reservoir funds to pair with
             (,,, uint256 reservoir1New) =
@@ -1494,9 +1564,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.rebasingToken0.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountA(
+            uint256 equivalentToken1;
+            (liquidityNew, equivalentToken1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
                 vars.pair.totalSupply(), amount10, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure we don't try to mint more than there's reservoir funds to pair with
             (,, uint256 reservoir0New,) =
@@ -1509,9 +1583,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.token1.mint(vars.minter2, amount1X);
 
             // Calculate the liquidity the minter should receive
-            liquidityNew = PairMath.getSingleSidedMintLiquidityOutAmountB(
+            uint256 equivalentToken0;
+            (liquidityNew, equivalentToken0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
                 vars.pair.totalSupply(), amount11, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
 
             // Ensure we don't try to mint more than there's reservoir funds to pair with
             (,,, uint256 reservoir1New) =
@@ -1703,16 +1781,24 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint256 expectedAmount1;
         if (vars.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            expectedAmount1 = PairMath.getSingleSidedBurnOutputAmountB(
+            uint256 equivalentToken1;
+            (expectedAmount1, equivalentToken1) = PairMath.getSingleSidedBurnOutputAmountB(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
             vm.assume(expectedAmount1 <= vars.reservoir1);
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            expectedAmount0 = PairMath.getSingleSidedBurnOutputAmountA(
+            uint256 equivalentToken0;
+            (expectedAmount0, equivalentToken0) = PairMath.getSingleSidedBurnOutputAmountA(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
             vm.assume(expectedAmount0 <= vars.reservoir0);
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         }
         // Ignore edge cases where both expected amounts are zero
         vm.assume(expectedAmount0 > 0 || expectedAmount1 > 0);
@@ -1815,16 +1901,24 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint256 expectedAmount1;
         if (vars.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            expectedAmount1 = PairMath.getSingleSidedBurnOutputAmountB(
+            uint256 equivalentToken1;
+            (expectedAmount1, equivalentToken1) = PairMath.getSingleSidedBurnOutputAmountB(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
             vm.assume(expectedAmount1 <= vars.reservoir1);
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            expectedAmount0 = PairMath.getSingleSidedBurnOutputAmountA(
+            uint256 equivalentToken0;
+            (expectedAmount0, equivalentToken0) = PairMath.getSingleSidedBurnOutputAmountA(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
             vm.assume(expectedAmount0 <= vars.reservoir0);
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         }
 
         // Ignore edge cases where both expected amounts are zero
@@ -1913,16 +2007,24 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint256 expectedAmount1;
         if (vars.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            expectedAmount1 = PairMath.getSingleSidedBurnOutputAmountB(
+            uint256 equivalentToken1;
+            (expectedAmount1, equivalentToken1) = PairMath.getSingleSidedBurnOutputAmountB(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
             vm.assume(expectedAmount1 <= vars.reservoir1);
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            expectedAmount0 = PairMath.getSingleSidedBurnOutputAmountA(
+            uint256 equivalentToken0;
+            (expectedAmount0, equivalentToken0) = PairMath.getSingleSidedBurnOutputAmountA(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
             vm.assume(expectedAmount0 <= vars.reservoir0);
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         }
         // Ignore edge cases where both expected amounts are zero
         vm.assume(expectedAmount0 > 0 || expectedAmount1 > 0);
@@ -2008,16 +2110,24 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint256 expectedAmount1;
         if (vars.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            expectedAmount1 = PairMath.getSingleSidedBurnOutputAmountB(
+            uint256 equivalentToken1;
+            (expectedAmount1, equivalentToken1) = PairMath.getSingleSidedBurnOutputAmountB(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
             vm.assume(expectedAmount1 <= vars.reservoir1);
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            expectedAmount0 = PairMath.getSingleSidedBurnOutputAmountA(
+            uint256 equivalentToken0;
+            (expectedAmount0, equivalentToken0) = PairMath.getSingleSidedBurnOutputAmountA(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
             vm.assume(expectedAmount0 <= vars.reservoir0);
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         }
 
         // Ignore edge cases where both expected amounts are zero
@@ -2095,12 +2205,14 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Estimate redeemed amounts if full balance was burned
         if (vars.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            expectedAmount1 = PairMath.getSingleSidedBurnOutputAmountB(
+            uint256 equivalentToken1;
+            (expectedAmount1, equivalentToken1) = PairMath.getSingleSidedBurnOutputAmountB(
                 vars.pair.totalSupply(), burnAmountMax, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            expectedAmount0 = PairMath.getSingleSidedBurnOutputAmountA(
+            uint256 equivalentToken0;
+            (expectedAmount0, equivalentToken0) = PairMath.getSingleSidedBurnOutputAmountA(
                 vars.pair.totalSupply(), burnAmountMax, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
         }
@@ -2117,14 +2229,40 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Update estimate redeemed amounts with adjusted burnAmount
         if (vars.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            expectedAmount1 = PairMath.getSingleSidedBurnOutputAmountB(
+            uint256 equivalentToken1;
+            (expectedAmount1, equivalentToken1) = PairMath.getSingleSidedBurnOutputAmountB(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Relying on vm.assume gives us too many rejections, so instead scale input down if it exceeds the limit
+            if (equivalentToken1 > MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir()) {
+                burnAmount =
+                    (burnAmount * MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir()) / equivalentToken1;
+                (expectedAmount1, equivalentToken1) = PairMath.getSingleSidedBurnOutputAmountB(
+                    vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
+                );
+            }
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            expectedAmount0 = PairMath.getSingleSidedBurnOutputAmountA(
+            uint256 equivalentToken0;
+            (expectedAmount0, equivalentToken0) = PairMath.getSingleSidedBurnOutputAmountA(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Relying on vm.assume gives us too many rejections, so instead scale input down if it exceeds the limit
+            if (equivalentToken0 > MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir()) {
+                burnAmount =
+                    (burnAmount * MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir()) / equivalentToken0;
+                (expectedAmount0, equivalentToken0) = PairMath.getSingleSidedBurnOutputAmountA(
+                    vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
+                );
+            }
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         }
         // This should result in  both expected amounts being zero
         vm.assume(expectedAmount0 == 0 && expectedAmount1 == 0);
@@ -2183,14 +2321,22 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint256 expectedAmount1;
         if (vars.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            expectedAmount1 = PairMath.getSingleSidedBurnOutputAmountB(
+            uint256 equivalentToken1;
+            (expectedAmount1, equivalentToken1) = PairMath.getSingleSidedBurnOutputAmountB(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            expectedAmount0 = PairMath.getSingleSidedBurnOutputAmountA(
+            uint256 equivalentToken0;
+            (expectedAmount0, equivalentToken0) = PairMath.getSingleSidedBurnOutputAmountA(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         }
         // Filter out cases when expected amounts are both zero
         vm.assume(expectedAmount0 > 0 || expectedAmount1 > 0);
@@ -2259,14 +2405,40 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint256 expectedAmount1;
         if (vars.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            expectedAmount1 = PairMath.getSingleSidedBurnOutputAmountB(
+            uint256 equivalentToken1;
+            (expectedAmount1, equivalentToken1) = PairMath.getSingleSidedBurnOutputAmountB(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Relying on vm.assume gives us too many rejections, so instead scale input down if it exceeds the limit
+            if (equivalentToken1 > MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir()) {
+                burnAmount =
+                    (burnAmount * MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir()) / equivalentToken1;
+                (expectedAmount1, equivalentToken1) = PairMath.getSingleSidedBurnOutputAmountB(
+                    vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
+                );
+            }
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken1 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            expectedAmount0 = PairMath.getSingleSidedBurnOutputAmountA(
+            uint256 equivalentToken0;
+            (expectedAmount0, equivalentToken0) = PairMath.getSingleSidedBurnOutputAmountA(
                 vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
             );
+
+            // Relying on vm.assume gives us too many rejections, so instead scale input down if it exceeds the limit
+            if (equivalentToken0 > MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir()) {
+                burnAmount =
+                    (burnAmount * MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir()) / equivalentToken0;
+                (expectedAmount0, equivalentToken0) = PairMath.getSingleSidedBurnOutputAmountA(
+                    vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
+                );
+            }
+
+            // Ensure within swappable reservoir limits
+            vm.assume(equivalentToken0 <= MockButtonswapPair(address(vars.pair)).mockGetSwappableReservoir());
         }
         // Target cases where expected amount exceeds reservoir balances
         vm.assume(expectedAmount0 > vars.reservoir0 || expectedAmount1 > vars.reservoir1);

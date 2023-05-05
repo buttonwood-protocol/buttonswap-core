@@ -84,7 +84,7 @@ contract PairMathTest is Test {
 
         uint256 tokenAToSwap =
             Math.mulDiv(mintAmountA, totalB, Math.mulDiv(movingAveragePriceA, totalA + mintAmountA, 2 ** 112) + totalB);
-        uint256 equivalentTokenB = Math.mulDiv(tokenAToSwap, movingAveragePriceA, 2 ** 112);
+        uint256 expectedEquivalentTokenB = Math.mulDiv(tokenAToSwap, movingAveragePriceA, 2 ** 112);
         uint256 tokenARemaining = mintAmountA - tokenAToSwap;
 
         // TotalLiquidity is non-zero
@@ -93,15 +93,20 @@ contract PairMathTest is Test {
         // amountInA * totalLiquidity < type(uint256).max
         vm.assume(tokenARemaining < type(uint256).max / totalLiquidity);
         // amountInB * totalLiquidity < type(uint256).max
-        vm.assume(equivalentTokenB < type(uint256).max / totalLiquidity);
+        vm.assume(expectedEquivalentTokenB < type(uint256).max / totalLiquidity);
 
         uint256 expectedLiquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
-            totalLiquidity, tokenARemaining, equivalentTokenB, totalA + tokenAToSwap, totalB - equivalentTokenB
+            totalLiquidity,
+            tokenARemaining,
+            expectedEquivalentTokenB,
+            totalA + tokenAToSwap,
+            totalB - expectedEquivalentTokenB
         );
 
-        uint256 liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountA(
+        (uint256 liquidityOut, uint256 equivalentTokenB) = PairMath.getSingleSidedMintLiquidityOutAmountA(
             totalLiquidity, mintAmountA, totalA, totalB, movingAveragePriceA
         );
+        assertEq(equivalentTokenB, expectedEquivalentTokenB, "equivalentTokenA does not match expected amounts");
         assertEq(liquidityOut, expectedLiquidityOut, "liquidityOut does not match expectedLiquidityOut");
     }
 
@@ -122,24 +127,29 @@ contract PairMathTest is Test {
         uint256 tokenBToSwap =
             (mintAmountB * totalA) / (((2 ** 112 * (totalB + mintAmountB)) / movingAveragePriceA) + totalA);
         // Inverse price so again we can use it without overflow risk
-        uint256 equivalentTokenA = (tokenBToSwap * (2 ** 112)) / movingAveragePriceA;
+        uint256 expectedEquivalentTokenA = (tokenBToSwap * (2 ** 112)) / movingAveragePriceA;
         uint256 tokenBRemaining = mintAmountB - tokenBToSwap;
 
         // TotalLiquidity is non-zero
         vm.assume(totalLiquidity > 0);
         // Ensuring that we don't trigger an overflow in the intermediate `getDualSidedMintLiquidityOutAmount()` call
         // amountInA * totalLiquidity < type(uint256).max
-        vm.assume(equivalentTokenA < type(uint256).max / totalLiquidity);
+        vm.assume(expectedEquivalentTokenA < type(uint256).max / totalLiquidity);
         // amountInB * totalLiquidity < type(uint256).max
         vm.assume(tokenBRemaining < type(uint256).max / totalLiquidity);
 
         uint256 expectedLiquidityOut = PairMath.getDualSidedMintLiquidityOutAmount(
-            totalLiquidity, equivalentTokenA, tokenBRemaining, totalA - equivalentTokenA, totalB + tokenBToSwap
+            totalLiquidity,
+            expectedEquivalentTokenA,
+            tokenBRemaining,
+            totalA - expectedEquivalentTokenA,
+            totalB + tokenBToSwap
         );
 
-        uint256 liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountB(
+        (uint256 liquidityOut, uint256 equivalentTokenA) = PairMath.getSingleSidedMintLiquidityOutAmountB(
             totalLiquidity, mintAmountB, totalA, totalB, movingAveragePriceA
         );
+        assertEq(equivalentTokenA, expectedEquivalentTokenA, "equivalentTokenA does not match expected amounts");
         assertEq(liquidityOut, expectedLiquidityOut, "liquidityOut does not match expectedLiquidityOut");
     }
 
@@ -190,13 +200,16 @@ contract PairMathTest is Test {
             PairMath.getDualSidedBurnOutputAmounts(totalLiquidity, liquidityIn, totalA, totalB);
         // amountOutB must be capped by 2**113 since it is from the bPool and bRes
         vm.assume(internalAmountOutB < uint256(type(uint112).max) * 2);
-        uint256 equivalentTokenA = (internalAmountOutB * (2 ** 112)) / movingAveragePriceA;
+        uint256 expectedEquivalentTokenA = (internalAmountOutB * (2 ** 112)) / movingAveragePriceA;
 
-        uint256 amountOutA =
+        (uint256 amountOutA, uint256 equivalentTokenA) =
             PairMath.getSingleSidedBurnOutputAmountA(totalLiquidity, liquidityIn, totalA, totalB, movingAveragePriceA);
 
         // amountOutA == (A from dual-burn) + (A from swap)
-        assertEq(amountOutA, internalAmountOutA + equivalentTokenA, "amountOutA does not match expected amounts");
+        assertEq(equivalentTokenA, expectedEquivalentTokenA, "equivalentTokenA does not match expected amounts");
+        assertEq(
+            amountOutA, internalAmountOutA + expectedEquivalentTokenA, "amountOutA does not match expected amounts"
+        );
     }
 
     function test_getSingleSidedBurnOutputAmountB(
@@ -223,15 +236,18 @@ contract PairMathTest is Test {
             PairMath.getDualSidedBurnOutputAmounts(totalLiquidity, liquidityIn, totalA, totalB);
         // amountOutA must be capped by 2**113 since it is from the aPool and aRes
         vm.assume(internalAmountOutA < uint256(type(uint112).max) * 2);
-        uint256 equivalentTokenB = Math.mulDiv(internalAmountOutA, movingAveragePriceA, 2 ** 112);
+        uint256 expectedEquivalentTokenB = Math.mulDiv(internalAmountOutA, movingAveragePriceA, 2 ** 112);
         // equivalentTokenB must be capped by 2**112 since it is from the bRes
-        vm.assume(equivalentTokenB < uint256(type(uint112).max));
+        vm.assume(expectedEquivalentTokenB < uint256(type(uint112).max));
 
-        uint256 amountOutB =
+        (uint256 amountOutB, uint256 equivalentTokenB) =
             PairMath.getSingleSidedBurnOutputAmountB(totalLiquidity, liquidityIn, totalA, totalB, movingAveragePriceA);
 
         // amountOutB == (B from dual-burn) + (B from swap)
-        assertEq(amountOutB, internalAmountOutB + equivalentTokenB, "amountOutB does not match expected amounts");
+        assertEq(equivalentTokenB, expectedEquivalentTokenB, "equivalentTokenB does not match expected amounts");
+        assertEq(
+            amountOutB, internalAmountOutB + expectedEquivalentTokenB, "amountOutB does not match expected amounts"
+        );
     }
 
     function test_getSwapOutputAmount(uint256 inputAmount, uint256 poolInput, uint256 poolOutput) public {
