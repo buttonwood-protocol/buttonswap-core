@@ -9,7 +9,6 @@ import {UQ112x112} from "./libraries/UQ112x112.sol";
 import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import {IButtonswapFactory} from "./interfaces/IButtonswapFactory/IButtonswapFactory.sol";
-import {IButtonswapCallee} from "./interfaces/IButtonswapCallee.sol";
 
 contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     using UQ112x112 for uint224;
