@@ -132,11 +132,4 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
      * @param to The account that receives the swap output
      */
     function swap(uint256 amountIn0, uint256 amountIn1, uint256 amountOut0, uint256 amountOut1, address to) external;
-
-    /**
-     * @notice Called during Pair deployment to initialize the new instance.
-     * @param _token0 The address for `token0`
-     * @param _token1 The address for `token1`
-     */
-    function initialize(address _token0, address _token1) external;
 }
