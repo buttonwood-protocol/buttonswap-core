@@ -63,4 +63,11 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @param _feeToSetter The new address
      */
     function setFeeToSetter(address _feeToSetter) external;
+
+    /**
+     * @notice Returns the last token pair created.
+     * @return token0 The first token address
+     * @return token1 The second token address
+     */
+    function lastCreatedPairTokens() external returns (address token0, address token1);
 }

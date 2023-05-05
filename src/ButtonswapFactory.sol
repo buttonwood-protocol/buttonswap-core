@@ -26,6 +26,10 @@ contract ButtonswapFactory is IButtonswapFactory {
      */
     address[] public allPairs;
 
+    address internal lastToken0;
+
+    address internal lastToken1;
+
     /**
      * @dev `feeTo` is not initialised during deployment, and must be set separately by a call to {setFeeTo}.
      * @param _feeToSetter The account that has the ability to set `feeToSetter` and `feeTo`
@@ -56,12 +60,17 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (getPair[token0][token1] != address(0)) {
             revert PairExists();
         }
+        lastToken0 = token0;
+        lastToken1 = token1;
         bytes memory bytecode = type(ButtonswapPair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IButtonswapPair(pair).initialize(token0, token1);
+        // Resetting lastToken0/lastToken1 to 0 to refund gas
+        lastToken0 = address(0);
+        lastToken1 = address(0);
+
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);
@@ -86,5 +95,13 @@ contract ButtonswapFactory is IButtonswapFactory {
             revert Forbidden();
         }
         feeToSetter = _feeToSetter;
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function lastCreatedPairTokens() external view returns (address token0, address token1) {
+        token0 = lastToken0;
+        token1 = lastToken1;
     }
 }

@@ -54,12 +54,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    address public token0;
+    address public immutable token0;
 
     /**
      * @inheritdoc IButtonswapPair
      */
-    address public token1;
+    address public immutable token1;
 
     /**
      * @dev TODO
@@ -125,18 +125,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
 
     constructor() {
         factory = msg.sender;
-    }
-
-    /**
-     * @inheritdoc IButtonswapPair
-     */
-    function initialize(address _token0, address _token1) external {
-        // sufficient check
-        if (msg.sender != factory) {
-            revert Forbidden();
-        }
-        token0 = _token0;
-        token1 = _token1;
+        (token0, token1) = IButtonswapFactory(factory).lastCreatedPairTokens();
     }
 
     /**
