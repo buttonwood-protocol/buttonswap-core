@@ -93,63 +93,9 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebasingTokenB.initialize();
     }
 
-    function test_initialize(address factory, address token0, address token1) public {
-        vm.assume(factory != address(this));
-
-        vm.prank(factory);
-        ButtonswapPair pair = new ButtonswapPair();
-
-        assertEq(pair.factory(), factory);
-        assertEq(pair.token0(), address(0));
-        assertEq(pair.token1(), address(0));
-
-        vm.prank(factory);
-        pair.initialize(token0, token1);
-        assertEq(pair.token0(), token0);
-        assertEq(pair.token1(), token1);
-        assertEq(pair.totalSupply(), 0);
-        assertEq(pair.balanceOf(address(0)), 0);
-        assertEq(pair.balanceOf(factory), 0);
-    }
-
-    function test_initialize_CannotCallWhenNotCreator(address factory, address token0, address token1) public {
-        vm.assume(factory != address(this));
-
-        vm.prank(factory);
-        ButtonswapPair pair = new ButtonswapPair();
-
-        assertEq(pair.factory(), factory);
-        assertEq(pair.token0(), address(0));
-        assertEq(pair.token1(), address(0));
-
-        vm.expectRevert(Forbidden.selector);
-        pair.initialize(token0, token1);
-    }
-
-    function test_initialize_CreateViaFactory(address token0, address token1) public {
-        TestVariables memory vars;
-        vars.feeToSetter = userA;
-        vars.feeTo = userB;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
-        vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair(vars.factory.createPair(token0, token1));
-
-        assertEq(vars.pair.token0(), token0);
-        assertEq(vars.pair.token1(), token1);
-        assertEq(vars.pair.totalSupply(), 0);
-        assertEq(vars.pair.balanceOf(vars.zeroAddress), 0);
-        assertEq(vars.pair.balanceOf(vars.feeToSetter), 0);
-        assertEq(vars.pair.balanceOf(vars.feeTo), 0);
-    }
-
-    function test_getLiquidityBalances_ReturnsZeroBeforeFirstMint(address factory) public {
-        vm.assume(factory != address(this));
-
-        vm.startPrank(factory);
-        ButtonswapPair pair = new ButtonswapPair();
-        pair.initialize(address(tokenA), address(tokenB));
-        vm.stopPrank();
+    function test_getLiquidityBalances_ReturnsZeroBeforeFirstMint(bytes32 factorySalt) public {
+        MockButtonswapFactory factory = new MockButtonswapFactory{salt: factorySalt}(userA);
+        ButtonswapPair pair = ButtonswapPair(factory.createPair(address(tokenA), address(tokenB)));
 
         (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1, uint256 blockTimestampLast) =
             pair.getLiquidityBalances();
@@ -160,10 +106,17 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(blockTimestampLast, 0);
     }
 
-    function test_getLiquidityBalances(uint112 _pool0Last, uint112 _pool1Last, uint112 total0, uint112 total1) public {
+    function test_getLiquidityBalances(
+        uint112 _pool0Last,
+        uint112 _pool1Last,
+        uint112 total0,
+        uint112 total1,
+        bytes32 factorySalt
+    ) public {
         vm.assume(_pool0Last != 0 && _pool1Last != 0);
         vm.assume(total0 != 0 && total1 != 0);
-        MockButtonswapPair pair = new MockButtonswapPair();
+        MockButtonswapFactory factory = new MockButtonswapFactory{salt: factorySalt}(userA);
+        MockButtonswapPair pair = MockButtonswapPair(factory.createPair(address(tokenA), address(tokenB)));
         pair.mockSetPoolsLast(_pool0Last, _pool1Last);
         (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) =
             pair.mockGetLiquidityBalances(uint256(total0), uint256(total1));
@@ -187,7 +140,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint112 _pool0Last,
         uint112 _pool1Last,
         uint256 total0,
-        uint256 total1
+        uint256 total1,
+        bytes32 factorySalt
     ) public {
         vm.assume(_pool0Last != 0 && _pool1Last != 0);
         // Target pool values that will cause final values to overflow uint112
@@ -198,7 +152,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(((total0 * _pool1Last) / _pool0Last) + 1 < type(uint256).max / _pool0Last);
         vm.assume(((total1 * _pool0Last) / _pool1Last) + 1 < type(uint256).max / _pool1Last);
 
-        MockButtonswapPair pair = new MockButtonswapPair();
+        MockButtonswapFactory factory = new MockButtonswapFactory{salt: factorySalt}(userA);
+        MockButtonswapPair pair = MockButtonswapPair(factory.createPair(address(tokenA), address(tokenB)));
         pair.mockSetPoolsLast(_pool0Last, _pool1Last);
         vm.expectRevert(Overflow.selector);
         pair.mockGetLiquidityBalances(total0, total1);
@@ -208,10 +163,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint112 _pool0Last,
         uint112 _pool1Last,
         uint256 total0,
-        uint256 total1
+        uint256 total1,
+        bytes32 factorySalt
     ) public {
         vm.assume(_pool0Last != 0 && _pool1Last != 0);
-        MockButtonswapPair pair = new MockButtonswapPair();
+        MockButtonswapFactory factory = new MockButtonswapFactory{salt: factorySalt}(userA);
+        MockButtonswapPair pair = MockButtonswapPair(factory.createPair(address(tokenA), address(tokenB)));
         pair.mockSetPoolsLast(_pool0Last, _pool1Last);
         uint256 pool0;
         uint256 pool1;
