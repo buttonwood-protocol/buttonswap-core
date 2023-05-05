@@ -77,4 +77,11 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @param _isCreationRestricted The new state
      */
     function setIsCreationRestricted(bool _isCreationRestricted) external;
+
+    /**
+     * @notice Returns the last token pair created.
+     * @return token0 The first token address
+     * @return token1 The second token address
+     */
+    function lastCreatedPairTokens() external returns (address token0, address token1);
 }
