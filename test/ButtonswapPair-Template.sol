@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
+import {Test, stdError} from "forge-std/Test.sol";
 import {IButtonswapPairEvents, IButtonswapPairErrors} from "../src/interfaces/IButtonswapPair/IButtonswapPair.sol";
 import {ButtonswapPair} from "../src/ButtonswapPair.sol";
 import {Math} from "../src/libraries/Math.sol";
@@ -3008,22 +3008,24 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(vars.pair.balanceOf(vars.feeTo), expectedFeeToBalance);
     }
 
-    function test_mintFee_sameDepositsGetSameTokens(
-        uint256 mintAmount00,
-        uint256 mintAmount01,
-        uint256 lpMintAmountToken0
+    function test_mintFee_depositsAfterSwapDontEarnFee(
+        uint256 mintAmount0,
+        uint256 mintAmount1,
+        uint256 lpMintAmountToken0,
+        uint256 swapAmount0
     ) public {
         // Make sure the amounts aren't liable to overflow 2**112
         // Div by 3 to have room for two mints and a swap
         // Amounts must also be non-zero, and must exceed minimum liquidity
-        mintAmount00 = bound(mintAmount00, 1001, uint256(2 ** 112) / 3);
-        mintAmount01 = bound(mintAmount01, 1001, uint256(2 ** 112) / 3);
+        mintAmount0 = bound(mintAmount0, 1001, uint256(2 ** 112) / 3);
+        mintAmount1 = bound(mintAmount1, 1001, uint256(2 ** 112) / 3);
 
         TestVariables memory vars;
         vars.feeToSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
+        vars.swapper1 = userE;
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
         vm.prank(vars.feeToSetter);
         vars.factory.setFeeTo(vars.feeTo);
@@ -3032,25 +3034,22 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.rebasingToken1 = ICommonMockRebasingERC20(vars.pair.token1());
 
         // Ensure that mintAmounts don't exceed the maximum mintable balances
-        vm.assume(mintAmount00 < vars.rebasingToken0.mintableBalance() / 3);
-        vm.assume(mintAmount01 < vars.rebasingToken1.mintableBalance() / 3);
+        vm.assume(mintAmount0 < vars.rebasingToken0.mintableBalance() / 3);
+        vm.assume(mintAmount1 < vars.rebasingToken1.mintableBalance() / 3);
 
         // Mint initial liquidity (to address(this))
-        vars.rebasingToken0.mint(address(this), mintAmount00);
-        vars.rebasingToken0.approve(address(vars.pair), mintAmount00);
-        vars.rebasingToken1.mint(address(this), mintAmount01);
-        vars.rebasingToken1.approve(address(vars.pair), mintAmount01);
-        vars.pair.mint(mintAmount00, mintAmount01, address(this));
+        vars.rebasingToken0.mint(address(this), mintAmount0);
+        vars.rebasingToken0.approve(address(vars.pair), mintAmount0);
+        vars.rebasingToken1.mint(address(this), mintAmount1);
+        vars.rebasingToken1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, address(this));
 
         // The subsequent minter must mint a non-zero amount
-        lpMintAmountToken0 = bound(lpMintAmountToken0, mintAmount00 / 10, vars.rebasingToken1.mintableBalance() / 3);
-        uint256 lpMintAmountToken1 = Math.mulDiv(lpMintAmountToken0, mintAmount01, mintAmount00);
+        lpMintAmountToken0 = bound(lpMintAmountToken0, mintAmount0 / 10, vars.rebasingToken1.mintableBalance() / 3);
+        uint256 lpMintAmountToken1 = Math.mulDiv(lpMintAmountToken0, mintAmount1, mintAmount0);
         vm.assume(lpMintAmountToken1 < vars.rebasingToken1.mintableBalance() / 3);
 
         // Minter 1 generates LP tokens with lpMintAmountToken0 token0 and matching token1 amounts
-        console.log(lpMintAmountToken0);
-        console.log(lpMintAmountToken1);
-
         vm.startPrank(vars.minter1);
         vars.rebasingToken0.mint(vars.minter1, lpMintAmountToken0);
         vars.rebasingToken0.approve(address(vars.pair), lpMintAmountToken0);
@@ -3059,31 +3058,39 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.pair.mint(lpMintAmountToken0, lpMintAmountToken1, vars.minter1);
         vm.stopPrank();
 
-        // Minter 2 generates LP tokens with the same token amounts
+        // Swapper1 does two swaps and creates lazily-collected fee
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        vm.startPrank(vars.swapper1);
+        swapAmount0 = bound(swapAmount0, vars.pool0 / 10, vars.pool0);
+        vm.assume(swapAmount0 < vars.rebasingToken0.mintableBalance());
+        uint256 swapOutput = PairMath.getSwapOutputAmount(swapAmount0, vars.pool0, vars.pool1);
+        vars.rebasingToken0.mint(vars.swapper1, swapAmount0);
+        vars.rebasingToken0.approve(address(vars.pair), swapAmount0);
+        vars.pair.swap(swapAmount0, 0, 0, swapOutput, vars.swapper1, new bytes(0));
+        vm.stopPrank();
+
+        // Minter2 generates LP tokens by duplicating the token balances
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        uint256 minter2Deposit0 = (vars.pool0 + vars.reservoir0);
+        uint256 minter2Deposit1 = (vars.pool1 + vars.reservoir1);
+        vm.assume(minter2Deposit0 < vars.rebasingToken0.mintableBalance());
+        vm.assume(minter2Deposit1 < vars.rebasingToken1.mintableBalance());
         vm.startPrank(vars.minter2);
-        vars.rebasingToken0.mint(vars.minter2, lpMintAmountToken0);
-        vars.rebasingToken0.approve(address(vars.pair), lpMintAmountToken0);
-        vars.rebasingToken1.mint(vars.minter2, lpMintAmountToken1);
-        vars.rebasingToken1.approve(address(vars.pair), lpMintAmountToken1);
-        vars.pair.mint(lpMintAmountToken0, lpMintAmountToken1, vars.minter2);
+        vars.rebasingToken0.mint(vars.minter2, minter2Deposit0);
+        vars.rebasingToken0.approve(address(vars.pair), minter2Deposit0);
+        vars.rebasingToken1.mint(vars.minter2, minter2Deposit1);
+        vars.rebasingToken1.approve(address(vars.pair), minter2Deposit1);
+        vars.pair.mint(minter2Deposit0, minter2Deposit1, vars.minter2);
         vm.stopPrank();
 
-        // Confirm both minter1 and minter2 have the same number of LP tokens
-        assertEq(vars.pair.balanceOf(vars.minter1), vars.pair.balanceOf(vars.minter2), "Both minters should have the same LP balance");
-
-        // First minter burns their LP tokens and gets back both tokens
-        vm.startPrank(vars.minter1);
-        (uint256 minter1Out0, uint256 minter1Out1) = vars.pair.burn(vars.pair.balanceOf(vars.minter1), vars.minter1);
-        vm.stopPrank();
-
-        // Second minter burns their LP tokens and gets back both tokens
+        // Minter2 burns their LP tokens and gets back both tokens
         vm.startPrank(vars.minter2);
         (uint256 minter2Out0, uint256 minter2Out1) = vars.pair.burn(vars.pair.balanceOf(vars.minter2), vars.minter2);
         vm.stopPrank();
 
-        // Confirm that minter1 and minter2 get back the same amount of tokens (allowing for potential rounding error of 1)
-        assertApproxEqAbs(minter1Out0, minter2Out0, 1);
-        assertApproxEqAbs(minter1Out1, minter2Out1, 1);
+        // Since no swaps have occurred since minter2 minted, they should get back their deposits with no fee collected
+        assertApproxEqAbs(minter2Out0, minter2Deposit0, 1);
+        assertApproxEqAbs(minter2Out1, minter2Deposit1, 1);
     }
 
     function test_movingAveragePrice0(
