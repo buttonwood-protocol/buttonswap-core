@@ -284,7 +284,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         uint256 _getSwappableReservoirAtMaxDeadline = swappableReservoirAtMaxDeadline;
         uint256 blockTimestamp = block.timestamp;
         if (_getSwappableReservoirAtMaxDeadline > blockTimestamp) {
-            uint256 progress = swappableReservoirGrowthWindow - _getSwappableReservoirAtMaxDeadline - blockTimestamp;
+            uint256 progress = swappableReservoirGrowthWindow - (_getSwappableReservoirAtMaxDeadline - blockTimestamp);
             swappableReservoir = (maxSwappableReservoir * progress) / swappableReservoirGrowthWindow;
         } else {
             swappableReservoir = maxSwappableReservoir;
