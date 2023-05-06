@@ -2289,7 +2289,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectEmit(true, true, true, true);
         emit Swap(vars.swapper1, vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // Confirm new state is as expected
@@ -2375,7 +2375,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectEmit(true, true, true, true);
         emit Swap(vars.swapper1, vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // Confirm new state is as expected
@@ -2456,7 +2456,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(InsufficientOutputAmount.selector);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
     }
 
@@ -2518,7 +2518,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(InsufficientLiquidity.selector);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
     }
 
@@ -2580,7 +2580,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(InvalidRecipient.selector);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
     }
 
@@ -2642,7 +2642,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         // Don't transfer any tokens in
         vm.expectRevert(InsufficientInputAmount.selector);
-        vars.pair.swap(0, 0, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(0, 0, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
     }
 
@@ -2706,7 +2706,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(KInvariant.selector);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
     }
 
@@ -2783,7 +2783,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // Confirm final state meets expectations
@@ -2850,7 +2850,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // First minter burns their LP tokens to trigger platform fee being transferred or burned
@@ -2953,7 +2953,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.rebasingToken0.approve(address(vars.pair), vars.amount0In);
         vars.rebasingToken1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // First minter burns their LP tokens to trigger platform fee being transferred or burned
@@ -3112,7 +3112,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // With no time elapsed the movingAveragePrice0 remains unchanged
@@ -3198,7 +3198,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // Confirm new state is as expected
@@ -3270,7 +3270,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1);
         vm.stopPrank();
 
         assertGe(
@@ -3299,7 +3299,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1);
         vm.stopPrank();
 
         assertEq(
@@ -3329,7 +3329,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1);
         vm.stopPrank();
 
         assertGe(
@@ -3392,7 +3392,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // Can't call single sided operations whilst lock is active
