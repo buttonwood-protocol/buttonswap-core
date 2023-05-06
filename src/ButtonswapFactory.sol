@@ -31,6 +31,11 @@ contract ButtonswapFactory is IButtonswapFactory {
     address internal lastToken1;
 
     /**
+     * @inheritdoc IButtonswapFactory
+     */
+    bool public isCreationRestricted;
+
+    /**
      * @dev `feeTo` is not initialised during deployment, and must be set separately by a call to {setFeeTo}.
      * @param _feeToSetter The account that has the ability to set `feeToSetter` and `feeTo`
      */
@@ -49,6 +54,9 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @inheritdoc IButtonswapFactory
      */
     function createPair(address tokenA, address tokenB) external returns (address pair) {
+        if (isCreationRestricted && msg.sender != feeToSetter) {
+            revert Forbidden();
+        }
         if (tokenA == tokenB) {
             revert TokenIdenticalAddress();
         }
@@ -100,6 +108,13 @@ contract ButtonswapFactory is IButtonswapFactory {
     /**
      * @inheritdoc IButtonswapFactory
      */
+    function setIsCreationRestricted(bool _isCreationRestricted) external {
+        if (msg.sender != feeToSetter) {
+            revert Forbidden();
+        }
+        isCreationRestricted = _isCreationRestricted;
+    }
+
     function lastCreatedPairTokens() external view returns (address token0, address token1) {
         token0 = lastToken0;
         token1 = lastToken1;

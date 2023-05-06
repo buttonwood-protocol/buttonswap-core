@@ -20,6 +20,13 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function feeToSetter() external view returns (address _feeToSetter);
 
     /**
+     * @notice Returns the current state of restricted creation.
+     * If true, then no new pairs, only feeToSetter can create new pairs
+     * @return _isCreationRestricted The `isCreationRestricted` state
+     */
+    function isCreationRestricted() external view returns (bool _isCreationRestricted);
+
+    /**
      * @notice Get the (unique) Pair address created for the given combination of `tokenA` and `tokenB`.
      * If the Pair does not exist then zero address is returned.
      * @param tokenA The first unsorted token
@@ -63,6 +70,13 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @param _feeToSetter The new address
      */
     function setFeeToSetter(address _feeToSetter) external;
+
+    /**
+     * @notice Updates the state of restricted creation.
+     * This can only be called by the `feeToSetter` address.
+     * @param _isCreationRestricted The new state
+     */
+    function setIsCreationRestricted(bool _isCreationRestricted) external;
 
     /**
      * @notice Returns the last token pair created.

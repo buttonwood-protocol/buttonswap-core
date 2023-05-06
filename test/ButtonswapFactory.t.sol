@@ -315,6 +315,59 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         buttonswapFactory.allPairs(1);
     }
 
+    function test_createPair_CannotCreatePairIfCreationLockedAndNotFeeToSetter(
+        address initialFeeToSetter,
+        address pairCreator,
+        address tokenA,
+        address tokenB
+    ) public {
+        vm.assume(pairCreator != initialFeeToSetter);
+        // Ensure fuzzed addresses are non-zero
+        vm.assume(tokenA != address(0));
+        vm.assume(tokenB != address(0));
+        // Ensure fuzzed addresses are not identical
+        vm.assume(tokenA != tokenB);
+        // Calculate sorted token pairs
+        Tokens memory tokens = getTokens(tokenA, tokenB);
+        ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
+
+        // FeeToSetter locking pair creation
+        vm.prank(initialFeeToSetter);
+        buttonswapFactory.setIsCreationRestricted(true);
+
+        // PairCreator attempting to create pair
+        vm.startPrank(pairCreator);
+        vm.expectRevert(Forbidden.selector);
+        buttonswapFactory.createPair(tokens.A, tokens.B);
+        vm.stopPrank();
+    }
+
+    function test_createPair_FeeToSetterCanCreatePairIfCreationLocked(
+        address initialFeeToSetter,
+        address tokenA,
+        address tokenB
+    ) public {
+        // Ensure fuzzed addresses are non-zero
+        vm.assume(tokenA != address(0));
+        vm.assume(tokenB != address(0));
+        // Ensure fuzzed addresses are not identical
+        vm.assume(tokenA != tokenB);
+        // Calculate sorted token pairs
+        Tokens memory tokens = getTokens(tokenA, tokenB);
+        ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
+
+        // FeeToSetter locking pair creation
+        vm.prank(initialFeeToSetter);
+        buttonswapFactory.setIsCreationRestricted(true);
+
+        // FeeToSetter can create pair
+        vm.startPrank(initialFeeToSetter);
+        vm.expectEmit(true, true, false, false);
+        emit PairCreated(tokens._0, tokens._1, address(0), 1);
+        buttonswapFactory.createPair(tokens.A, tokens.B);
+        vm.stopPrank();
+    }
+
     function test_setFeeTo(address initialFeeToSetter, address feeTo) public {
         vm.assume(initialFeeToSetter != address(this));
         ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
