@@ -9,7 +9,6 @@ import {UQ112x112} from "./libraries/UQ112x112.sol";
 import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import {IButtonswapFactory} from "./interfaces/IButtonswapFactory/IButtonswapFactory.sol";
-import {IButtonswapCallee} from "./interfaces/IButtonswapCallee.sol";
 
 contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     using UQ112x112 for uint224;
@@ -60,17 +59,17 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    address public factory;
+    address public immutable factory;
 
     /**
      * @inheritdoc IButtonswapPair
      */
-    address public token0;
+    address public immutable token0;
 
     /**
      * @inheritdoc IButtonswapPair
      */
-    address public token1;
+    address public immutable token1;
 
     /**
      * @dev TODO
@@ -141,33 +140,33 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
 
     constructor() {
         factory = msg.sender;
+        (token0, token1) = IButtonswapFactory(factory).lastCreatedPairTokens();
     }
 
     /**
-     * @inheritdoc IButtonswapPair
-     */
-    function initialize(address _token0, address _token1) external {
-        // sufficient check
-        if (msg.sender != factory) {
-            revert Forbidden();
-        }
-        token0 = _token0;
-        token1 = _token1;
-    }
-
-    /**
-     * @dev TODO
-     * if fee is on, mint liquidity equivalent to 1/6th of the growth in sqrt(k)
+     * @dev Always mints liquidity equivalent to 1/6th of the growth in sqrt(k) and allocates to address(this)
+     * If there isn't a `feeTo` address defined, these LP tokens will get burned this 1/6th gets reallocated to LPs
      */
     function _mintFee(uint256 pool0, uint256 pool1, uint256 pool0New, uint256 pool1New) internal {
+        uint256 liquidityOut = PairMath.getProtocolFeeLiquidityMinted(totalSupply, pool0 * pool1, pool0New * pool1New);
+        if (liquidityOut > 0) {
+            _mint(address(this), liquidityOut);
+        }
+    }
+
+    /**
+     * @dev Called whenever an LP wants to burn their LP tokens to make sure they get their fair share of fees
+     * If feeTo is defined, balanceOf(address(this)) gets transferred to feeTo
+     * If feeTo is not defined, balanceOf(address(this)) gets burned and the LP-tokens all grow in value
+     */
+    modifier sendOrRefundFee() {
         address feeTo = IButtonswapFactory(factory).feeTo();
         if (feeTo != address(0)) {
-            uint256 liquidityOut =
-                PairMath.getProtocolFeeLiquidityMinted(totalSupply, pool0 * pool1, pool0New * pool1New);
-            if (liquidityOut > 0) {
-                _mint(feeTo, liquidityOut);
-            }
+            _transfer(address(this), feeTo, balanceOf[address(this)]);
+        } else {
+            _burn(address(this), balanceOf[address(this)]);
         }
+        _;
     }
 
     /**
@@ -179,14 +178,14 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
         uint32 timeElapsed;
         unchecked {
-            // overflow is desired
+            // underflow is desired
             timeElapsed = blockTimestamp - blockTimestampLast;
         }
         if (timeElapsed > 0 && pool0 != 0 && pool1 != 0) {
             // * never overflows, and + overflow is desired
             unchecked {
-                price0CumulativeLast += uint256(UQ112x112.encode(_pool1).uqdiv(_pool0)) * timeElapsed;
-                price1CumulativeLast += uint256(UQ112x112.encode(_pool0).uqdiv(_pool1)) * timeElapsed;
+                price0CumulativeLast += ((pool1 << 112) * timeElapsed) / _pool0;
+                price1CumulativeLast += ((pool0 << 112) * timeElapsed) / _pool1;
             }
             blockTimestampLast = blockTimestamp;
         }
@@ -367,7 +366,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function mint(uint256 amountIn0, uint256 amountIn1, address to) external lock returns (uint256 liquidityOut) {
+    function mint(uint256 amountIn0, uint256 amountIn1, address to)
+        external
+        lock
+        sendOrRefundFee
+        returns (uint256 liquidityOut)
+    {
         uint256 _totalSupply = totalSupply;
         address _token0 = token0;
         address _token1 = token1;
@@ -412,6 +416,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         external
         lock
         singleSidedTimelock
+        sendOrRefundFee
         returns (uint256 liquidityOut)
     {
         if (amountIn == 0) {
@@ -490,7 +495,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function burn(uint256 liquidityIn, address to) external lock returns (uint256 amountOut0, uint256 amountOut1) {
+    function burn(uint256 liquidityIn, address to)
+        external
+        lock
+        sendOrRefundFee
+        returns (uint256 amountOut0, uint256 amountOut1)
+    {
         uint256 _totalSupply = totalSupply;
         address _token0 = token0;
         address _token1 = token1;
@@ -515,6 +525,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         external
         lock
         singleSidedTimelock
+        sendOrRefundFee
         returns (uint256 amountOut0, uint256 amountOut1)
     {
         uint256 _totalSupply = totalSupply;
@@ -576,14 +587,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function swap(
-        uint256 amountIn0,
-        uint256 amountIn1,
-        uint256 amountOut0,
-        uint256 amountOut1,
-        address to,
-        bytes calldata data
-    ) external lock {
+    function swap(uint256 amountIn0, uint256 amountIn1, uint256 amountOut0, uint256 amountOut1, address to)
+        external
+        lock
+    {
         {
             if (amountOut0 == 0 && amountOut1 == 0) {
                 revert InsufficientOutputAmount();
@@ -614,9 +621,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             if (amountOut1 > 0) {
                 SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
             }
-            if (data.length > 0) {
-                IButtonswapCallee(to).buttonswapCall(msg.sender, amountOut0, amountOut1, data);
-            }
+
             // Refresh balances
             total0 = IERC20(_token0).balanceOf(address(this));
             total1 = IERC20(_token1).balanceOf(address(this));

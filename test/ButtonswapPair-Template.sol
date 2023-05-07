@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
+import {Test, stdError} from "forge-std/Test.sol";
 import {IButtonswapPairEvents, IButtonswapPairErrors} from "../src/interfaces/IButtonswapPair/IButtonswapPair.sol";
 import {ButtonswapPair} from "../src/ButtonswapPair.sol";
 import {Math} from "../src/libraries/Math.sol";
@@ -96,63 +96,9 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.warp(100 days);
     }
 
-    function test_initialize(address factory, address token0, address token1) public {
-        vm.assume(factory != address(this));
-
-        vm.prank(factory);
-        ButtonswapPair pair = new ButtonswapPair();
-
-        assertEq(pair.factory(), factory);
-        assertEq(pair.token0(), address(0));
-        assertEq(pair.token1(), address(0));
-
-        vm.prank(factory);
-        pair.initialize(token0, token1);
-        assertEq(pair.token0(), token0);
-        assertEq(pair.token1(), token1);
-        assertEq(pair.totalSupply(), 0);
-        assertEq(pair.balanceOf(address(0)), 0);
-        assertEq(pair.balanceOf(factory), 0);
-    }
-
-    function test_initialize_CannotCallWhenNotCreator(address factory, address token0, address token1) public {
-        vm.assume(factory != address(this));
-
-        vm.prank(factory);
-        ButtonswapPair pair = new ButtonswapPair();
-
-        assertEq(pair.factory(), factory);
-        assertEq(pair.token0(), address(0));
-        assertEq(pair.token1(), address(0));
-
-        vm.expectRevert(Forbidden.selector);
-        pair.initialize(token0, token1);
-    }
-
-    function test_initialize_CreateViaFactory(address token0, address token1) public {
-        TestVariables memory vars;
-        vars.feeToSetter = userA;
-        vars.feeTo = userB;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
-        vars.factory.setFeeTo(vars.feeTo);
-        vars.pair = ButtonswapPair(vars.factory.createPair(token0, token1));
-
-        assertEq(vars.pair.token0(), token0);
-        assertEq(vars.pair.token1(), token1);
-        assertEq(vars.pair.totalSupply(), 0);
-        assertEq(vars.pair.balanceOf(vars.zeroAddress), 0);
-        assertEq(vars.pair.balanceOf(vars.feeToSetter), 0);
-        assertEq(vars.pair.balanceOf(vars.feeTo), 0);
-    }
-
-    function test_getLiquidityBalances_ReturnsZeroBeforeFirstMint(address factory) public {
-        vm.assume(factory != address(this));
-
-        vm.startPrank(factory);
-        ButtonswapPair pair = new ButtonswapPair();
-        pair.initialize(address(tokenA), address(tokenB));
-        vm.stopPrank();
+    function test_getLiquidityBalances_ReturnsZeroBeforeFirstMint(bytes32 factorySalt) public {
+        MockButtonswapFactory factory = new MockButtonswapFactory{salt: factorySalt}(userA);
+        ButtonswapPair pair = ButtonswapPair(factory.createPair(address(tokenA), address(tokenB)));
 
         (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1, uint256 blockTimestampLast) =
             pair.getLiquidityBalances();
@@ -163,10 +109,17 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(blockTimestampLast, 0);
     }
 
-    function test_getLiquidityBalances(uint112 _pool0Last, uint112 _pool1Last, uint112 total0, uint112 total1) public {
+    function test_getLiquidityBalances(
+        uint112 _pool0Last,
+        uint112 _pool1Last,
+        uint112 total0,
+        uint112 total1,
+        bytes32 factorySalt
+    ) public {
         vm.assume(_pool0Last != 0 && _pool1Last != 0);
         vm.assume(total0 != 0 && total1 != 0);
-        MockButtonswapPair pair = new MockButtonswapPair();
+        MockButtonswapFactory factory = new MockButtonswapFactory{salt: factorySalt}(userA);
+        MockButtonswapPair pair = MockButtonswapPair(factory.createPair(address(tokenA), address(tokenB)));
         pair.mockSetPoolsLast(_pool0Last, _pool1Last);
         (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1) =
             pair.mockGetLiquidityBalances(uint256(total0), uint256(total1));
@@ -190,7 +143,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint112 _pool0Last,
         uint112 _pool1Last,
         uint256 total0,
-        uint256 total1
+        uint256 total1,
+        bytes32 factorySalt
     ) public {
         vm.assume(_pool0Last != 0 && _pool1Last != 0);
         // Target pool values that will cause final values to overflow uint112
@@ -201,7 +155,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(((total0 * _pool1Last) / _pool0Last) + 1 < type(uint256).max / _pool0Last);
         vm.assume(((total1 * _pool0Last) / _pool1Last) + 1 < type(uint256).max / _pool1Last);
 
-        MockButtonswapPair pair = new MockButtonswapPair();
+        MockButtonswapFactory factory = new MockButtonswapFactory{salt: factorySalt}(userA);
+        MockButtonswapPair pair = MockButtonswapPair(factory.createPair(address(tokenA), address(tokenB)));
         pair.mockSetPoolsLast(_pool0Last, _pool1Last);
         vm.expectRevert(Overflow.selector);
         pair.mockGetLiquidityBalances(total0, total1);
@@ -211,10 +166,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint112 _pool0Last,
         uint112 _pool1Last,
         uint256 total0,
-        uint256 total1
+        uint256 total1,
+        bytes32 factorySalt
     ) public {
         vm.assume(_pool0Last != 0 && _pool1Last != 0);
-        MockButtonswapPair pair = new MockButtonswapPair();
+        MockButtonswapFactory factory = new MockButtonswapFactory{salt: factorySalt}(userA);
+        MockButtonswapPair pair = MockButtonswapPair(factory.createPair(address(tokenA), address(tokenB)));
         pair.mockSetPoolsLast(_pool0Last, _pool1Last);
         uint256 pool0;
         uint256 pool1;
@@ -2558,7 +2515,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectEmit(true, true, true, true);
         emit Swap(vars.swapper1, vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // Confirm new state is as expected
@@ -2644,7 +2601,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectEmit(true, true, true, true);
         emit Swap(vars.swapper1, vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // Confirm new state is as expected
@@ -2725,7 +2682,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(InsufficientOutputAmount.selector);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
     }
 
@@ -2787,7 +2744,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(InsufficientLiquidity.selector);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
     }
 
@@ -2849,7 +2806,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(InvalidRecipient.selector);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
     }
 
@@ -2911,7 +2868,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         // Don't transfer any tokens in
         vm.expectRevert(InsufficientInputAmount.selector);
-        vars.pair.swap(0, 0, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(0, 0, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
     }
 
@@ -2975,7 +2932,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
         vm.expectRevert(KInvariant.selector);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
     }
 
@@ -3041,10 +2998,9 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         unchecked {
             timeElapsed = warpTime - blockTimestampLast;
         }
-        uint256 expectedPrice0CumulativeLast =
-            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount01)), uint112(mintAmount00))) * timeElapsed;
-        uint256 expectedPrice1CumulativeLast =
-            uint256(UQ112x112.uqdiv(UQ112x112.encode(uint112(mintAmount00)), uint112(mintAmount01))) * timeElapsed;
+
+        uint256 expectedPrice0CumulativeLast = ((uint256(mintAmount01) * 2 ** 112) * timeElapsed) / mintAmount00;
+        uint256 expectedPrice1CumulativeLast = ((uint256(mintAmount00) * 2 ** 112) * timeElapsed) / mintAmount01;
 
         // Move time forward so that price can accrue
         vm.warp(warpTime);
@@ -3053,7 +3009,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // Confirm final state meets expectations
@@ -3120,7 +3076,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
+        vm.stopPrank();
+
+        // First minter burns their LP tokens to trigger platform fee being transferred or burned
+        vm.startPrank(vars.minter1);
+        vars.pair.burn(vars.pair.balanceOf(vars.minter1), vars.minter1);
         vm.stopPrank();
 
         // Confirm new state is as expected
@@ -3218,11 +3179,101 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.rebasingToken0.approve(address(vars.pair), vars.amount0In);
         vars.rebasingToken1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
+        vm.stopPrank();
+
+        // First minter burns their LP tokens to trigger platform fee being transferred or burned
+        vm.startPrank(vars.minter1);
+        vars.pair.burn(vars.pair.balanceOf(vars.minter1), vars.minter1);
         vm.stopPrank();
 
         // Confirm new state is as expected
         assertEq(vars.pair.balanceOf(vars.feeTo), expectedFeeToBalance);
+    }
+
+    function test_mintFee_depositsAfterSwapDontEarnFee(
+        uint256 mintAmount0,
+        uint256 mintAmount1,
+        uint256 lpMintAmountToken0,
+        uint256 swapAmount0
+    ) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        // Div by 3 to have room for two mints and a swap
+        // Amounts must also be non-zero, and must exceed minimum liquidity
+        mintAmount0 = bound(mintAmount0, 1001, uint256(2 ** 112) / 3);
+        mintAmount1 = bound(mintAmount1, 1001, uint256(2 ** 112) / 3);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.minter2 = userD;
+        vars.swapper1 = userE;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.rebasingToken1 = ICommonMockRebasingERC20(vars.pair.token1());
+
+        // Ensure that mintAmounts don't exceed the maximum mintable balances
+        vm.assume(mintAmount0 < vars.rebasingToken0.mintableBalance() / 3);
+        vm.assume(mintAmount1 < vars.rebasingToken1.mintableBalance() / 3);
+
+        // Mint initial liquidity (to address(this))
+        vars.rebasingToken0.mint(address(this), mintAmount0);
+        vars.rebasingToken0.approve(address(vars.pair), mintAmount0);
+        vars.rebasingToken1.mint(address(this), mintAmount1);
+        vars.rebasingToken1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, address(this));
+
+        // The subsequent minter must mint a non-zero amount
+        lpMintAmountToken0 = bound(lpMintAmountToken0, mintAmount0 / 10, vars.rebasingToken1.mintableBalance() / 3);
+        uint256 lpMintAmountToken1 = Math.mulDiv(lpMintAmountToken0, mintAmount1, mintAmount0);
+        vm.assume(lpMintAmountToken1 < vars.rebasingToken1.mintableBalance() / 3);
+
+        // Minter 1 generates LP tokens with lpMintAmountToken0 token0 and matching token1 amounts
+        vm.startPrank(vars.minter1);
+        vars.rebasingToken0.mint(vars.minter1, lpMintAmountToken0);
+        vars.rebasingToken0.approve(address(vars.pair), lpMintAmountToken0);
+        vars.rebasingToken1.mint(vars.minter1, lpMintAmountToken1);
+        vars.rebasingToken1.approve(address(vars.pair), lpMintAmountToken1);
+        vars.pair.mint(lpMintAmountToken0, lpMintAmountToken1, vars.minter1);
+        vm.stopPrank();
+
+        // Swapper1 does two swaps and creates lazily-collected fee
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        vm.startPrank(vars.swapper1);
+        swapAmount0 = bound(swapAmount0, vars.pool0 / 10, vars.pool0);
+        vm.assume(swapAmount0 < vars.rebasingToken0.mintableBalance());
+        uint256 swapOutput = PairMath.getSwapOutputAmount(swapAmount0, vars.pool0, vars.pool1);
+        vars.rebasingToken0.mint(vars.swapper1, swapAmount0);
+        vars.rebasingToken0.approve(address(vars.pair), swapAmount0);
+        vars.pair.swap(swapAmount0, 0, 0, swapOutput, vars.swapper1, new bytes(0));
+        vm.stopPrank();
+
+        // Minter2 generates LP tokens by duplicating the token balances
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        uint256 minter2Deposit0 = (vars.pool0 + vars.reservoir0);
+        uint256 minter2Deposit1 = (vars.pool1 + vars.reservoir1);
+        vm.assume(minter2Deposit0 < vars.rebasingToken0.mintableBalance());
+        vm.assume(minter2Deposit1 < vars.rebasingToken1.mintableBalance());
+        vm.startPrank(vars.minter2);
+        vars.rebasingToken0.mint(vars.minter2, minter2Deposit0);
+        vars.rebasingToken0.approve(address(vars.pair), minter2Deposit0);
+        vars.rebasingToken1.mint(vars.minter2, minter2Deposit1);
+        vars.rebasingToken1.approve(address(vars.pair), minter2Deposit1);
+        vars.pair.mint(minter2Deposit0, minter2Deposit1, vars.minter2);
+        vm.stopPrank();
+
+        // Minter2 burns their LP tokens and gets back both tokens
+        vm.startPrank(vars.minter2);
+        (uint256 minter2Out0, uint256 minter2Out1) = vars.pair.burn(vars.pair.balanceOf(vars.minter2), vars.minter2);
+        vm.stopPrank();
+
+        // Since no swaps have occurred since minter2 minted, they should get back their deposits with no fee collected
+        assertApproxEqAbs(minter2Out0, minter2Deposit0, 1);
+        assertApproxEqAbs(minter2Out1, minter2Deposit1, 1);
     }
 
     function test_movingAveragePrice0(
@@ -3287,7 +3338,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // With no time elapsed the movingAveragePrice0 remains unchanged
@@ -3373,7 +3424,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // Confirm new state is as expected
@@ -3445,7 +3496,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1);
         vm.stopPrank();
 
         assertGe(
@@ -3474,7 +3525,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1);
         vm.stopPrank();
 
         assertEq(
@@ -3504,7 +3555,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.swapper1);
         vm.stopPrank();
 
         assertGe(
@@ -3567,7 +3618,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         vars.token0.approve(address(vars.pair), vars.amount0In);
         vars.token1.approve(address(vars.pair), vars.amount1In);
-        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver, new bytes(0));
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
         vm.stopPrank();
 
         // Can't call single sided operations whilst lock is active

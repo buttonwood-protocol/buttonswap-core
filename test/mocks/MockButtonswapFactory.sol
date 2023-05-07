@@ -8,9 +8,13 @@ import {MockButtonswapPair} from "./MockButtonswapPair.sol";
 contract MockButtonswapFactory is IButtonswapFactory {
     address public feeTo;
     address public feeToSetter;
+    bool public isCreationRestricted;
 
     mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
+
+    address lastTokenA;
+    address lastTokenB;
 
     constructor(address _feeToSetter) {
         feeToSetter = _feeToSetter;
@@ -22,12 +26,16 @@ contract MockButtonswapFactory is IButtonswapFactory {
 
     function createPair(address tokenA, address tokenB) external returns (address pair) {
         // Don't sort tokenA and tokenB, this reduces the complexity of ButtonswapPair unit tests
+        lastTokenA = tokenA;
+        lastTokenB = tokenB;
         bytes memory bytecode = type(MockButtonswapPair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(tokenA, tokenB));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IButtonswapPair(pair).initialize(tokenA, tokenB);
+        // Resetting lastTokenA/lastTokenB to 0 to refund gas
+        lastTokenA = address(0);
+        lastTokenB = address(0);
     }
 
     function setFeeTo(address _feeTo) external {
@@ -36,5 +44,14 @@ contract MockButtonswapFactory is IButtonswapFactory {
 
     function setFeeToSetter(address _feeToSetter) external {
         feeToSetter = _feeToSetter;
+    }
+
+    function setIsCreationRestricted(bool _isCreationRestricted) external {
+        isCreationRestricted = _isCreationRestricted;
+    }
+
+    function lastCreatedPairTokens() external view returns (address token0, address token1) {
+        token0 = lastTokenA;
+        token1 = lastTokenB;
     }
 }
