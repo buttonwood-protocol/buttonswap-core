@@ -442,16 +442,16 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 revert InsufficientReservoir();
             }
 
-            uint256 equivalentToken1;
-            (liquidityOut, equivalentToken1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
+            uint256 swappedReservoirAmount1;
+            (liquidityOut, swappedReservoirAmount1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
                 _totalSupply, amountIn, total0, total1, movingAveragePrice0()
             );
 
             uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
-            if (equivalentToken1 > swappableReservoirLimit) {
+            if (swappedReservoirAmount1 > swappableReservoirLimit) {
                 revert SwappableReservoirExceeded();
             }
-            _updateSwappableReservoirDeadline(lb.pool1, equivalentToken1);
+            _updateSwappableReservoirDeadline(lb.pool1, swappedReservoirAmount1);
         } else {
             // If reservoir1 is empty then we're adding token1 to pair with token0 reservoir liquidity
             SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn);
@@ -464,16 +464,16 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 revert InsufficientReservoir();
             }
 
-            uint256 equivalentToken0;
-            (liquidityOut, equivalentToken0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
+            uint256 swappedReservoirAmount0;
+            (liquidityOut, swappedReservoirAmount0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
                 _totalSupply, amountIn, total0, total1, movingAveragePrice0()
             );
 
             uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
-            if (equivalentToken0 > swappableReservoirLimit) {
+            if (swappedReservoirAmount0 > swappableReservoirLimit) {
                 revert SwappableReservoirExceeded();
             }
-            _updateSwappableReservoirDeadline(lb.pool0, equivalentToken0);
+            _updateSwappableReservoirDeadline(lb.pool0, swappedReservoirAmount0);
         }
 
         if (liquidityOut == 0) {
@@ -529,8 +529,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
         if (lb.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            uint256 equivalentToken1;
-            (amountOut1, equivalentToken1) = PairMath.getSingleSidedBurnOutputAmountB(
+            uint256 swappedReservoirAmount1;
+            (amountOut1, swappedReservoirAmount1) = PairMath.getSingleSidedBurnOutputAmountB(
                 _totalSupply, liquidityIn, total0, total1, movingAveragePrice0()
             );
             // Check there's enough reservoir liquidity to withdraw from
@@ -540,14 +540,14 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             }
 
             uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
-            if (equivalentToken1 > swappableReservoirLimit) {
+            if (swappedReservoirAmount1 > swappableReservoirLimit) {
                 revert SwappableReservoirExceeded();
             }
-            _updateSwappableReservoirDeadline(lb.pool1, equivalentToken1);
+            _updateSwappableReservoirDeadline(lb.pool1, swappedReservoirAmount1);
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            uint256 equivalentToken0;
-            (amountOut0, equivalentToken0) = PairMath.getSingleSidedBurnOutputAmountA(
+            uint256 swappedReservoirAmount0;
+            (amountOut0, swappedReservoirAmount0) = PairMath.getSingleSidedBurnOutputAmountA(
                 _totalSupply, liquidityIn, total0, total1, movingAveragePrice0()
             );
             // Check there's enough reservoir liquidity to withdraw from
@@ -557,10 +557,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             }
 
             uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
-            if (equivalentToken0 > swappableReservoirLimit) {
+            if (swappedReservoirAmount0 > swappableReservoirLimit) {
                 revert SwappableReservoirExceeded();
             }
-            _updateSwappableReservoirDeadline(lb.pool0, equivalentToken0);
+            _updateSwappableReservoirDeadline(lb.pool0, swappedReservoirAmount0);
         }
         _burn(msg.sender, liquidityIn);
         if (amountOut0 > 0) {
