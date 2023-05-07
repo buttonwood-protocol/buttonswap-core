@@ -3080,6 +3080,15 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.stopPrank();
 
         // First minter burns their LP tokens to trigger platform fee being transferred or burned
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath.getDualSidedBurnOutputAmounts(
+            vars.pair.totalSupply(),
+            vars.pair.balanceOf(vars.minter1),
+            vars.token0.balanceOf(address(vars.pair)),
+            vars.token1.balanceOf(address(vars.pair))
+        );
+        // Ignore edge cases where both expected amounts are zero
+        vm.assume(expectedAmount0 > 0 && expectedAmount1 > 0);
         vm.startPrank(vars.minter1);
         vars.pair.burn(vars.pair.balanceOf(vars.minter1), vars.minter1);
         vm.stopPrank();
@@ -3183,6 +3192,15 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.stopPrank();
 
         // First minter burns their LP tokens to trigger platform fee being transferred or burned
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath.getDualSidedBurnOutputAmounts(
+            vars.pair.totalSupply(),
+            vars.pair.balanceOf(vars.minter1),
+            vars.rebasingToken0.balanceOf(address(vars.pair)),
+            vars.rebasingToken1.balanceOf(address(vars.pair))
+        );
+        // Ignore edge cases where both expected amounts are zero
+        vm.assume(expectedAmount0 > 0 && expectedAmount1 > 0);
         vm.startPrank(vars.minter1);
         vars.pair.burn(vars.pair.balanceOf(vars.minter1), vars.minter1);
         vm.stopPrank();
@@ -3249,7 +3267,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint256 swapOutput = PairMath.getSwapOutputAmount(swapAmount0, vars.pool0, vars.pool1);
         vars.rebasingToken0.mint(vars.swapper1, swapAmount0);
         vars.rebasingToken0.approve(address(vars.pair), swapAmount0);
-        vars.pair.swap(swapAmount0, 0, 0, swapOutput, vars.swapper1, new bytes(0));
+        vars.pair.swap(swapAmount0, 0, 0, swapOutput, vars.swapper1);
         vm.stopPrank();
 
         // Minter2 generates LP tokens by duplicating the token balances
@@ -3267,6 +3285,15 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.stopPrank();
 
         // Minter2 burns their LP tokens and gets back both tokens
+        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
+        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath.getDualSidedBurnOutputAmounts(
+            vars.pair.totalSupply(),
+            vars.pair.balanceOf(vars.minter2),
+            vars.rebasingToken0.balanceOf(address(vars.pair)),
+            vars.rebasingToken1.balanceOf(address(vars.pair))
+        );
+        // Ignore edge cases where both expected amounts are zero
+        vm.assume(expectedAmount0 > 0 && expectedAmount1 > 0);
         vm.startPrank(vars.minter2);
         (uint256 minter2Out0, uint256 minter2Out1) = vars.pair.burn(vars.pair.balanceOf(vars.minter2), vars.minter2);
         vm.stopPrank();
