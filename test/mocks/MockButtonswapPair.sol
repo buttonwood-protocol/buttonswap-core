@@ -24,10 +24,10 @@ contract MockButtonswapPair is ButtonswapPair {
         }
     }
 
-    function mockGetSwappableReservoir() public view returns (uint256 swappableReservoir) {
+    function mockGetSwappableReservoirLimit() public view returns (uint256 swappableReservoirLimit) {
         uint256 total0 = IERC20(token0).balanceOf(address(this));
         uint256 total1 = IERC20(token1).balanceOf(address(this));
         LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
-        swappableReservoir = _getSwappableReservoir(lb.reservoir0, lb.pool0, lb.pool1);
+        swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
     }
 }

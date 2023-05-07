@@ -106,7 +106,7 @@ contract PairMathTest is Test {
         (uint256 liquidityOut, uint256 equivalentTokenB) = PairMath.getSingleSidedMintLiquidityOutAmountA(
             totalLiquidity, mintAmountA, totalA, totalB, movingAveragePriceA
         );
-        assertEq(equivalentTokenB, expectedEquivalentTokenB, "equivalentTokenA does not match expected amounts");
+        assertEq(equivalentTokenB, expectedEquivalentTokenB, "equivalentTokenB does not match expected amounts");
         assertEq(liquidityOut, expectedLiquidityOut, "liquidityOut does not match expectedLiquidityOut");
     }
 
