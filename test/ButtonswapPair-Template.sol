@@ -1353,9 +1353,6 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(amount00 < (uint256(2 ** 112) / 1000));
         vm.assume(amount01 < (uint256(2 ** 112) / 1000));
         vm.assume(amount1X < uint256(2 ** 112));
-        //        amount00 = bound(amount00, 0, uint256(2 ** 112) / 1000);
-        //        amount01 = bound(amount01, 0, uint256(2 ** 112) / 1000);
-        //        amount1X = bound(amount1X, 0, uint256(2 ** 112));
         // Amounts must be non-zero
         // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
         vm.assume(Math.sqrt(amount00 * amount01) > 1000);
