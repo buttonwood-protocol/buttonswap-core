@@ -46,6 +46,17 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     uint256 private constant maxTimelockDuration = 24 hours;
 
     /**
+     * @dev Numerator for the fraction of the pool balance that acts as the maximum limit on how much of the reservoir
+     * can be swapped in a given timeframe.
+     */
+    uint256 private constant maxSwappableReservoirLimitBps = 1000;
+
+    /**
+     * @dev How much time it takes for the swappable reservoir value to grow from nothing to its maximum value.
+     */
+    uint256 private constant swappableReservoirGrowthWindow = 24 hours;
+
+    /**
      * @inheritdoc IButtonswapPair
      */
     address public immutable factory;
@@ -91,9 +102,14 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     uint256 internal movingAveragePrice0Last;
 
     /**
-     * @dev TODO
+     * @notice TODO
      */
     uint128 public singleSidedTimelockDeadline;
+
+    /**
+     * @notice TODO
+     */
+    uint128 public swappableReservoirLimitReachesMaxDeadline;
 
     /**
      * @dev TODO
@@ -251,6 +267,64 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
+     * @dev todo
+     */
+    function _getSwappableReservoirLimit(uint256 reservoirA, uint256 poolA, uint256 poolB)
+        internal
+        view
+        returns (uint256 swappableReservoir)
+    {
+        // Calculate the maximum the limit can be as a fraction of the corresponding active liquidity
+        uint256 maxSwappableReservoirLimit;
+        if (reservoirA == 0) {
+            maxSwappableReservoirLimit = (poolB * maxSwappableReservoirLimitBps) / BPS;
+        } else {
+            maxSwappableReservoirLimit = (poolA * maxSwappableReservoirLimitBps) / BPS;
+        }
+        uint256 _swappableReservoirLimitReachesMaxDeadline = swappableReservoirLimitReachesMaxDeadline;
+        uint256 blockTimestamp = block.timestamp;
+        if (_swappableReservoirLimitReachesMaxDeadline > blockTimestamp) {
+            // If the current deadline is still active then calculate the progress towards reaching it
+            uint256 progress =
+                swappableReservoirGrowthWindow - (_swappableReservoirLimitReachesMaxDeadline - blockTimestamp);
+            // The greater the progress, the closer to the max limit we get
+            swappableReservoir = (maxSwappableReservoirLimit * progress) / swappableReservoirGrowthWindow;
+        } else {
+            // If the current deadline has expired then the full limit is available
+            swappableReservoir = maxSwappableReservoirLimit;
+        }
+    }
+
+    /**
+     * @dev todo
+     */
+    function _updateSwappableReservoirDeadline(uint256 poolA, uint256 swappedAmountA) internal {
+        // Calculate the maximum the limit can be as a fraction of the corresponding active liquidity
+        uint256 maxSwappableReservoirLimit = (poolA * maxSwappableReservoirLimitBps) / BPS;
+        // Calculate how much time delay the swap instigates
+        uint256 delay;
+        // Check non-zero to avoid div by zero error
+        if (maxSwappableReservoirLimit > 0) {
+            delay = (swappableReservoirGrowthWindow * Math.min(swappedAmountA, maxSwappableReservoirLimit))
+                / maxSwappableReservoirLimit;
+        } else {
+            // If it is zero then it's in an extreme condition and a delay is most appropriate way to handle it
+            delay = swappableReservoirGrowthWindow;
+        }
+        // Apply the delay
+        uint256 _swappableReservoirLimitReachesMaxDeadline = swappableReservoirLimitReachesMaxDeadline;
+        uint256 blockTimestamp = block.timestamp;
+        if (_swappableReservoirLimitReachesMaxDeadline > blockTimestamp) {
+            // If the current deadline hasn't expired yet then add the delay to it
+            swappableReservoirLimitReachesMaxDeadline = uint128(_swappableReservoirLimitReachesMaxDeadline + delay);
+        } else {
+            // If the current deadline has expired already then add the delay to the current time, so that the full
+            //   delay is still applied
+            swappableReservoirLimitReachesMaxDeadline = uint128(blockTimestamp + delay);
+        }
+    }
+
+    /**
      * @inheritdoc IButtonswapPair
      */
     function getLiquidityBalances()
@@ -269,7 +343,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @notice TODO
+     * @notice todo
      */
     function movingAveragePrice0() public view returns (uint256 _movingAveragePrice0) {
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
@@ -373,9 +447,16 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 revert InsufficientReservoir();
             }
 
-            liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountA(
+            uint256 swappedReservoirAmount1;
+            (liquidityOut, swappedReservoirAmount1) = PairMath.getSingleSidedMintLiquidityOutAmountA(
                 _totalSupply, amountIn, total0, total1, movingAveragePrice0()
             );
+
+            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
+            if (swappedReservoirAmount1 > swappableReservoirLimit) {
+                revert SwappableReservoirExceeded();
+            }
+            _updateSwappableReservoirDeadline(lb.pool1, swappedReservoirAmount1);
         } else {
             // If reservoir1 is empty then we're adding token1 to pair with token0 reservoir liquidity
             SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn);
@@ -388,9 +469,16 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 revert InsufficientReservoir();
             }
 
-            liquidityOut = PairMath.getSingleSidedMintLiquidityOutAmountB(
+            uint256 swappedReservoirAmount0;
+            (liquidityOut, swappedReservoirAmount0) = PairMath.getSingleSidedMintLiquidityOutAmountB(
                 _totalSupply, amountIn, total0, total1, movingAveragePrice0()
             );
+
+            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
+            if (swappedReservoirAmount0 > swappableReservoirLimit) {
+                revert SwappableReservoirExceeded();
+            }
+            _updateSwappableReservoirDeadline(lb.pool0, swappedReservoirAmount0);
         }
 
         if (liquidityOut == 0) {
@@ -452,7 +540,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
         if (lb.reservoir0 == 0) {
             // If reservoir0 is empty then we're swapping amountOut0 for token1 from reservoir1
-            amountOut1 = PairMath.getSingleSidedBurnOutputAmountB(
+            uint256 swappedReservoirAmount1;
+            (amountOut1, swappedReservoirAmount1) = PairMath.getSingleSidedBurnOutputAmountB(
                 _totalSupply, liquidityIn, total0, total1, movingAveragePrice0()
             );
             // Check there's enough reservoir liquidity to withdraw from
@@ -460,9 +549,16 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             if (amountOut1 > lb.reservoir1) {
                 revert InsufficientReservoir();
             }
+
+            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
+            if (swappedReservoirAmount1 > swappableReservoirLimit) {
+                revert SwappableReservoirExceeded();
+            }
+            _updateSwappableReservoirDeadline(lb.pool1, swappedReservoirAmount1);
         } else {
             // If reservoir0 isn't empty then we're swapping amountOut1 for token0 from reservoir0
-            amountOut0 = PairMath.getSingleSidedBurnOutputAmountA(
+            uint256 swappedReservoirAmount0;
+            (amountOut0, swappedReservoirAmount0) = PairMath.getSingleSidedBurnOutputAmountA(
                 _totalSupply, liquidityIn, total0, total1, movingAveragePrice0()
             );
             // Check there's enough reservoir liquidity to withdraw from
@@ -470,6 +566,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             if (amountOut0 > lb.reservoir0) {
                 revert InsufficientReservoir();
             }
+
+            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
+            if (swappedReservoirAmount0 > swappableReservoirLimit) {
+                revert SwappableReservoirExceeded();
+            }
+            _updateSwappableReservoirDeadline(lb.pool0, swappedReservoirAmount0);
         }
         _burn(msg.sender, liquidityIn);
         if (amountOut0 > 0) {

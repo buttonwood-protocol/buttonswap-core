@@ -22,7 +22,7 @@ library PairMath {
         uint256 totalA,
         uint256 totalB,
         uint256 movingAveragePriceA
-    ) public pure returns (uint256 liquidityOut) {
+    ) public pure returns (uint256 liquidityOut, uint256 swappedReservoirAmountB) {
         // movingAveragePriceA is a UQ112x112 and so is a uint224 that needs to be divided by 2^112 after being multiplied.
         // Here we risk `movingAveragePriceA * (totalA + mintAmountA)` overflowing since we multiple a uint224 by the sum
         //   of two uint112s, however:
@@ -32,18 +32,17 @@ library PairMath {
         // Is 2^32 sufficient? Consider a pair with 1 WBTC (8 decimals) and 30,000 USDX (18 decimals)
         // log2((30000*1e18)/1e8) = 48 and as such a greater price ratio that can be handled.
         // Consequently we require a mulDiv that can handle phantom overflow.
-
         uint256 tokenAToSwap =
             (mintAmountA * totalB) / (Math.mulDiv(movingAveragePriceA, (totalA + mintAmountA), 2 ** 112) + totalB);
         // Here we don't risk undesired overflow because if `tokenAToSwap * movingAveragePriceA` exceeded 2^256 then it
-        //   would necessarily mean `equivalentTokenB` exceeded 2^112, which would result in breaking the poolX unit112 limits.
-        uint256 equivalentTokenB = (tokenAToSwap * movingAveragePriceA) / 2 ** 112;
+        //   would necessarily mean `swappedReservoirAmountB` exceeded 2^112, which would result in breaking the poolX unit112 limits.
+        swappedReservoirAmountB = (tokenAToSwap * movingAveragePriceA) / 2 ** 112;
         // Update totals to account for the fixed price swap
         totalA += tokenAToSwap;
-        totalB -= equivalentTokenB;
+        totalB -= swappedReservoirAmountB;
         uint256 tokenARemaining = mintAmountA - tokenAToSwap;
         liquidityOut =
-            getDualSidedMintLiquidityOutAmount(totalLiquidity, tokenARemaining, equivalentTokenB, totalA, totalB);
+            getDualSidedMintLiquidityOutAmount(totalLiquidity, tokenARemaining, swappedReservoirAmountB, totalA, totalB);
     }
 
     /// @dev Refer to `/notes/mint-math.md`
@@ -53,20 +52,20 @@ library PairMath {
         uint256 totalA,
         uint256 totalB,
         uint256 movingAveragePriceA
-    ) public pure returns (uint256 liquidityOut) {
+    ) public pure returns (uint256 liquidityOut, uint256 swappedReservoirAmountA) {
         // `movingAveragePriceA` is a UQ112x112 and so is a uint224 that needs to be divided by 2^112 after being multiplied.
         // Here we need to use the inverse price however, which means we multiply the numerator by 2^112 and then divide that
         //   by movingAveragePriceA to get the result, all without risk of overflow.
         uint256 tokenBToSwap =
             (mintAmountB * totalA) / (((2 ** 112 * (totalB + mintAmountB)) / movingAveragePriceA) + totalA);
         // Inverse price so again we can use it without overflow risk
-        uint256 equivalentTokenA = (tokenBToSwap * (2 ** 112)) / movingAveragePriceA;
+        swappedReservoirAmountA = (tokenBToSwap * (2 ** 112)) / movingAveragePriceA;
         // Update totals to account for the fixed price swap
-        totalA -= equivalentTokenA;
+        totalA -= swappedReservoirAmountA;
         totalB += tokenBToSwap;
         uint256 tokenBRemaining = mintAmountB - tokenBToSwap;
         liquidityOut =
-            getDualSidedMintLiquidityOutAmount(totalLiquidity, equivalentTokenA, tokenBRemaining, totalA, totalB);
+            getDualSidedMintLiquidityOutAmount(totalLiquidity, swappedReservoirAmountA, tokenBRemaining, totalA, totalB);
     }
 
     /// @dev Refer to `/notes/burn-math.md`
@@ -86,15 +85,15 @@ library PairMath {
         uint256 totalA,
         uint256 totalB,
         uint256 movingAveragePriceA
-    ) public pure returns (uint256 amountOutA) {
+    ) public pure returns (uint256 amountOutA, uint256 swappedReservoirAmountA) {
         // Calculate what the liquidity is worth in terms of both tokens
         uint256 amountOutB;
         (amountOutA, amountOutB) = getDualSidedBurnOutputAmounts(totalLiquidity, liquidityIn, totalA, totalB);
 
         // Here we need to use the inverse price however, which means we multiply the numerator by 2^112 and then divide that
         //   by movingAveragePriceA to get the result, all without risk of overflow (because amountOutB must be less than 2*2^112)
-        uint256 equivalentTokenA = (amountOutB * (2 ** 112)) / movingAveragePriceA;
-        amountOutA = amountOutA + equivalentTokenA;
+        swappedReservoirAmountA = (amountOutB * (2 ** 112)) / movingAveragePriceA;
+        amountOutA = amountOutA + swappedReservoirAmountA;
     }
 
     /// @dev Refer to `/notes/burn-math.md`
@@ -104,17 +103,17 @@ library PairMath {
         uint256 totalA,
         uint256 totalB,
         uint256 movingAveragePriceA
-    ) public pure returns (uint256 amountOutB) {
+    ) public pure returns (uint256 amountOutB, uint256 swappedReservoirAmountB) {
         // Calculate what the liquidity is worth in terms of both tokens
         uint256 amountOutA;
         (amountOutA, amountOutB) = getDualSidedBurnOutputAmounts(totalLiquidity, liquidityIn, totalA, totalB);
 
-        // Whilst we appear to risk overflow here, the final `equivalentTokenB` needs to be smaller than the reservoir
+        // Whilst we appear to risk overflow here, the final `swappedReservoirAmountB` needs to be smaller than the reservoir
         //   which soft-caps it at 2^112.
         // As such, any combination of amountOutA and movingAveragePriceA that would overflow would violate the next
         //   check anyway, and we can therefore safely ignore the overflow potential.
-        uint256 equivalentTokenB = (amountOutA * movingAveragePriceA) / 2 ** 112;
-        amountOutB = amountOutB + equivalentTokenB;
+        swappedReservoirAmountB = (amountOutA * movingAveragePriceA) / 2 ** 112;
+        amountOutB = amountOutB + swappedReservoirAmountB;
     }
 
     /// @dev Refer to `/notes/swap-math.md`
