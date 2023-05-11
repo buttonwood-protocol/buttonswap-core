@@ -97,6 +97,17 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     uint128 public singleSidedTimelockDeadline;
 
     /**
+     * @notice TODO
+     */
+    uint128 public swappableReservoirLimitReachesMaxDeadline;
+
+    /**
+     * @notice Whether or not the pair is isPaused (paused = 1, unPaused = 0).
+     * When paused, all operations other than dual-sided burning LP tokens are disabled.
+     */
+    uint128 public isPaused;
+
+    /**
      * @dev TODO
      */
     uint128 private unlocked = 1;
@@ -123,8 +134,17 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         _;
     }
 
+    modifier checkPaused() {
+        if (isPaused == 1) {
+            revert Paused();
+        }
+        _;
+    }
+
     constructor() {
         factory = msg.sender;
+        (token0, token1) = IButtonswapFactory(factory).lastCreatedPairTokens();
+        updateIsPaused();
     }
 
     /**
@@ -293,7 +313,13 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function mint(uint256 amountIn0, uint256 amountIn1, address to) external lock returns (uint256 liquidityOut) {
+    function mint(uint256 amountIn0, uint256 amountIn1, address to)
+        external
+        lock
+        checkPaused
+        sendOrRefundFee
+        returns (uint256 liquidityOut)
+    {
         uint256 _totalSupply = totalSupply;
         address _token0 = token0;
         address _token1 = token1;
@@ -337,6 +363,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     function mintWithReservoir(uint256 amountIn, address to)
         external
         lock
+        checkPaused
         singleSidedTimelock
         returns (uint256 liquidityOut)
     {
@@ -426,6 +453,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     function burnFromReservoir(uint256 liquidityIn, address to)
         external
         lock
+        checkPaused
         singleSidedTimelock
         returns (uint256 amountOut0, uint256 amountOut1)
     {
@@ -474,14 +502,11 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function swap(
-        uint256 amountIn0,
-        uint256 amountIn1,
-        uint256 amountOut0,
-        uint256 amountOut1,
-        address to,
-        bytes calldata data
-    ) external lock {
+    function swap(uint256 amountIn0, uint256 amountIn1, uint256 amountOut0, uint256 amountOut1, address to)
+        external
+        lock
+        checkPaused
+    {
         {
             if (amountOut0 == 0 && amountOut1 == 0) {
                 revert InsufficientOutputAmount();
@@ -557,5 +582,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             pool1Last = uint112(pool1New);
         }
         emit Swap(msg.sender, amountIn0, amountIn1, amountOut0, amountOut1, to);
+    }
+
+    /**
+     * @inheritdoc IButtonswapPair
+     */
+    function updateIsPaused() public {
+        isPaused = IButtonswapFactory(factory).isPaused() ? 1 : 0;
     }
 }

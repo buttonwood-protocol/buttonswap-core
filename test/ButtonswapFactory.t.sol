@@ -356,4 +356,79 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         buttonswapFactory.setFeeToSetter(newFeeToSetter);
         assertEq(buttonswapFactory.feeToSetter(), initialFeeToSetter);
     }
+
+    function test_isPaused_initiallyFalse(address initialFeeToSetter) public {
+        ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
+        assert(!buttonswapFactory.isPaused());
+    }
+
+    // If isPaused is true, then new pairs are created paused
+    function test_setIsPaused_onlyFeeToSetterCanChangeisPaused(
+        address initialFeeToSetter,
+        address setIsPausedCaller,
+        bool isPaused
+    ) public {
+        vm.assume(initialFeeToSetter != address(this));
+        ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
+
+        vm.startPrank(setIsPausedCaller);
+        if (setIsPausedCaller != initialFeeToSetter) {
+            vm.expectRevert(Forbidden.selector);
+            buttonswapFactory.setIsPaused(isPaused);
+        } else {
+            buttonswapFactory.setIsPaused(isPaused);
+            assertEq(buttonswapFactory.isPaused(), isPaused, "Factory pause state should equal isPaused");
+        }
+        vm.stopPrank();
+    }
+
+    // If isPaused is true, then new pairs are created paused
+    function test_isPaused_newPairsArePausedWhenFactoryIsPaused(
+        address initialFeeToSetter,
+        address tokenA,
+        address tokenB
+    ) public {
+        vm.assume(initialFeeToSetter != address(this));
+        // Ensure fuzzed addresses are non-zero
+        vm.assume(tokenA != address(0));
+        vm.assume(tokenB != address(0));
+        // Ensure fuzzed addresses are not identical
+        vm.assume(tokenA != tokenB);
+        // Calculate sorted token pairs
+        Tokens memory tokens = getTokens(tokenA, tokenB);
+        ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
+
+        // Setting default isPaused to true
+        vm.prank(initialFeeToSetter);
+        buttonswapFactory.setIsPaused(true);
+
+        // Creating a pair
+        IButtonswapPair pair = IButtonswapPair(buttonswapFactory.createPair(tokens.A, tokens.B));
+
+        // Asserting that the pair is paused
+        assertEq(pair.isPaused(), 1, "Pair should be paused (isPaused = 1)");
+    }
+
+    // If isPaused is false, then new pairs are created unpaused
+    function test_isPaused_newPairsAreUnpausedWhenFactoryIsUnpaused(
+        address initialFeeToSetter,
+        address tokenA,
+        address tokenB
+    ) public {
+        vm.assume(initialFeeToSetter != address(this));
+        // Ensure fuzzed addresses are non-zero
+        vm.assume(tokenA != address(0));
+        vm.assume(tokenB != address(0));
+        // Ensure fuzzed addresses are not identical
+        vm.assume(tokenA != tokenB);
+        // Calculate sorted token pairs
+        Tokens memory tokens = getTokens(tokenA, tokenB);
+        ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
+
+        // Creating a pair
+        IButtonswapPair pair = IButtonswapPair(buttonswapFactory.createPair(tokens.A, tokens.B));
+
+        // Asserting that the pair is unpaused
+        assertEq(pair.isPaused(), 0, "Pair should be unpaused (isPaused = 0)");
+    }
 }

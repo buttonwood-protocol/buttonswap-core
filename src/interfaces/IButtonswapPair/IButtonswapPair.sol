@@ -37,6 +37,12 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     function token1() external view returns (address token1);
 
     /**
+     * @notice Whether the Pair is currently paused
+     * @return isPaused The paused state
+     */
+    function isPaused() external view returns (uint128 isPaused);
+
+    /**
      * @notice Get the current liquidity values.
      * @return _pool0 The active `token0` liquidity
      * @return _pool1 The active `token1` liquidity
@@ -130,21 +136,11 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
      * @param amountOut0 The amount of `token0` that the recipient receives
      * @param amountOut1 The amount of `token1` that the recipient receives
      * @param to The account that receives the swap output
-     * @param data Optional calldata that can be used to confirm the token transfer with `to`
      */
-    function swap(
-        uint256 amountIn0,
-        uint256 amountIn1,
-        uint256 amountOut0,
-        uint256 amountOut1,
-        address to,
-        bytes calldata data
-    ) external;
+    function swap(uint256 amountIn0, uint256 amountIn1, uint256 amountOut0, uint256 amountOut1, address to) external;
 
     /**
-     * @notice Called during Pair deployment to initialize the new instance.
-     * @param _token0 The address for `token0`
-     * @param _token1 The address for `token1`
+     * @notice Updates the pause state of the pair to the default value of the factory.
      */
-    function initialize(address _token0, address _token1) external;
+    function updateIsPaused() external;
 }

@@ -78,4 +78,13 @@ interface IButtonswapPairErrors is IButtonswapERC20Errors {
      * @notice
      */
     error SingleSidedTimelock();
+
+    /**
+     * @notice The attempted operation would have swapped reservoir tokens above the current limit
+     */
+    error SwappableReservoirExceeded();
+    /**
+     * @notice All operations on the pair other than dual-sided burning are currently paused
+     */
+    error Paused();
 }
