@@ -112,15 +112,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     uint128 public swappableReservoirLimitReachesMaxDeadline;
 
     /**
-<<<<<<< HEAD
      * @notice Whether or not the pair is isPaused (paused = 1, unPaused = 0).
      * When paused, all operations other than dual-sided burning LP tokens are disabled.
      */
     uint128 public isPaused;
 
     /**
-=======
->>>>>>> main
      * @dev TODO
      */
     uint128 private unlocked = 1;

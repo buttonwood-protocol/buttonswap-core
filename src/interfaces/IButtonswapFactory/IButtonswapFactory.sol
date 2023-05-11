@@ -27,7 +27,6 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function isCreationRestricted() external view returns (bool _isCreationRestricted);
 
     /**
-<<<<<<< HEAD
      * @notice Returns the current default pause state of Pairs
      * New pairs are created with this value as their initial pause state
      * @return _isPaused The `isPaused` state
@@ -35,8 +34,6 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function isPaused() external view returns (bool _isPaused);
 
     /**
-=======
->>>>>>> main
      * @notice Get the (unique) Pair address created for the given combination of `tokenA` and `tokenB`.
      * If the Pair does not exist then zero address is returned.
      * @param tokenA The first unsorted token
