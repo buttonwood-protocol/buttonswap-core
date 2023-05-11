@@ -75,7 +75,7 @@ interface IButtonswapPairErrors is IButtonswapERC20Errors {
     error InvalidFinalPrice();
 
     /**
-     * @notice
+     * @notice Single sided operations are not executable at this point in time
      */
     error SingleSidedTimelock();
 
@@ -83,6 +83,7 @@ interface IButtonswapPairErrors is IButtonswapERC20Errors {
      * @notice The attempted operation would have swapped reservoir tokens above the current limit
      */
     error SwappableReservoirExceeded();
+
     /**
      * @notice All operations on the pair other than dual-sided burning are currently paused
      */

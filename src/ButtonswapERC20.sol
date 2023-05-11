@@ -113,7 +113,7 @@ contract ButtonswapERC20 is IButtonswapERC20 {
      * @param to The account that is receiving the tokens
      * @param value The amount of tokens being sent
      */
-    function _transfer(address from, address to, uint256 value) private {
+    function _transfer(address from, address to, uint256 value) internal {
         balanceOf[from] = balanceOf[from] - value;
         balanceOf[to] = balanceOf[to] + value;
         emit Transfer(from, to, value);
@@ -139,8 +139,10 @@ contract ButtonswapERC20 is IButtonswapERC20 {
      * @inheritdoc IButtonswapERC20
      */
     function transferFrom(address from, address to, uint256 value) external returns (bool success) {
-        if (allowance[from][msg.sender] != type(uint256).max) {
-            allowance[from][msg.sender] = allowance[from][msg.sender] - value;
+        uint256 allowanceFromSender = allowance[from][msg.sender];
+        if (allowanceFromSender != type(uint256).max) {
+            allowance[from][msg.sender] = allowanceFromSender - value;
+            emit Approval(from, msg.sender, allowanceFromSender - value);
         }
         _transfer(from, to, value);
         success = true;

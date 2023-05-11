@@ -26,6 +26,15 @@ contract ButtonswapFactory is IButtonswapFactory {
      */
     address[] public allPairs;
 
+    address internal lastToken0;
+
+    address internal lastToken1;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    bool public isCreationRestricted;
+
     /**
      * @inheritdoc IButtonswapFactory
      */
@@ -50,6 +59,9 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @inheritdoc IButtonswapFactory
      */
     function createPair(address tokenA, address tokenB) external returns (address pair) {
+        if (isCreationRestricted && msg.sender != feeToSetter) {
+            revert Forbidden();
+        }
         if (tokenA == tokenB) {
             revert TokenIdenticalAddress();
         }
@@ -61,12 +73,17 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (getPair[token0][token1] != address(0)) {
             revert PairExists();
         }
+        lastToken0 = token0;
+        lastToken1 = token1;
         bytes memory bytecode = type(ButtonswapPair).creationCode;
         bytes32 salt = keccak256(abi.encodePacked(token0, token1));
         assembly {
             pair := create2(0, add(bytecode, 32), mload(bytecode), salt)
         }
-        IButtonswapPair(pair).initialize(token0, token1);
+        // Resetting lastToken0/lastToken1 to 0 to refund gas
+        lastToken0 = address(0);
+        lastToken1 = address(0);
+
         getPair[token0][token1] = pair;
         getPair[token1][token0] = pair; // populate mapping in the reverse direction
         allPairs.push(pair);
