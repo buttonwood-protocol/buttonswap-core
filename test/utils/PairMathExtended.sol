@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {Math} from "../../src/libraries/Math.sol";
 
 library PairMathExtended {
-    /// @dev Refer to `/notes/mint-math.md`
+    /// @dev Refer to [mint-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/mint-math.md#single-sided-mint) for more detail.
     /// This method inverts `getSingleSidedMintLiquidityOutAmountA` to allow for the calculation of how much can be
     /// input without breaking the swappable reservoir limit.
     function getMaximumSingleSidedMintLiquidityMintAmountA(
@@ -18,7 +18,7 @@ library PairMathExtended {
             / (totalB - Math.mulDiv(tokenAToSwap, movingAveragePriceA, 2 ** 112));
     }
 
-    /// @dev Refer to `/notes/mint-math.md`
+    /// @dev Refer to [mint-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/mint-math.md#single-sided-mint) for more detail.
     /// This method inverts `getSingleSidedMintLiquidityOutAmountB` to allow for the calculation of how much can be
     /// input without breaking the swappable reservoir limit.
     function getMaximumSingleSidedMintLiquidityMintAmountB(
