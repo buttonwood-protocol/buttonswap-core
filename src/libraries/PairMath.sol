@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {Math} from "./Math.sol";
 
 library PairMath {
-    /// @dev Refer to `/notes/mint-math.md`
+    /// @dev Refer to [mint-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/mint-math.md#dual-sided-mint) for more detail.
     function getDualSidedMintLiquidityOutAmount(
         uint256 totalLiquidity,
         uint256 amountInA,
@@ -15,7 +15,7 @@ library PairMath {
         liquidityOut = Math.min((totalLiquidity * amountInA) / totalA, (totalLiquidity * amountInB) / totalB);
     }
 
-    /// @dev Refer to `/notes/mint-math.md`
+    /// @dev Refer to [mint-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/mint-math.md#single-sided-mint) for more detail.
     function getSingleSidedMintLiquidityOutAmountA(
         uint256 totalLiquidity,
         uint256 mintAmountA,
@@ -45,7 +45,7 @@ library PairMath {
             getDualSidedMintLiquidityOutAmount(totalLiquidity, tokenARemaining, swappedReservoirAmountB, totalA, totalB);
     }
 
-    /// @dev Refer to `/notes/mint-math.md`
+    /// @dev Refer to [mint-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/mint-math.md#single-sided-mint) for more detail.
     function getSingleSidedMintLiquidityOutAmountB(
         uint256 totalLiquidity,
         uint256 mintAmountB,
@@ -68,7 +68,7 @@ library PairMath {
             getDualSidedMintLiquidityOutAmount(totalLiquidity, swappedReservoirAmountA, tokenBRemaining, totalA, totalB);
     }
 
-    /// @dev Refer to `/notes/burn-math.md`
+    /// @dev Refer to [burn-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/burn-math.md#dual-sided-burn) for more detail.
     function getDualSidedBurnOutputAmounts(uint256 totalLiquidity, uint256 liquidityIn, uint256 totalA, uint256 totalB)
         public
         pure
@@ -78,7 +78,7 @@ library PairMath {
         amountOutB = (totalB * liquidityIn) / totalLiquidity;
     }
 
-    /// @dev Refer to `/notes/burn-math.md`
+    /// @dev Refer to [burn-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/burn-math.md#single-sided-burn) for more detail.
     function getSingleSidedBurnOutputAmountA(
         uint256 totalLiquidity,
         uint256 liquidityIn,
@@ -96,7 +96,7 @@ library PairMath {
         amountOutA = amountOutA + swappedReservoirAmountA;
     }
 
-    /// @dev Refer to `/notes/burn-math.md`
+    /// @dev Refer to [burn-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/burn-math.md#single-sided-burn) for more detail.
     function getSingleSidedBurnOutputAmountB(
         uint256 totalLiquidity,
         uint256 liquidityIn,
@@ -116,7 +116,7 @@ library PairMath {
         amountOutB = amountOutB + swappedReservoirAmountB;
     }
 
-    /// @dev Refer to `/notes/swap-math.md`
+    /// @dev Refer to [swap-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/swap-math.md) for more detail.
     function getSwapOutputAmount(uint256 inputAmount, uint256 poolInput, uint256 poolOutput)
         public
         pure
@@ -125,7 +125,7 @@ library PairMath {
         outputAmount = (poolOutput * inputAmount * 997) / ((poolInput * 1000) + (inputAmount * 997));
     }
 
-    /// @dev Refer to `/notes/fee-math.md`
+    /// @dev @dev Refer to [fee-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/fee-math.md) for more detail.
     function getProtocolFeeLiquidityMinted(uint256 totalLiquidity, uint256 kLast, uint256 k)
         public
         pure
