@@ -445,7 +445,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             revert InsufficientLiquidityMinted();
         }
         _mint(to, liquidityOut);
-        emit Mint(msg.sender, amountIn0, amountIn1);
+        emit Mint(msg.sender, amountIn0, amountIn1, to);
     }
 
     /**
@@ -525,9 +525,9 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
         _mint(to, liquidityOut);
         if (lb.reservoir0 == 0) {
-            emit Mint(msg.sender, amountIn, 0);
+            emit Mint(msg.sender, amountIn, 0, to);
         } else {
-            emit Mint(msg.sender, 0, amountIn);
+            emit Mint(msg.sender, 0, amountIn, to);
         }
     }
 

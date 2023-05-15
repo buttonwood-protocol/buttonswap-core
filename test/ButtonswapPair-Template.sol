@@ -219,7 +219,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.approve(address(vars.pair), amount0);
         vars.token1.approve(address(vars.pair), amount1);
         vm.expectEmit(true, true, true, true);
-        emit Mint(vars.minter1, amount0, amount1);
+        emit Mint(vars.minter1, amount0, amount1, vars.minter1);
         uint256 liquidity1 = vars.pair.mint(amount0, amount1, vars.minter1);
         vm.stopPrank();
 
@@ -355,7 +355,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.approve(address(vars.pair), amount10);
         vars.token1.approve(address(vars.pair), amount11);
         vm.expectEmit(true, true, true, true);
-        emit Mint(vars.minter2, amount10, amount11);
+        emit Mint(vars.minter2, amount10, amount11, vars.minter2);
         vars.liquidity2 = vars.pair.mint(amount10, amount11, vars.minter2);
         vm.stopPrank();
 
@@ -501,7 +501,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.rebasingToken0.approve(address(vars.pair), amount10);
         vars.token1.approve(address(vars.pair), amount11);
         vm.expectEmit(true, true, true, true);
-        emit Mint(vars.minter2, amount10, amount11);
+        emit Mint(vars.minter2, amount10, amount11, vars.minter2);
         vars.liquidity2 = vars.pair.mint(amount10, amount11, vars.minter2);
         vm.stopPrank();
 
@@ -600,7 +600,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.rebasingToken0.approve(address(vars.pair), amount10);
         vars.rebasingToken1.approve(address(vars.pair), amount11);
         vm.expectEmit(true, true, true, true);
-        emit Mint(vars.minter2, amount10, amount11);
+        emit Mint(vars.minter2, amount10, amount11, vars.minter2);
         vars.liquidity2 = vars.pair.mint(amount10, amount11, vars.minter2);
         vm.stopPrank();
 
@@ -714,7 +714,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.rebasingToken0.approve(address(vars.pair), amount10);
         vars.rebasingToken1.approve(address(vars.pair), amount11);
         vm.expectEmit(true, true, true, true);
-        emit Mint(vars.minter2, amount10, amount11);
+        emit Mint(vars.minter2, amount10, amount11, vars.minter2);
         vars.liquidity2 = vars.pair.mint(amount10, amount11, vars.minter2);
         vm.stopPrank();
 
@@ -837,7 +837,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.rebasingToken0.approve(address(vars.pair), amount10);
         vars.token1.approve(address(vars.pair), amount11);
         vm.expectEmit(true, true, true, true);
-        emit Mint(vars.minter2, amount10, amount11);
+        emit Mint(vars.minter2, amount10, amount11, vars.minter2);
         vars.liquidity2 = vars.pair.mintWithReservoir(amount1X, vars.minter2);
         vm.stopPrank();
 
@@ -977,7 +977,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.rebasingToken0.approve(address(vars.pair), amount10);
         vars.token1.approve(address(vars.pair), amount11);
         vm.expectEmit(true, true, true, true);
-        emit Mint(vars.minter2, amount10, amount11);
+        emit Mint(vars.minter2, amount10, amount11, vars.minter2);
         vars.liquidity2 = vars.pair.mintWithReservoir(amount1X, vars.minter2);
         vm.stopPrank();
 
@@ -1109,7 +1109,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.rebasingToken0.approve(address(vars.pair), amount10);
         vars.token1.approve(address(vars.pair), amount11);
         vm.expectEmit(true, true, true, true);
-        emit Mint(vars.minter2, amount10, amount11);
+        emit Mint(vars.minter2, amount10, amount11, vars.minter2);
         vars.liquidity2 = vars.pair.mintWithReservoir(amount1X, vars.minter2);
         vm.stopPrank();
 
@@ -1235,7 +1235,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.rebasingToken0.approve(address(vars.pair), amount10);
         vars.token1.approve(address(vars.pair), amount11);
         vm.expectEmit(true, true, true, true);
-        emit Mint(vars.minter2, amount10, amount11);
+        emit Mint(vars.minter2, amount10, amount11, vars.minter2);
         vars.liquidity2 = vars.pair.mintWithReservoir(amount1X, vars.minter2);
         vm.stopPrank();
 
@@ -3685,7 +3685,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.approve(address(vars.pair), amount0);
         vars.token1.approve(address(vars.pair), amount1);
         vm.expectEmit(true, true, true, true);
-        emit Mint(vars.minter1, amount0, amount1);
+        emit Mint(vars.minter1, amount0, amount1, vars.minter1);
         vars.pair.mint(amount0, amount1, vars.minter1);
         vm.stopPrank();
 

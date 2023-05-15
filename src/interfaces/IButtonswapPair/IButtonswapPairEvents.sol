@@ -10,8 +10,9 @@ interface IButtonswapPairEvents is IButtonswapERC20Events {
      * @param sender The account that supplied the tokens for the mint
      * @param amount0 The amount of `token0` that was deposited
      * @param amount1 The amount of `token1` that was deposited
+     * @param to The account that received the tokens from the mint
      */
-    event Mint(address indexed sender, uint256 amount0, uint256 amount1);
+    event Mint(address indexed sender, uint256 amount0, uint256 amount1, address indexed to);
 
     /**
      * @notice Emitted when a {IButtonswapPair-burn} is performed.
