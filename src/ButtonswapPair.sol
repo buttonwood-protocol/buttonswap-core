@@ -445,7 +445,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             revert InsufficientLiquidityMinted();
         }
         _mint(to, liquidityOut);
-        emit Mint(msg.sender, amountIn0, amountIn1, to);
+        emit Mint(msg.sender, amountIn0, amountIn1, liquidityOut, to);
     }
 
     /**
@@ -525,9 +525,9 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
         _mint(to, liquidityOut);
         if (lb.reservoir0 == 0) {
-            emit Mint(msg.sender, amountIn, 0, to);
+            emit Mint(msg.sender, amountIn, 0, liquidityOut, to);
         } else {
-            emit Mint(msg.sender, 0, amountIn, to);
+            emit Mint(msg.sender, 0, amountIn, liquidityOut, to);
         }
     }
 
@@ -554,7 +554,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         _burn(msg.sender, liquidityIn);
         SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
         SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
-        emit Burn(msg.sender, amountOut0, amountOut1, to);
+        emit Burn(msg.sender, liquidityIn, amountOut0, amountOut1, to);
     }
 
     /**
@@ -620,7 +620,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         } else {
             revert InsufficientLiquidityBurned();
         }
-        emit Burn(msg.sender, amountOut0, amountOut1, to);
+        emit Burn(msg.sender, liquidityIn, amountOut0, amountOut1, to);
     }
 
     /**
