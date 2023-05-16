@@ -43,19 +43,6 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     function isPaused() external view returns (uint128 isPaused);
 
     /**
-     * @notice Get the current liquidity values.
-     * @return _pool0 The active `token0` liquidity
-     * @return _pool1 The active `token1` liquidity
-     * @return _reservoir0 The inactive `token0` liquidity
-     * @return _reservoir1 The inactive `token1` liquidity
-     * @return _blockTimestampLast The timestamp of when the price was last updated
-     */
-    function getLiquidityBalances()
-        external
-        view
-        returns (uint112 _pool0, uint112 _pool1, uint112 _reservoir0, uint112 _reservoir1, uint32 _blockTimestampLast);
-
-    /**
      * @notice The time-weighted average price of the Pair.
      * The price is of `token0` in terms of `token1`.
      * @dev The price is represented as a [UQ112x112](https://en.wikipedia.org/wiki/Q_(number_format)) to maintain precision.
@@ -76,6 +63,54 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
      * @return price1CumulativeLast The current cumulative `token1` price
      */
     function price1CumulativeLast() external view returns (uint256 price1CumulativeLast);
+
+    /**
+     * @notice The timestamp for when the single-sided timelock concludes.
+     * The timelock is initiated based on price volatility of swaps over the last 24 hours, and can be extended by new
+     *   swaps if they are sufficiently volatile.
+     * The timelock protects against attempts to manipulate the price that is used to valuate the reservoir tokens during
+     *   single-sided operations.
+     * It also guards against general legitimate volatility, as it is preferable to defer single-sided operations until
+     *   it is clearer what the market considers the price to be.
+     * @return singleSidedTimelockDeadline The current deadline timestamp
+     */
+    function singleSidedTimelockDeadline() external view returns (uint128 singleSidedTimelockDeadline);
+
+    /**
+     * @notice The timestamp by which the amount of reservoir tokens that can be exchanged during a single-sided operation
+     *   reaches its maximum value.
+     * This maximum value is not necessarily the entirety of the reservoir, instead being calculated as a fraction of the
+     *   corresponding token's active liquidity.
+     * @return swappableReservoirLimitReachesMaxDeadline The current deadline timestamp
+     */
+    function swappableReservoirLimitReachesMaxDeadline()
+        external
+        view
+        returns (uint128 swappableReservoirLimitReachesMaxDeadline);
+
+    /**
+     * @notice Get the current liquidity values.
+     * @return _pool0 The active `token0` liquidity
+     * @return _pool1 The active `token1` liquidity
+     * @return _reservoir0 The inactive `token0` liquidity
+     * @return _reservoir1 The inactive `token1` liquidity
+     * @return _blockTimestampLast The timestamp of when the price was last updated
+     */
+    function getLiquidityBalances()
+        external
+        view
+        returns (uint112 _pool0, uint112 _pool1, uint112 _reservoir0, uint112 _reservoir1, uint32 _blockTimestampLast);
+
+    /**
+     * @notice The current `movingAveragePrice0` value, based on the current block timestamp.
+     * @dev This is the `token0` price, time weighted to prevent manipulation.
+     * Refer to [reservoir-valuation.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/reservoir-valuation.md#price-stability) for more detail.
+     *
+     * The price is represented as a [UQ112x112](https://en.wikipedia.org/wiki/Q_(number_format)) to maintain precision.
+     * It is used to valuate the reservoir tokens that are exchanged during single-sided operations.
+     * @return _movingAveragePrice0 The current `movingAveragePrice0` value
+     */
+    function movingAveragePrice0() external view returns (uint256 _movingAveragePrice0);
 
     /**
      * @notice Mints new liquidity tokens to `to` based on `amountIn0` of `token0` and `amountIn1  of`token1` deposited.
@@ -130,7 +165,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
      * A 0.3% fee is collected to distribute between liquidity providers and the protocol.
      * @dev The token deposits are deduced to be the delta between the current Pair contract token balances and the last stored balances.
      * Optional calldata can be passed to `data`, which will be used to confirm the output token transfer with `to` if `to` is a contract that implements the {IButtonswapCallee} interface.
-     * Refer to [mint-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/swap-math.md) for more detail.
+     * Refer to [swap-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/swap-math.md) for more detail.
      * @param amountIn0 The amount of `token0` that the sender sends
      * @param amountIn1 The amount of `token1` that the sender sends
      * @param amountOut0 The amount of `token0` that the recipient receives

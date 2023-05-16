@@ -13,6 +13,13 @@ import {IButtonswapFactory} from "./interfaces/IButtonswapFactory/IButtonswapFac
 contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     using UQ112x112 for uint224;
 
+    /**
+     * @dev A set of liquidity values.
+     * @param pool0 The active `token0` liquidity
+     * @param pool1 The active `token1` liquidity
+     * @param reservoir0 The inactive `token0` liquidity
+     * @param reservoir1 The inactive `token1` liquidity
+     */
     struct LiquidityBalances {
         uint256 pool0;
         uint256 pool1;
@@ -31,17 +38,17 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     uint256 private constant BPS = 10_000;
 
     /**
-     * @dev Numerator for when price volatility triggers maximum single-sided timelock duration
+     * @dev Numerator for when price volatility triggers maximum single-sided timelock duration.
      */
     uint256 private constant maxVolatilityBps = 700;
 
     /**
-     * @dev How long the minimum singled-sided timelock lasts for
+     * @dev How long the minimum singled-sided timelock lasts for.
      */
     uint256 private constant minTimelockDuration = 24 seconds;
 
     /**
-     * @dev How long the maximum singled-sided timelock lasts for
+     * @dev How long the maximum singled-sided timelock lasts for.
      */
     uint256 private constant maxTimelockDuration = 24 hours;
 
@@ -72,17 +79,19 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     address public immutable token1;
 
     /**
-     * @dev TODO
+     * @dev The active `token0` liquidity amount following the last swap.
+     * This value is used to determine active liquidity balances after potential rebases until the next future swap.
      */
     uint112 internal pool0Last;
 
     /**
-     * @dev TODO
+     * @dev The active `token1` liquidity amount following the last swap.
+     * This value is used to determine active liquidity balances after potential rebases until the next future swap.
      */
     uint112 internal pool1Last;
 
     /**
-     * @dev TODO
+     * @dev The timestamp of the block that the last swap occurred in.
      */
     uint32 internal blockTimestampLast;
 
@@ -97,17 +106,17 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     uint256 public price1CumulativeLast;
 
     /**
-     * @dev TODO
+     * @dev The value of `movingAveragePrice0` at the time of the last swap.
      */
     uint256 internal movingAveragePrice0Last;
 
     /**
-     * @notice TODO
+     * @inheritdoc IButtonswapPair
      */
     uint128 public singleSidedTimelockDeadline;
 
     /**
-     * @notice TODO
+     * @inheritdoc IButtonswapPair
      */
     uint128 public swappableReservoirLimitReachesMaxDeadline;
 
@@ -118,12 +127,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     uint128 public isPaused;
 
     /**
-     * @dev TODO
+     * @dev Value to track the state of the re-entrancy guard.
      */
     uint128 private unlocked = 1;
 
     /**
-     * @dev TODO
+     * @dev Guards against re-entrancy.
      */
     modifier lock() {
         if (unlocked == 0) {
@@ -135,7 +144,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @dev TODO
+     * @dev Prevents certain operations from being executed if the price volatility induced timelock has yet to conclude.
      */
     modifier singleSidedTimelock() {
         if (block.timestamp < singleSidedTimelockDeadline) {
@@ -144,9 +153,27 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         _;
     }
 
+    /**
+    * @dev Prevents operations from being executed if the Pair is currently paused.
+    */
     modifier checkPaused() {
         if (isPaused == 1) {
             revert Paused();
+        }
+        _;
+    }
+
+    /**
+     * @dev Called whenever an LP wants to burn their LP tokens to make sure they get their fair share of fees.
+     * If `feeTo` is defined, `balanceOf(address(this))` gets transferred to `feeTo`.
+     * If `feeTo` is not defined, `balanceOf(address(this))` gets burned and the LP tokens all grow in value.
+     */
+    modifier sendOrRefundFee() {
+        address feeTo = IButtonswapFactory(factory).feeTo();
+        if (feeTo != address(0)) {
+            _transfer(address(this), feeTo, balanceOf[address(this)]);
+        } else {
+            _burn(address(this), balanceOf[address(this)]);
         }
         _;
     }
@@ -160,6 +187,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @dev Always mints liquidity equivalent to 1/6th of the growth in sqrt(k) and allocates to address(this)
      * If there isn't a `feeTo` address defined, these LP tokens will get burned this 1/6th gets reallocated to LPs
+     * @param pool0 The `token0` active liquidity balance at the start of the ongoing swap
+     * @param pool1 The `token1` active liquidity balance at the start of the ongoing swap
+     * @param pool0New The `token0` active liquidity balance at the end of the ongoing swap
+     * @param pool1New The `token1` active liquidity balance at the end of the ongoing swap
      */
     function _mintFee(uint256 pool0, uint256 pool1, uint256 pool0New, uint256 pool1New) internal {
         uint256 liquidityOut = PairMath.getProtocolFeeLiquidityMinted(totalSupply, pool0 * pool1, pool0New * pool1New);
@@ -169,22 +200,9 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @dev Called whenever an LP wants to burn their LP tokens to make sure they get their fair share of fees
-     * If feeTo is defined, balanceOf(address(this)) gets transferred to feeTo
-     * If feeTo is not defined, balanceOf(address(this)) gets burned and the LP-tokens all grow in value
-     */
-    modifier sendOrRefundFee() {
-        address feeTo = IButtonswapFactory(factory).feeTo();
-        if (feeTo != address(0)) {
-            _transfer(address(this), feeTo, balanceOf[address(this)]);
-        } else {
-            _burn(address(this), balanceOf[address(this)]);
-        }
-        _;
-    }
-
-    /**
-     * @dev TODO
+     * @dev Updates `price0CumulativeLast` and `price1CumulativeLast` based on the current timestamp.
+     * @param pool0 The `token0` active liquidity balance at the start of the ongoing swap
+     * @param pool1 The `token1` active liquidity balance at the start of the ongoing swap
      */
     function _updatePriceCumulative(uint256 pool0, uint256 pool1) internal {
         uint112 _pool0 = uint112(pool0);
@@ -206,21 +224,29 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @dev Refer to `\notes\closest-bound-math.md`
+     * @dev Refer to [closest-bound-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/closest-bound-math.md) for more detail.
+     * @param poolALower The lower bound for the active liquidity balance of the non-fixed token
+     * @param poolB The active liquidity balance of the fixed token
+     * @param _poolALast The active liquidity balance at the end of the last swap for the non-fixed token
+     * @param _poolBLast The active liquidity balance at the end of the last swap for the fixed token
+     * @return closestBound The bound for the active liquidity balance of the non-fixed token that produces a price ratio closest to last swap price
      */
     function _closestBound(uint256 poolALower, uint256 poolB, uint256 _poolALast, uint256 _poolBLast)
         internal
         pure
-        returns (uint256)
+        returns (uint256 closestBound)
     {
         if ((poolALower * _poolBLast) + (_poolBLast / 2) < _poolALast * poolB) {
-            return poolALower + 1;
+            closestBound = poolALower + 1;
         }
-        return poolALower;
+        closestBound = poolALower;
     }
 
     /**
-     * @dev Refer to `\notes\liquidity-balances-math.md`
+     * @dev Refer to [liquidity-balances-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/liquidity-balances-math.md) for more detail.
+     * @param total0 The total amount of `token0` held by the Pair
+     * @param total1 The total amount of `token1` held by the Pair
+     * @return lb The current active and inactive liquidity balances
      */
     function _getLiquidityBalances(uint256 total0, uint256 total1)
         internal
@@ -258,7 +284,13 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @dev TODO
+     * @dev Calculates current price volatility and initiates a timelock scaled to the volatility size.
+     * This timelock prohibits single-sided operations from being executed until enough time has passed for the timelock
+     *   to conclude.
+     * This protects against attempts to manipulate the price that the reservoir is valued at during single-sided operations.
+     * @param _movingAveragePrice0 The current `movingAveragePrice0` value
+     * @param pool0New The `token0` active liquidity balance at the end of the ongoing swap
+     * @param pool1New The `token1` active liquidity balance at the end of the ongoing swap
      */
     function _updateSingleSidedTimelock(uint256 _movingAveragePrice0, uint112 pool0New, uint112 pool1New) internal {
         uint256 newPrice0 = uint256(UQ112x112.encode(pool1New).uqdiv(pool0New));
@@ -281,7 +313,13 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @dev todo
+     * @dev Calculates the current limit on the number of reservoir tokens that can be exchanged during a single-sided
+     *   operation.
+     * This is based on corresponding active liquidity size and time since and size of the last single-sided operation.
+     * @param reservoirA The inactive liquidity balance for the non-zero reservoir token
+     * @param poolA The active liquidity balance for the non-zero reservoir token
+     * @param poolB The active liquidity balance for the zero reservoir token
+     * @return swappableReservoir The amount of non-zero reservoir token that can be exchanged as part of a single-sided operation
      */
     function _getSwappableReservoirLimit(uint256 reservoirA, uint256 poolA, uint256 poolB)
         internal
@@ -310,7 +348,11 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @dev todo
+     * @dev Updates the value of `swappableReservoirLimitReachesMaxDeadline` which is the time at which the maximum
+     *   amount of inactive liquidity tokens can be exchanged during a single-sided operation.
+     * @param poolA The active liquidity balance for the non-zero reservoir token
+     * @param swappedAmountA The amount of non-zero reservoir tokens that were exchanged during the ongoing single-sided
+     *   operation
      */
     function _updateSwappableReservoirDeadline(uint256 poolA, uint256 swappedAmountA) internal {
         // Calculate the maximum the limit can be as a fraction of the corresponding active liquidity
@@ -357,7 +399,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @notice todo
+     * @inheritdoc IButtonswapPair
      */
     function movingAveragePrice0() public view returns (uint256 _movingAveragePrice0) {
         uint32 blockTimestamp = uint32(block.timestamp % 2 ** 32);
