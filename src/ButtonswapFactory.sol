@@ -36,6 +36,11 @@ contract ButtonswapFactory is IButtonswapFactory {
     bool public isCreationRestricted;
 
     /**
+     * @inheritdoc IButtonswapFactory
+     */
+    bool public isPaused;
+
+    /**
      * @dev `feeTo` is not initialised during deployment, and must be set separately by a call to {setFeeTo}.
      * @param _feeToSetter The account that has the ability to set `feeToSetter` and `feeTo`
      */
@@ -113,6 +118,16 @@ contract ButtonswapFactory is IButtonswapFactory {
             revert Forbidden();
         }
         isCreationRestricted = _isCreationRestricted;
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setIsPaused(bool _isPaused) external {
+        if (msg.sender != feeToSetter) {
+            revert Forbidden();
+        }
+        isPaused = _isPaused;
     }
 
     function lastCreatedPairTokens() external view returns (address token0, address token1) {

@@ -37,6 +37,12 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     function token1() external view returns (address token1);
 
     /**
+     * @notice Whether the Pair is currently paused
+     * @return isPaused The paused state
+     */
+    function isPaused() external view returns (uint128 isPaused);
+
+    /**
      * @notice The time-weighted average price of the Pair.
      * The price is of `token0` in terms of `token1`.
      * @dev The price is represented as a [UQ112x112](https://en.wikipedia.org/wiki/Q_(number_format)) to maintain precision.
@@ -167,4 +173,9 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
      * @param to The account that receives the swap output
      */
     function swap(uint256 amountIn0, uint256 amountIn1, uint256 amountOut0, uint256 amountOut1, address to) external;
+
+    /**
+     * @notice Updates the pause state of the pair to the default value of the factory.
+     */
+    function updateIsPaused() external;
 }

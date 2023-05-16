@@ -3856,4 +3856,141 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             );
         }
     }
+
+    function test_updateIsPaused(bool factoryIsPaused) public {
+        // Setup
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+
+        // Confirm factory is unpaused and the pair is unpaused
+        assert(!vars.factory.isPaused());
+        assertEq(vars.pair.isPaused(), 0, "Pair should not be paused");
+
+        // Change the factory paused state
+        vm.prank(vars.feeToSetter);
+        vars.factory.setIsPaused(factoryIsPaused);
+
+        // Update the pair isPaused state
+        vars.pair.updateIsPaused();
+
+        // Confirm that the pair's pause state is correct
+        assertEq(vars.pair.isPaused(), factoryIsPaused ? 1 : 0, "Pair pause state should match factory");
+    }
+
+    function test_checkPaused_cannotMintWhenPaused(uint256 amount00, uint256 amount01) public {
+        // Setup
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.minter1 = userB;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+
+        // Change the factory paused state
+        vm.prank(vars.feeToSetter);
+        vars.factory.setIsPaused(true);
+
+        // Create the pair
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+
+        // Attempt to mint
+        vm.startPrank(vars.minter1);
+        vm.expectRevert(Paused.selector);
+        vars.pair.mint(amount00, amount01, vars.minter1);
+        vm.stopPrank();
+    }
+
+    function test_checkPaused_cannotMintWithReservoirWhenPaused(uint256 amountIn) public {
+        // Setup
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.minter1 = userB;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+
+        // Change the factory paused state
+        vm.prank(vars.feeToSetter);
+        vars.factory.setIsPaused(true);
+
+        // Create the pair
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+
+        // Attempt to mint with reservoir
+        vm.startPrank(vars.minter1);
+        vm.expectRevert(Paused.selector);
+        vars.pair.mintWithReservoir(amountIn, vars.minter1);
+        vm.stopPrank();
+    }
+
+    function test_checkPaused_cannotBurnWithReservoirWhenPaused(uint256 liquidityIn) public {
+        // Setup
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.burner1 = userB;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+
+        // Change the factory paused state
+        vm.prank(vars.feeToSetter);
+        vars.factory.setIsPaused(true);
+
+        // Create the pair
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+
+        // Attempt to burn from reservoir
+        vm.startPrank(vars.burner1);
+        vm.expectRevert(Paused.selector);
+        vars.pair.burnFromReservoir(liquidityIn, vars.burner1);
+        vm.stopPrank();
+    }
+
+    // Can still dual-burn when paused
+    function test_checkPaused_canStillBurnWhenPaused(uint256 amountIn0, uint256 amountIn1) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(amountIn0 < (2 ** 112));
+        vm.assume(amountIn1 < (2 ** 112));
+        // Amounts must be non-zero
+        // They must also be sufficient for equivalent liquidity to exceed the MINIMUM_LIQUIDITY
+        vm.assume(Math.sqrt(amountIn0 * amountIn1) > 1000);
+
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, amountIn0);
+        vars.token1.mint(vars.minter1, amountIn1);
+
+        // Minter1 mints LP tokens
+        vm.startPrank(vars.minter1);
+        vars.token0.approve(address(vars.pair), amountIn0);
+        vars.token1.approve(address(vars.pair), amountIn1);
+        uint256 liquidity1 = vars.pair.mint(amountIn0, amountIn1, vars.minter1);
+        vm.stopPrank();
+
+        // Ensuring that we don't trigger InsufficientLiquidityBurned error
+        (uint256 amountOut0, uint256 amountOut1) =
+            PairMath.getDualSidedBurnOutputAmounts(vars.pair.totalSupply(), liquidity1, amountIn0, amountIn1);
+        vm.assume(amountOut0 > 0);
+        vm.assume(amountOut1 > 0);
+
+        // Change the factory paused state to paused
+        vm.prank(vars.feeToSetter);
+        vars.factory.setIsPaused(true);
+
+        // Update the pair isPaused state to paused
+        vars.pair.updateIsPaused();
+
+        // Burning all of minter1's LP tokens
+        vm.startPrank(vars.minter1);
+        vars.pair.burn(liquidity1, vars.minter1);
+        vm.stopPrank();
+
+        assertEq(vars.pair.balanceOf(vars.minter1), 0, "Minter1 should have no LP tokens left");
+    }
 }
