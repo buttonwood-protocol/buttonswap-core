@@ -11,7 +11,7 @@ library PairMath {
         uint256 amountInB,
         uint256 totalA,
         uint256 totalB
-    ) public pure returns (uint256 liquidityOut) {
+    ) internal pure returns (uint256 liquidityOut) {
         liquidityOut = Math.min((totalLiquidity * amountInA) / totalA, (totalLiquidity * amountInB) / totalB);
     }
 
@@ -22,7 +22,7 @@ library PairMath {
         uint256 totalA,
         uint256 totalB,
         uint256 movingAveragePriceA
-    ) public pure returns (uint256 liquidityOut, uint256 swappedReservoirAmountB) {
+    ) internal pure returns (uint256 liquidityOut, uint256 swappedReservoirAmountB) {
         // movingAveragePriceA is a UQ112x112 and so is a uint224 that needs to be divided by 2^112 after being multiplied.
         // Here we risk `movingAveragePriceA * (totalA + mintAmountA)` overflowing since we multiple a uint224 by the sum
         //   of two uint112s, however:
@@ -52,7 +52,7 @@ library PairMath {
         uint256 totalA,
         uint256 totalB,
         uint256 movingAveragePriceA
-    ) public pure returns (uint256 liquidityOut, uint256 swappedReservoirAmountA) {
+    ) internal pure returns (uint256 liquidityOut, uint256 swappedReservoirAmountA) {
         // `movingAveragePriceA` is a UQ112x112 and so is a uint224 that needs to be divided by 2^112 after being multiplied.
         // Here we need to use the inverse price however, which means we multiply the numerator by 2^112 and then divide that
         //   by movingAveragePriceA to get the result, all without risk of overflow.
@@ -70,7 +70,7 @@ library PairMath {
 
     /// @dev Refer to [burn-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/burn-math.md#dual-sided-burn) for more detail.
     function getDualSidedBurnOutputAmounts(uint256 totalLiquidity, uint256 liquidityIn, uint256 totalA, uint256 totalB)
-        public
+        internal
         pure
         returns (uint256 amountOutA, uint256 amountOutB)
     {
@@ -85,7 +85,7 @@ library PairMath {
         uint256 totalA,
         uint256 totalB,
         uint256 movingAveragePriceA
-    ) public pure returns (uint256 amountOutA, uint256 swappedReservoirAmountA) {
+    ) internal pure returns (uint256 amountOutA, uint256 swappedReservoirAmountA) {
         // Calculate what the liquidity is worth in terms of both tokens
         uint256 amountOutB;
         (amountOutA, amountOutB) = getDualSidedBurnOutputAmounts(totalLiquidity, liquidityIn, totalA, totalB);
@@ -103,7 +103,7 @@ library PairMath {
         uint256 totalA,
         uint256 totalB,
         uint256 movingAveragePriceA
-    ) public pure returns (uint256 amountOutB, uint256 swappedReservoirAmountB) {
+    ) internal pure returns (uint256 amountOutB, uint256 swappedReservoirAmountB) {
         // Calculate what the liquidity is worth in terms of both tokens
         uint256 amountOutA;
         (amountOutA, amountOutB) = getDualSidedBurnOutputAmounts(totalLiquidity, liquidityIn, totalA, totalB);
@@ -118,7 +118,7 @@ library PairMath {
 
     /// @dev Refer to [swap-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/swap-math.md) for more detail.
     function getSwapOutputAmount(uint256 inputAmount, uint256 poolInput, uint256 poolOutput)
-        public
+        internal
         pure
         returns (uint256 outputAmount)
     {
@@ -127,7 +127,7 @@ library PairMath {
 
     /// @dev @dev Refer to [fee-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/fee-math.md) for more detail.
     function getProtocolFeeLiquidityMinted(uint256 totalLiquidity, uint256 kLast, uint256 k)
-        public
+        internal
         pure
         returns (uint256 liquidityOut)
     {
