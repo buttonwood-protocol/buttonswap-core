@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {ButtonswapPair} from "../../src/ButtonswapPair.sol";
-import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "buttonswap-core_@openzeppelin-contracts/token/ERC20/IERC20.sol";
 
 contract MockButtonswapPair is ButtonswapPair {
     function mockSetPoolsLast(uint112 _pool0Last, uint112 _pool1Last) public {

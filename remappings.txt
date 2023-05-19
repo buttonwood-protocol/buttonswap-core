@@ -1,1 +1,9 @@
-@openzeppelin-contracts=lib/openzeppelin-contracts/contracts
+forge-std/=null
+openzeppelin-contracts/=null
+@openzeppelin-contracts/=null
+openzeppelin/=null
+mock-contracts/=null
+
+buttonswap-core_@openzeppelin-contracts=lib/openzeppelin-contracts/contracts
+buttonswap-core_forge-std=lib/forge-std/src
+buttonswap-core_mock-contracts=lib/mock-contracts/src

@@ -6,8 +6,8 @@ import {ButtonswapERC20} from "./ButtonswapERC20.sol";
 import {Math} from "./libraries/Math.sol";
 import {PairMath} from "./libraries/PairMath.sol";
 import {UQ112x112} from "./libraries/UQ112x112.sol";
-import {IERC20} from "@openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "buttonswap-core_@openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "buttonswap-core_@openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import {IButtonswapFactory} from "./interfaces/IButtonswapFactory/IButtonswapFactory.sol";
 
 contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
