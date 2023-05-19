@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import "forge-std/Test.sol";
+import "buttonswap-core_forge-std/Test.sol";
 import {PriceAssertion} from "./PriceAssertion.sol";
 
 contract PriceAssertionTest is Test {

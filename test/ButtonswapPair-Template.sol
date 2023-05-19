@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.13;
 
-import {Test, stdError} from "forge-std/Test.sol";
+import {Test, stdError} from "buttonswap-core_forge-std/Test.sol";
 import {IButtonswapPairEvents, IButtonswapPairErrors} from "../src/interfaces/IButtonswapPair/IButtonswapPair.sol";
 import {ButtonswapPair} from "../src/ButtonswapPair.sol";
 import {Math} from "../src/libraries/Math.sol";
 import {PairMath} from "../src/libraries/PairMath.sol";
-import {MockERC20} from "mock-contracts/MockERC20.sol";
-import {ICommonMockRebasingERC20} from "mock-contracts/interfaces/ICommonMockRebasingERC20/ICommonMockRebasingERC20.sol";
+import {MockERC20} from "buttonswap-core_mock-contracts/MockERC20.sol";
+import {ICommonMockRebasingERC20} from "buttonswap-core_mock-contracts/interfaces/ICommonMockRebasingERC20/ICommonMockRebasingERC20.sol";
 import {MockButtonswapFactory} from "./mocks/MockButtonswapFactory.sol";
 import {MockButtonswapPair} from "./mocks/MockButtonswapPair.sol";
 import {Utils} from "./utils/Utils.sol";
