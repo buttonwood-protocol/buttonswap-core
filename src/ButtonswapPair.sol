@@ -154,8 +154,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-    * @dev Prevents operations from being executed if the Pair is currently paused.
-    */
+     * @dev Prevents operations from being executed if the Pair is currently paused.
+     */
     modifier checkPaused() {
         if (isPaused == 1) {
             revert Paused();
@@ -316,23 +316,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      * @dev Calculates the current limit on the number of reservoir tokens that can be exchanged during a single-sided
      *   operation.
      * This is based on corresponding active liquidity size and time since and size of the last single-sided operation.
-     * @param reservoirA The inactive liquidity balance for the non-zero reservoir token
      * @param poolA The active liquidity balance for the non-zero reservoir token
-     * @param poolB The active liquidity balance for the zero reservoir token
      * @return swappableReservoir The amount of non-zero reservoir token that can be exchanged as part of a single-sided operation
      */
-    function _getSwappableReservoirLimit(uint256 reservoirA, uint256 poolA, uint256 poolB)
-        internal
-        view
-        returns (uint256 swappableReservoir)
-    {
+    function _getSwappableReservoirLimit(uint256 poolA) internal view returns (uint256 swappableReservoir) {
         // Calculate the maximum the limit can be as a fraction of the corresponding active liquidity
-        uint256 maxSwappableReservoirLimit;
-        if (reservoirA == 0) {
-            maxSwappableReservoirLimit = (poolB * maxSwappableReservoirLimitBps) / BPS;
-        } else {
-            maxSwappableReservoirLimit = (poolA * maxSwappableReservoirLimitBps) / BPS;
-        }
+        uint256 maxSwappableReservoirLimit = (poolA * maxSwappableReservoirLimitBps) / BPS;
         uint256 _swappableReservoirLimitReachesMaxDeadline = swappableReservoirLimitReachesMaxDeadline;
         uint256 blockTimestamp = block.timestamp;
         if (_swappableReservoirLimitReachesMaxDeadline > blockTimestamp) {
@@ -344,6 +333,22 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         } else {
             // If the current deadline has expired then the full limit is available
             swappableReservoir = maxSwappableReservoirLimit;
+        }
+    }
+
+    /**
+     * @notice Returns the current limit on the number of reservoir tokens that can be exchanged during a single-sided mint/burn operation.
+     * @return swappableReservoirLimit The amount of reservoir token that can be exchanged
+     */
+    function getSwappableReservoirLimit() external view returns (uint256 swappableReservoirLimit) {
+        uint256 total0 = IERC20(token0).balanceOf(address(this));
+        uint256 total1 = IERC20(token1).balanceOf(address(this));
+        LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
+
+        if (lb.reservoir0 > 0) {
+            swappableReservoirLimit = _getSwappableReservoirLimit(lb.pool0);
+        } else {
+            swappableReservoirLimit = _getSwappableReservoirLimit(lb.pool1);
         }
     }
 
@@ -510,7 +515,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 _totalSupply, amountIn, total0, total1, movingAveragePrice0()
             );
 
-            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
+            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.pool1);
             if (swappedReservoirAmount1 > swappableReservoirLimit) {
                 revert SwappableReservoirExceeded();
             }
@@ -532,7 +537,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 _totalSupply, amountIn, total0, total1, movingAveragePrice0()
             );
 
-            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
+            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.pool0);
             if (swappedReservoirAmount0 > swappableReservoirLimit) {
                 revert SwappableReservoirExceeded();
             }
@@ -609,7 +614,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 revert InsufficientReservoir();
             }
 
-            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
+            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.pool1);
             if (swappedReservoirAmount1 > swappableReservoirLimit) {
                 revert SwappableReservoirExceeded();
             }
@@ -626,7 +631,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 revert InsufficientReservoir();
             }
 
-            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.reservoir0, lb.pool0, lb.pool1);
+            uint256 swappableReservoirLimit = _getSwappableReservoirLimit(lb.pool0);
             if (swappedReservoirAmount0 > swappableReservoirLimit) {
                 revert SwappableReservoirExceeded();
             }
