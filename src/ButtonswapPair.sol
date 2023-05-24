@@ -337,8 +337,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-     * @notice Returns the current limit on the number of reservoir tokens that can be exchanged during a single-sided mint/burn operation.
-     * @return swappableReservoirLimit The amount of reservoir token that can be exchanged
+     * @inheritdoc IButtonswapPair
      */
     function getSwappableReservoirLimit() external view returns (uint256 swappableReservoirLimit) {
         uint256 total0 = IERC20(token0).balanceOf(address(this));

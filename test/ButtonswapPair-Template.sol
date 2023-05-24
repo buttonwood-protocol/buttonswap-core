@@ -1390,10 +1390,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
                 amount1X,
                 0,
                 PairMathExtended.getMaximumSingleSidedMintLiquidityMintAmountA(
-                    vars.pair.getSwappableReservoirLimit(),
-                    vars.total0,
-                    vars.total1,
-                    vars.pair.movingAveragePrice0()
+                    vars.pair.getSwappableReservoirLimit(), vars.total0, vars.total1, vars.pair.movingAveragePrice0()
                 )
             );
 
@@ -1422,10 +1419,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
                 amount1X,
                 0,
                 PairMathExtended.getMaximumSingleSidedMintLiquidityMintAmountB(
-                    vars.pair.getSwappableReservoirLimit(),
-                    vars.total0,
-                    vars.total1,
-                    vars.pair.movingAveragePrice0()
+                    vars.pair.getSwappableReservoirLimit(), vars.total0, vars.total1, vars.pair.movingAveragePrice0()
                 )
             );
 
@@ -2196,8 +2190,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
             // Relying on vm.assume gives us too many rejections, so instead scale input down if it exceeds the limit
             if (swappedReservoirAmount1 > vars.pair.getSwappableReservoirLimit()) {
-                burnAmount = (burnAmount * vars.pair.getSwappableReservoirLimit())
-                    / swappedReservoirAmount1;
+                burnAmount = (burnAmount * vars.pair.getSwappableReservoirLimit()) / swappedReservoirAmount1;
                 (expectedAmount1, swappedReservoirAmount1) = PairMath.getSingleSidedBurnOutputAmountB(
                     vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
                 );
@@ -2214,8 +2207,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
             // Relying on vm.assume gives us too many rejections, so instead scale input down if it exceeds the limit
             if (swappedReservoirAmount0 > vars.pair.getSwappableReservoirLimit()) {
-                burnAmount = (burnAmount * vars.pair.getSwappableReservoirLimit())
-                    / swappedReservoirAmount0;
+                burnAmount = (burnAmount * vars.pair.getSwappableReservoirLimit()) / swappedReservoirAmount0;
                 (expectedAmount0, swappedReservoirAmount0) = PairMath.getSingleSidedBurnOutputAmountA(
                     vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
                 );
@@ -2372,8 +2364,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
             // Relying on vm.assume gives us too many rejections, so instead scale input down if it exceeds the limit
             if (swappedReservoirAmount1 > vars.pair.getSwappableReservoirLimit()) {
-                burnAmount = (burnAmount * vars.pair.getSwappableReservoirLimit())
-                    / swappedReservoirAmount1;
+                burnAmount = (burnAmount * vars.pair.getSwappableReservoirLimit()) / swappedReservoirAmount1;
                 (expectedAmount1, swappedReservoirAmount1) = PairMath.getSingleSidedBurnOutputAmountB(
                     vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
                 );
@@ -2390,8 +2381,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
             // Relying on vm.assume gives us too many rejections, so instead scale input down if it exceeds the limit
             if (swappedReservoirAmount0 > vars.pair.getSwappableReservoirLimit()) {
-                burnAmount = (burnAmount * vars.pair.getSwappableReservoirLimit())
-                    / swappedReservoirAmount0;
+                burnAmount = (burnAmount * vars.pair.getSwappableReservoirLimit()) / swappedReservoirAmount0;
                 (expectedAmount0, swappedReservoirAmount0) = PairMath.getSingleSidedBurnOutputAmountA(
                     vars.pair.totalSupply(), burnAmount, vars.total0, vars.total1, vars.pair.movingAveragePrice0()
                 );

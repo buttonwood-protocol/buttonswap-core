@@ -89,6 +89,12 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
         returns (uint128 swappableReservoirLimitReachesMaxDeadline);
 
     /**
+     * @notice Returns the current limit on the number of reservoir tokens that can be exchanged during a single-sided mint/burn operation.
+     * @return swappableReservoirLimit The amount of reservoir token that can be exchanged
+     */
+    function getSwappableReservoirLimit() external view returns (uint256 swappableReservoirLimit);
+
+    /**
      * @notice Get the current liquidity values.
      * @return _pool0 The active `token0` liquidity
      * @return _pool1 The active `token1` liquidity
