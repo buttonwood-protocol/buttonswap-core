@@ -7,7 +7,8 @@ import {ButtonswapPair} from "../src/ButtonswapPair.sol";
 import {Math} from "../src/libraries/Math.sol";
 import {PairMath} from "../src/libraries/PairMath.sol";
 import {MockERC20} from "buttonswap-core_mock-contracts/MockERC20.sol";
-import {ICommonMockRebasingERC20} from "buttonswap-core_mock-contracts/interfaces/ICommonMockRebasingERC20/ICommonMockRebasingERC20.sol";
+import {ICommonMockRebasingERC20} from
+    "buttonswap-core_mock-contracts/interfaces/ICommonMockRebasingERC20/ICommonMockRebasingERC20.sol";
 import {MockButtonswapFactory} from "./mocks/MockButtonswapFactory.sol";
 import {MockButtonswapPair} from "./mocks/MockButtonswapPair.sol";
 import {Utils} from "./utils/Utils.sol";

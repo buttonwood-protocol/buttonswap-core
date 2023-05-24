@@ -154,8 +154,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-    * @dev Prevents operations from being executed if the Pair is currently paused.
-    */
+     * @dev Prevents operations from being executed if the Pair is currently paused.
+     */
     modifier checkPaused() {
         if (isPaused == 1) {
             revert Paused();
