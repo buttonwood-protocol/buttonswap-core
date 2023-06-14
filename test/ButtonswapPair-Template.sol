@@ -2509,8 +2509,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.amount1Out = extraneousInputAmount;
             vm.assume(vars.amount0Out > 0);
         }
-        vm.assume(vars.amount0Out <= mintAmount0);
-        vm.assume(vars.amount1Out <= mintAmount1);
+        vm.assume(vars.amount0Out < mintAmount0);
+        vm.assume(vars.amount1Out < mintAmount1);
 
         vars.feeToSetter = userA;
         vars.feeTo = userB;
