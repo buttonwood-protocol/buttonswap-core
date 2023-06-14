@@ -2471,6 +2471,97 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(reservoir1, 0);
     }
 
+    /**
+     * @dev The swap method allows people to specify non-zero amounts for both in and out on the same token.
+     * Practically speaking, this should just act as if the delta were subtracted from both.
+     * This test checks for this, using `extraneousInputAmount` to add an arbitrary amount to both sides.
+     */
+    function test_swap_ExtraneousInput(
+        uint256 mintAmount0,
+        uint256 mintAmount1,
+        uint256 inputAmount,
+        uint256 extraneousInputAmount,
+        bool inputToken0
+    ) public {
+        // Make sure the amounts aren't liable to overflow 2**112
+        vm.assume(mintAmount0 < (2 ** 112) / 2);
+        vm.assume(mintAmount1 < (2 ** 112) / 2);
+        vm.assume(inputAmount < mintAmount0 && inputAmount < mintAmount1);
+        vm.assume(extraneousInputAmount < 2 ** 112);
+        // Amounts must be non-zero, and must exceed minimum liquidity
+        vm.assume(mintAmount0 > 1000);
+        vm.assume(mintAmount1 > 1000);
+
+        TestVariables memory vars;
+        vars.amount0In;
+        vars.amount1In;
+        vars.amount0Out;
+        vars.amount1Out;
+        // Output amount must be non-zero
+        if (inputToken0) {
+            vars.amount0In = inputAmount + extraneousInputAmount;
+            vars.amount0Out = extraneousInputAmount;
+            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vm.assume(vars.amount1Out > 0);
+        } else {
+            vars.amount1In = inputAmount + extraneousInputAmount;
+            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vars.amount1Out = extraneousInputAmount;
+            vm.assume(vars.amount0Out > 0);
+        }
+        vm.assume(vars.amount0Out < mintAmount0);
+        vm.assume(vars.amount1Out < mintAmount1);
+
+        vars.feeToSetter = userA;
+        vars.feeTo = userB;
+        vars.minter1 = userC;
+        vars.swapper1 = userD;
+        vars.receiver = userE;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vm.prank(vars.feeToSetter);
+        vars.factory.setFeeTo(vars.feeTo);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        vars.token0 = MockERC20(vars.pair.token0());
+        vars.token1 = MockERC20(vars.pair.token1());
+        vars.token0.mint(vars.minter1, mintAmount0);
+        vars.token1.mint(vars.minter1, mintAmount1);
+        vars.token0.mint(vars.swapper1, vars.amount0In);
+        vars.token1.mint(vars.swapper1, vars.amount1In);
+
+        // Mint initial liquidity
+        vm.startPrank(vars.minter1);
+        vars.token0.approve(address(vars.pair), mintAmount0);
+        vars.token1.approve(address(vars.pair), mintAmount1);
+        vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
+        vm.stopPrank();
+
+        // Do the swap
+        vm.startPrank(vars.swapper1);
+        vars.token0.approve(address(vars.pair), vars.amount0In);
+        vars.token1.approve(address(vars.pair), vars.amount1In);
+        vm.expectEmit(true, true, true, true);
+        if (inputToken0) {
+            emit Swap(vars.swapper1, inputAmount, vars.amount1In, 0, vars.amount1Out, vars.receiver);
+        } else {
+            emit Swap(vars.swapper1, vars.amount0In, inputAmount, vars.amount0Out, 0, vars.receiver);
+        }
+        vars.pair.swap(vars.amount0In, vars.amount1In, vars.amount0Out, vars.amount1Out, vars.receiver);
+        vm.stopPrank();
+
+        // Confirm new state is as expected
+        assertEq(vars.token0.balanceOf(address(vars.pair)), mintAmount0 + vars.amount0In - vars.amount0Out);
+        assertEq(vars.token0.balanceOf(vars.swapper1), 0);
+        assertEq(vars.token0.balanceOf(vars.receiver), vars.amount0Out);
+        assertEq(vars.token1.balanceOf(address(vars.pair)), mintAmount1 + vars.amount1In - vars.amount1Out);
+        assertEq(vars.token1.balanceOf(vars.swapper1), 0);
+        assertEq(vars.token1.balanceOf(vars.receiver), vars.amount1Out);
+        (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1,) = vars.pair.getLiquidityBalances();
+        assertEq(pool0, mintAmount0 + vars.amount0In - vars.amount0Out);
+        assertEq(pool1, mintAmount1 + vars.amount1In - vars.amount1Out);
+        assertEq(reservoir0, 0);
+        assertEq(reservoir1, 0);
+    }
+
     function test_swap_Rebasing(
         uint256 mintAmount0,
         uint256 mintAmount1,
