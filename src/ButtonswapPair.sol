@@ -698,13 +698,17 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             // Update to the actual amount of tokens the user sent in based on the delta between old and new pool balances
             if (pool0New > lb.pool0) {
                 amountIn0 = pool0New - lb.pool0;
+                amountOut0 = 0;
             } else {
                 amountIn0 = 0;
+                amountOut0 = lb.pool0 - pool0New;
             }
             if (pool1New > lb.pool1) {
                 amountIn1 = pool1New - lb.pool1;
+                amountOut1 = 0;
             } else {
                 amountIn1 = 0;
+                amountOut1 = lb.pool1 - pool1New;
             }
             // If after accounting for input and output cancelling one another out, fee on transfer, etc there is no
             //   input tokens in real terms then revert.
