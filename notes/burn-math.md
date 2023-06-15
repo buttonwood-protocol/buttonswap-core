@@ -64,6 +64,20 @@ The final output $A_{user}$ is the sum of these amounts:
 A_{user} = A_{x} + A_{y}
 ```
 
+We can then substitute and rearrange to obtain a single expression for this:
+```math
+A_{user} = A_{x} + {B_{y} \over p_{ma}}
+```
+```math
+A_{user} = A_{x} + {B_{total} \cdot {L_{user} \over L_{total}} \over p_{ma}}
+```
+```math
+A_{user} = A_{total} \cdot {L_{user} \over L_{total}} + {B_{total} \cdot {L_{user} \over L_{total}} \over p_{ma}}
+```
+```math
+A_{user} = (A_{total} + {B_{total} \over p_{ma}}) \cdot {L_{user} \over L_{total}}
+```
+
 ### Validation
 
 A key objective for the single sided operation is to ensure that reservoirs shrink or stay the same when executing the operation.
