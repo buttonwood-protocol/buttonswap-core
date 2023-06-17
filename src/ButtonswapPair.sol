@@ -365,8 +365,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         uint256 delay;
         // Check non-zero to avoid div by zero error
         if (maxSwappableReservoirLimit > 0) {
-            delay = (swappableReservoirGrowthWindow * Math.min(swappedAmountA, maxSwappableReservoirLimit))
-                / maxSwappableReservoirLimit;
+            // Technically we multiply by `Math.min(swappedAmountA, maxSwappableReservoirLimit)`, but
+            //   due to using this limit at the start of the transaction we know `swappedAmountA` will
+            //   never exceed `maxSwappableReservoirLimit` and so can simplify the calculation here.
+            delay = (swappableReservoirGrowthWindow * swappedAmountA) / maxSwappableReservoirLimit;
         } else {
             // If it is zero then it's in an extreme condition and a delay is most appropriate way to handle it
             delay = swappableReservoirGrowthWindow;
