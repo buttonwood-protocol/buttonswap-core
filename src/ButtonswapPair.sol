@@ -113,23 +113,23 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    uint128 public singleSidedTimelockDeadline;
+    uint120 public singleSidedTimelockDeadline;
 
     /**
      * @inheritdoc IButtonswapPair
      */
-    uint128 public swappableReservoirLimitReachesMaxDeadline;
+    uint120 public swappableReservoirLimitReachesMaxDeadline;
 
     /**
      * @notice Whether or not the pair is isPaused (paused = 1, unPaused = 0).
      * When paused, all operations other than dual-sided burning LP tokens are disabled.
      */
-    uint128 public isPaused;
+    uint8 public isPaused;
 
     /**
      * @dev Value to track the state of the re-entrancy guard.
      */
-    uint128 private unlocked = 1;
+    uint8 private unlocked = 1;
 
     /**
      * @dev Guards against re-entrancy.
@@ -306,7 +306,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                 + ((priceDifference * BPS * maxTimelockDuration) / (_movingAveragePrice0 * maxVolatilityBps)),
             maxTimelockDuration
         );
-        uint128 timelockDeadline = uint128(block.timestamp + timelock);
+        uint120 timelockDeadline = uint120(block.timestamp + timelock);
         if (timelockDeadline > singleSidedTimelockDeadline) {
             singleSidedTimelockDeadline = timelockDeadline;
         }
@@ -376,11 +376,11 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         uint256 blockTimestamp = block.timestamp;
         if (_swappableReservoirLimitReachesMaxDeadline > blockTimestamp) {
             // If the current deadline hasn't expired yet then add the delay to it
-            swappableReservoirLimitReachesMaxDeadline = uint128(_swappableReservoirLimitReachesMaxDeadline + delay);
+            swappableReservoirLimitReachesMaxDeadline = uint120(_swappableReservoirLimitReachesMaxDeadline + delay);
         } else {
             // If the current deadline has expired already then add the delay to the current time, so that the full
             //   delay is still applied
-            swappableReservoirLimitReachesMaxDeadline = uint128(blockTimestamp + delay);
+            swappableReservoirLimitReachesMaxDeadline = uint120(blockTimestamp + delay);
         }
     }
 
