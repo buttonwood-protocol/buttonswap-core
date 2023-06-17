@@ -40,28 +40,28 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @dev Numerator for when price volatility triggers maximum single-sided timelock duration.
      */
-    uint256 private constant maxVolatilityBps = 700;
+    uint256 private constant MAX_VOLATILITY_BPS = 700;
 
     /**
      * @dev How long the minimum singled-sided timelock lasts for.
      */
-    uint256 private constant minTimelockDuration = 24 seconds;
+    uint256 private constant MIN_TIMELOCK_DURATION = 24 seconds;
 
     /**
      * @dev How long the maximum singled-sided timelock lasts for.
      */
-    uint256 private constant maxTimelockDuration = 24 hours;
+    uint256 private constant MAX_TIMELOCK_DURATION = 24 hours;
 
     /**
      * @dev Numerator for the fraction of the pool balance that acts as the maximum limit on how much of the reservoir
      * can be swapped in a given timeframe.
      */
-    uint256 private constant maxSwappableReservoirLimitBps = 1000;
+    uint256 private constant MAX_SWAPPABLE_RESERVOIR_LIMIT_BPS = 1000;
 
     /**
      * @dev How much time it takes for the swappable reservoir value to grow from nothing to its maximum value.
      */
-    uint256 private constant swappableReservoirGrowthWindow = 24 hours;
+    uint256 private constant SWAPPABLE_RESERVOIR_GROWTH_WINDOW = 24 hours;
 
     /**
      * @inheritdoc IButtonswapPair
@@ -300,14 +300,14 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         } else {
             priceDifference = _movingAveragePrice0 - newPrice0;
         }
-        // priceDifference / ((_movingAveragePrice0 * maxVolatilityBps)/BPS)
+        // priceDifference / ((_movingAveragePrice0 * MAX_VOLATILITY_BPS)/BPS)
         uint256 timelock = Math.min(
-            minTimelockDuration
+            MIN_TIMELOCK_DURATION
                 + (
-                    (priceDifference * BPS * (maxTimelockDuration - minTimelockDuration))
-                        / (_movingAveragePrice0 * maxVolatilityBps)
+                    (priceDifference * BPS * (MAX_TIMELOCK_DURATION - MIN_TIMELOCK_DURATION))
+                        / (_movingAveragePrice0 * MAX_VOLATILITY_BPS)
                 ),
-            maxTimelockDuration
+            MAX_TIMELOCK_DURATION
         );
         uint120 timelockDeadline = uint120(block.timestamp + timelock);
         if (timelockDeadline > singleSidedTimelockDeadline) {
@@ -324,15 +324,15 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      */
     function _getSwappableReservoirLimit(uint256 poolA) internal view returns (uint256 swappableReservoir) {
         // Calculate the maximum the limit can be as a fraction of the corresponding active liquidity
-        uint256 maxSwappableReservoirLimit = (poolA * maxSwappableReservoirLimitBps) / BPS;
+        uint256 maxSwappableReservoirLimit = (poolA * MAX_SWAPPABLE_RESERVOIR_LIMIT_BPS) / BPS;
         uint256 _swappableReservoirLimitReachesMaxDeadline = swappableReservoirLimitReachesMaxDeadline;
         uint256 blockTimestamp = block.timestamp;
         if (_swappableReservoirLimitReachesMaxDeadline > blockTimestamp) {
             // If the current deadline is still active then calculate the progress towards reaching it
             uint256 progress =
-                swappableReservoirGrowthWindow - (_swappableReservoirLimitReachesMaxDeadline - blockTimestamp);
+                SWAPPABLE_RESERVOIR_GROWTH_WINDOW - (_swappableReservoirLimitReachesMaxDeadline - blockTimestamp);
             // The greater the progress, the closer to the max limit we get
-            swappableReservoir = (maxSwappableReservoirLimit * progress) / swappableReservoirGrowthWindow;
+            swappableReservoir = (maxSwappableReservoirLimit * progress) / SWAPPABLE_RESERVOIR_GROWTH_WINDOW;
         } else {
             // If the current deadline has expired then the full limit is available
             swappableReservoir = maxSwappableReservoirLimit;
@@ -363,16 +363,16 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      */
     function _updateSwappableReservoirDeadline(uint256 poolA, uint256 swappedAmountA) internal {
         // Calculate the maximum the limit can be as a fraction of the corresponding active liquidity
-        uint256 maxSwappableReservoirLimit = (poolA * maxSwappableReservoirLimitBps) / BPS;
+        uint256 maxSwappableReservoirLimit = (poolA * MAX_SWAPPABLE_RESERVOIR_LIMIT_BPS) / BPS;
         // Calculate how much time delay the swap instigates
         uint256 delay;
         // Check non-zero to avoid div by zero error
         if (maxSwappableReservoirLimit > 0) {
-            delay = (swappableReservoirGrowthWindow * Math.min(swappedAmountA, maxSwappableReservoirLimit))
+            delay = (SWAPPABLE_RESERVOIR_GROWTH_WINDOW * Math.min(swappedAmountA, maxSwappableReservoirLimit))
                 / maxSwappableReservoirLimit;
         } else {
             // If it is zero then it's in an extreme condition and a delay is most appropriate way to handle it
-            delay = swappableReservoirGrowthWindow;
+            delay = SWAPPABLE_RESERVOIR_GROWTH_WINDOW;
         }
         // Apply the delay
         uint256 _swappableReservoirLimitReachesMaxDeadline = swappableReservoirLimitReachesMaxDeadline;
