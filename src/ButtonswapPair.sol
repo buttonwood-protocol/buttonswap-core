@@ -303,7 +303,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         // priceDifference / ((_movingAveragePrice0 * maxVolatilityBps)/BPS)
         uint256 timelock = Math.min(
             minTimelockDuration
-                + ((priceDifference * BPS * maxTimelockDuration) / (_movingAveragePrice0 * maxVolatilityBps)),
+                + (
+                    (priceDifference * BPS * (maxTimelockDuration - minTimelockDuration))
+                        / (_movingAveragePrice0 * maxVolatilityBps)
+                ),
             maxTimelockDuration
         );
         uint128 timelockDeadline = uint128(block.timestamp + timelock);
