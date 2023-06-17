@@ -323,11 +323,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         // Calculate the maximum the limit can be as a fraction of the corresponding active liquidity
         uint256 maxSwappableReservoirLimit = (poolA * maxSwappableReservoirLimitBps) / BPS;
         uint256 _swappableReservoirLimitReachesMaxDeadline = swappableReservoirLimitReachesMaxDeadline;
-        uint256 blockTimestamp = block.timestamp;
-        if (_swappableReservoirLimitReachesMaxDeadline > blockTimestamp) {
+        if (_swappableReservoirLimitReachesMaxDeadline > block.timestamp) {
             // If the current deadline is still active then calculate the progress towards reaching it
             uint256 progress =
-                swappableReservoirGrowthWindow - (_swappableReservoirLimitReachesMaxDeadline - blockTimestamp);
+                swappableReservoirGrowthWindow - (_swappableReservoirLimitReachesMaxDeadline - block.timestamp);
             // The greater the progress, the closer to the max limit we get
             swappableReservoir = (maxSwappableReservoirLimit * progress) / swappableReservoirGrowthWindow;
         } else {
@@ -373,14 +372,13 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
         // Apply the delay
         uint256 _swappableReservoirLimitReachesMaxDeadline = swappableReservoirLimitReachesMaxDeadline;
-        uint256 blockTimestamp = block.timestamp;
-        if (_swappableReservoirLimitReachesMaxDeadline > blockTimestamp) {
+        if (_swappableReservoirLimitReachesMaxDeadline > block.timestamp) {
             // If the current deadline hasn't expired yet then add the delay to it
             swappableReservoirLimitReachesMaxDeadline = uint128(_swappableReservoirLimitReachesMaxDeadline + delay);
         } else {
             // If the current deadline has expired already then add the delay to the current time, so that the full
             //   delay is still applied
-            swappableReservoirLimitReachesMaxDeadline = uint128(blockTimestamp + delay);
+            swappableReservoirLimitReachesMaxDeadline = uint128(block.timestamp + delay);
         }
     }
 
@@ -434,15 +432,13 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         returns (uint256 liquidityOut)
     {
         uint256 _totalSupply = totalSupply;
-        address _token0 = token0;
-        address _token1 = token1;
-        uint256 total0 = IERC20(_token0).balanceOf(address(this));
-        uint256 total1 = IERC20(_token1).balanceOf(address(this));
-        SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn0);
-        SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn1);
+        uint256 total0 = IERC20(token0).balanceOf(address(this));
+        uint256 total1 = IERC20(token1).balanceOf(address(this));
+        SafeERC20.safeTransferFrom(IERC20(token0), msg.sender, address(this), amountIn0);
+        SafeERC20.safeTransferFrom(IERC20(token1), msg.sender, address(this), amountIn1);
         // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
-        amountIn0 = IERC20(_token0).balanceOf(address(this)) - total0;
-        amountIn1 = IERC20(_token1).balanceOf(address(this)) - total1;
+        amountIn0 = IERC20(token0).balanceOf(address(this)) - total0;
+        amountIn1 = IERC20(token1).balanceOf(address(this)) - total1;
 
         if (_totalSupply == 0) {
             liquidityOut = Math.sqrt(amountIn0 * amountIn1) - MINIMUM_LIQUIDITY;
@@ -488,10 +484,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         if (_totalSupply == 0) {
             revert Uninitialized();
         }
-        address _token0 = token0;
-        address _token1 = token1;
-        uint256 total0 = IERC20(_token0).balanceOf(address(this));
-        uint256 total1 = IERC20(_token1).balanceOf(address(this));
+        uint256 total0 = IERC20(token0).balanceOf(address(this));
+        uint256 total1 = IERC20(token1).balanceOf(address(this));
         // Determine current pool liquidity
         LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
         if (lb.pool0 == 0 || lb.pool1 == 0) {
@@ -499,9 +493,9 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
         if (lb.reservoir0 == 0) {
             // If reservoir0 is empty then we're adding token0 to pair with token1 reservoir liquidity
-            SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn);
+            SafeERC20.safeTransferFrom(IERC20(token0), msg.sender, address(this), amountIn);
             // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
-            amountIn = IERC20(_token0).balanceOf(address(this)) - total0;
+            amountIn = IERC20(token0).balanceOf(address(this)) - total0;
 
             // Ensure there's enough reservoir1 liquidity to do this without growing reservoir0
             LiquidityBalances memory lbNew = _getLiquidityBalances(total0 + amountIn, total1);
@@ -521,9 +515,9 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             _updateSwappableReservoirDeadline(lb.pool1, swappedReservoirAmount1);
         } else {
             // If reservoir1 is empty then we're adding token1 to pair with token0 reservoir liquidity
-            SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn);
+            SafeERC20.safeTransferFrom(IERC20(token1), msg.sender, address(this), amountIn);
             // Use the balance delta as input amounts to ensure feeOnTransfer or similar tokens don't disrupt Pair math
-            amountIn = IERC20(_token1).balanceOf(address(this)) - total1;
+            amountIn = IERC20(token1).balanceOf(address(this)) - total1;
 
             // Ensure there's enough reservoir0 liquidity to do this without growing reservoir1
             LiquidityBalances memory lbNew = _getLiquidityBalances(total0, total1 + amountIn);
@@ -564,10 +558,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         returns (uint256 amountOut0, uint256 amountOut1)
     {
         uint256 _totalSupply = totalSupply;
-        address _token0 = token0;
-        address _token1 = token1;
-        uint256 total0 = IERC20(_token0).balanceOf(address(this));
-        uint256 total1 = IERC20(_token1).balanceOf(address(this));
+        uint256 total0 = IERC20(token0).balanceOf(address(this));
+        uint256 total1 = IERC20(token1).balanceOf(address(this));
 
         (amountOut0, amountOut1) = PairMath.getDualSidedBurnOutputAmounts(_totalSupply, liquidityIn, total0, total1);
 
@@ -575,8 +567,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             revert InsufficientLiquidityBurned();
         }
         _burn(msg.sender, liquidityIn);
-        SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
-        SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
+        SafeERC20.safeTransfer(IERC20(token0), to, amountOut0);
+        SafeERC20.safeTransfer(IERC20(token1), to, amountOut1);
         emit Burn(msg.sender, liquidityIn, amountOut0, amountOut1, to);
     }
 
@@ -592,10 +584,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         returns (uint256 amountOut0, uint256 amountOut1)
     {
         uint256 _totalSupply = totalSupply;
-        address _token0 = token0;
-        address _token1 = token1;
-        uint256 total0 = IERC20(_token0).balanceOf(address(this));
-        uint256 total1 = IERC20(_token1).balanceOf(address(this));
+        uint256 total0 = IERC20(token0).balanceOf(address(this));
+        uint256 total1 = IERC20(token1).balanceOf(address(this));
         // Determine current pool liquidity
         LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
         if (lb.pool0 == 0 || lb.pool1 == 0) {
@@ -638,9 +628,9 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
         _burn(msg.sender, liquidityIn);
         if (amountOut0 > 0) {
-            SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
+            SafeERC20.safeTransfer(IERC20(token0), to, amountOut0);
         } else if (amountOut1 > 0) {
-            SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
+            SafeERC20.safeTransfer(IERC20(token1), to, amountOut1);
         } else {
             revert InsufficientLiquidityBurned();
         }
@@ -659,13 +649,11 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             if (amountOut0 == 0 && amountOut1 == 0) {
                 revert InsufficientOutputAmount();
             }
-            address _token0 = token0;
-            address _token1 = token1;
-            if (to == _token0 || to == _token1) {
+            if (to == token0 || to == token1) {
                 revert InvalidRecipient();
             }
-            uint256 total0 = IERC20(_token0).balanceOf(address(this));
-            uint256 total1 = IERC20(_token1).balanceOf(address(this));
+            uint256 total0 = IERC20(token0).balanceOf(address(this));
+            uint256 total1 = IERC20(token1).balanceOf(address(this));
             // Determine current pool liquidity
             LiquidityBalances memory lb = _getLiquidityBalances(total0, total1);
             if (amountOut0 >= lb.pool0 || amountOut1 >= lb.pool1) {
@@ -673,22 +661,22 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             }
             // Transfer in the specified input
             if (amountIn0 > 0) {
-                SafeERC20.safeTransferFrom(IERC20(_token0), msg.sender, address(this), amountIn0);
+                SafeERC20.safeTransferFrom(IERC20(token0), msg.sender, address(this), amountIn0);
             }
             if (amountIn1 > 0) {
-                SafeERC20.safeTransferFrom(IERC20(_token1), msg.sender, address(this), amountIn1);
+                SafeERC20.safeTransferFrom(IERC20(token1), msg.sender, address(this), amountIn1);
             }
             // Optimistically transfer output
             if (amountOut0 > 0) {
-                SafeERC20.safeTransfer(IERC20(_token0), to, amountOut0);
+                SafeERC20.safeTransfer(IERC20(token0), to, amountOut0);
             }
             if (amountOut1 > 0) {
-                SafeERC20.safeTransfer(IERC20(_token1), to, amountOut1);
+                SafeERC20.safeTransfer(IERC20(token1), to, amountOut1);
             }
 
             // Refresh balances
-            total0 = IERC20(_token0).balanceOf(address(this));
-            total1 = IERC20(_token1).balanceOf(address(this));
+            total0 = IERC20(token0).balanceOf(address(this));
+            total1 = IERC20(token1).balanceOf(address(this));
             // The reservoir balances must remain unchanged during a swap, so all balance changes impact the pool balances
             uint256 pool0New = total0 - lb.reservoir0;
             uint256 pool1New = total1 - lb.reservoir1;
