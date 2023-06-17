@@ -41,9 +41,11 @@ contract ButtonswapERC20 is IButtonswapERC20 {
 
     /**
      * @inheritdoc IButtonswapERC20
-     * @dev Pre-computed to equal `keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");`
+     * @dev Value should equal `0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9` but it
+     *   is recommended to verify this by checking the public method on-chain.
      */
-    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    bytes32 public constant PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
 
     /**
      * @inheritdoc IButtonswapERC20

@@ -2417,11 +2417,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -2501,11 +2501,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         if (inputToken0) {
             vars.amount0In = inputAmount + extraneousInputAmount;
             vars.amount0Out = extraneousInputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount + extraneousInputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
             vars.amount1Out = extraneousInputAmount;
             vm.assume(vars.amount0Out > 0);
         }
@@ -2613,11 +2613,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, pool0Previous, pool1Previous);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, pool0Previous, pool1Previous);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, pool1Previous, pool0Previous);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, pool1Previous, pool0Previous);
             vm.assume(vars.amount0Out > 0);
         }
         // Mint swap amounts
@@ -2676,11 +2676,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Output amount must be zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
             vm.assume(vars.amount1Out == 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
             vm.assume(vars.amount0Out == 0);
         }
 
@@ -2800,7 +2800,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.amount1Out;
         // Output amount must be non-zero
         vars.amount0In = inputAmount;
-        vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
+        vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
         vm.assume(vars.amount1Out > 0);
 
         vars.feeToSetter = userA;
@@ -2863,11 +2863,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -2926,11 +2926,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Add 1 to calculated output amount to test K invariant prevents transaction
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1) + 1;
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1) + 1;
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0) + 1;
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0) + 1;
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -2986,11 +2986,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount00, mintAmount01);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount00, mintAmount01);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount01, mintAmount00);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount01, mintAmount00);
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -3063,11 +3063,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount00, mintAmount01);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount00, mintAmount01);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount01, mintAmount00);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount01, mintAmount00);
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -3155,11 +3155,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount00, mintAmount01);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount00, mintAmount01);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount01, mintAmount00);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount01, mintAmount00);
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -3194,11 +3194,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, vars.pool0, vars.pool1);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, vars.pool0, vars.pool1);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, vars.pool1, vars.pool0);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, vars.pool1, vars.pool0);
             vm.assume(vars.amount0Out > 0);
         }
         // Mint swap amounts
@@ -3294,7 +3294,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.startPrank(vars.swapper1);
         swapAmount0 = bound(swapAmount0, vars.pool0 / 10, vars.pool0);
         vm.assume(swapAmount0 < vars.rebasingToken0.mintableBalance());
-        uint256 swapOutput = PairMath.getSwapOutputAmount(swapAmount0, vars.pool0, vars.pool1);
+        uint256 swapOutput = PairMathExtended.getSwapOutputAmount(swapAmount0, vars.pool0, vars.pool1);
         vars.rebasingToken0.mint(vars.swapper1, swapAmount0);
         vars.rebasingToken0.approve(address(vars.pair), swapAmount0);
         vars.pair.swap(swapAmount0, 0, 0, swapOutput, vars.swapper1);
@@ -3356,11 +3356,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount00, mintAmount01);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount00, mintAmount01);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount01, mintAmount00);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount01, mintAmount00);
             vm.assume(vars.amount0Out > 0);
         }
 
@@ -3467,11 +3467,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
             vm.assume(vars.amount0Out > 0);
         }
         vars.token0.mint(vars.swapper1, vars.amount0In);
@@ -3539,12 +3539,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.amount0In = inputAmount / 3;
             vars.amount1In = 0;
             vars.amount0Out = 0;
-            vars.amount1Out = PairMath.getSwapOutputAmount(vars.amount0In, vars.pool0, vars.pool1);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(vars.amount0In, vars.pool0, vars.pool1);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount0In = 0;
             vars.amount1In = inputAmount / 3;
-            vars.amount0Out = PairMath.getSwapOutputAmount(vars.amount1In, vars.pool1, vars.pool0);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(vars.amount1In, vars.pool1, vars.pool0);
             vars.amount1Out = 0;
             vm.assume(vars.amount0Out > 0);
         }
@@ -3567,14 +3567,14 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         if (inputToken0) {
             vars.amount0In = 0;
             vars.amount1In = vars.amount1Out / 2;
-            vars.amount0Out = PairMath.getSwapOutputAmount(vars.amount1In, vars.pool1, vars.pool0);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(vars.amount1In, vars.pool1, vars.pool0);
             vars.amount1Out = 0;
             vm.assume(vars.amount0Out > 0);
         } else {
             vars.amount0In = vars.amount0Out / 2;
             vars.amount1In = 0;
             vars.amount0Out = 0;
-            vars.amount1Out = PairMath.getSwapOutputAmount(vars.amount0In, vars.pool0, vars.pool1);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(vars.amount0In, vars.pool0, vars.pool1);
             vm.assume(vars.amount1Out > 0);
         }
 
@@ -3598,12 +3598,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vars.amount0In = inputAmount * 2 / 3;
             vars.amount1In = 0;
             vars.amount0Out = 0;
-            vars.amount1Out = PairMath.getSwapOutputAmount(vars.amount0In, vars.pool0, vars.pool1);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(vars.amount0In, vars.pool0, vars.pool1);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount0In = 0;
             vars.amount1In = inputAmount * 2 / 3;
-            vars.amount0Out = PairMath.getSwapOutputAmount(vars.amount1In, vars.pool1, vars.pool0);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(vars.amount1In, vars.pool1, vars.pool0);
             vars.amount1Out = 0;
             vm.assume(vars.amount0Out > 0);
         }
@@ -3661,11 +3661,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Output amount must be non-zero
         if (inputToken0) {
             vars.amount0In = inputAmount;
-            vars.amount1Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
+            vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
             vm.assume(vars.amount1Out > 0);
         } else {
             vars.amount1In = inputAmount;
-            vars.amount0Out = PairMath.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
+            vars.amount0Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount1, mintAmount0);
             vm.assume(vars.amount0Out > 0);
         }
         vars.token0.mint(vars.swapper1, vars.amount0In);

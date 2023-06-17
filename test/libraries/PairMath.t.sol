@@ -270,24 +270,6 @@ contract PairMathTest is Test {
         );
     }
 
-    function test_getSwapOutputAmount(uint256 inputAmount, uint256 poolInput, uint256 poolOutput) public {
-        // Pools will be capped by uint112
-        vm.assume(poolInput < type(uint112).max);
-        vm.assume(poolOutput < type(uint112).max);
-
-        // Ensuring we don't divide by zero
-        vm.assume(poolInput > 0 || inputAmount > 0);
-
-        // Ensuring we don't overflow
-        vm.assume(inputAmount == 0 || inputAmount < type(uint256).max / 997);
-        vm.assume(inputAmount == 0 || poolOutput == 0 || inputAmount < type(uint256).max / (poolOutput * 997));
-
-        uint256 outputAmount = PairMath.getSwapOutputAmount(inputAmount, poolInput, poolOutput);
-        uint256 expectedOutputAmount = (poolOutput * inputAmount * 997) / ((poolInput * 1000) + (inputAmount * 997));
-
-        assertEq(outputAmount, expectedOutputAmount, "outputAmount does not match expectedOutputAmount");
-    }
-
     function test_getProtocolFeeLiquidityMinted(uint256 totalLiquidity, uint256 kLast, uint256 k) public {
         // Ensuring we don't underflow
         vm.assume(kLast <= k);
