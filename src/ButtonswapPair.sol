@@ -258,7 +258,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         if (_pool0Last == 0 || _pool1Last == 0) {
             // Before Pair is initialized by first dual mint just return zeroes
         } else if (total0 == 0 || total1 == 0) {
-            // Return zeroes, _getLiquidityBalancesUnsafe will get stuck in an infinite loop if called
+            // Save the extra calculations and just return zeroes
         } else {
             if (total0 * _pool1Last < total1 * _pool0Last) {
                 lb.pool0 = total0;
