@@ -356,6 +356,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @dev Updates the value of `swappableReservoirLimitReachesMaxDeadline` which is the time at which the maximum
      *   amount of inactive liquidity tokens can be exchanged during a single-sided operation.
+     * @dev Assumes `swappedAmountA` is less than or equal to `maxSwappableReservoirLimit`
      * @param poolA The active liquidity balance for the non-zero reservoir token
      * @param swappedAmountA The amount of non-zero reservoir tokens that were exchanged during the ongoing single-sided
      *   operation
@@ -367,9 +368,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         uint256 delay;
         // Check non-zero to avoid div by zero error
         if (maxSwappableReservoirLimit > 0) {
-            // Technically we multiply by `Math.min(swappedAmountA, maxSwappableReservoirLimit)`, but
-            //   due to using this limit at the start of the transaction we know `swappedAmountA` will
-            //   never exceed `maxSwappableReservoirLimit` and so can simplify the calculation here.
+            // Since `swappedAmountA/maxSwappableReservoirLimit <= 1`, `delay <= SWAPPABLE_RESERVOIR_GROWTH_WINDOW`
             delay = (SWAPPABLE_RESERVOIR_GROWTH_WINDOW * swappedAmountA) / maxSwappableReservoirLimit;
         } else {
             // If it is zero then it's in an extreme condition and a delay is most appropriate way to handle it
