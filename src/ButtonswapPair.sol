@@ -329,7 +329,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         if (_swappableReservoirLimitReachesMaxDeadline > block.timestamp) {
             // If the current deadline is still active then calculate the progress towards reaching it
             uint256 progress =
-            SWAPPABLE_RESERVOIR_GROWTH_WINDOW - (_swappableReservoirLimitReachesMaxDeadline - block.timestamp);
+                SWAPPABLE_RESERVOIR_GROWTH_WINDOW - (_swappableReservoirLimitReachesMaxDeadline - block.timestamp);
             // The greater the progress, the closer to the max limit we get
             swappableReservoir = (maxSwappableReservoirLimit * progress) / SWAPPABLE_RESERVOIR_GROWTH_WINDOW;
         } else {
