@@ -31,4 +31,13 @@ library PairMathExtended {
         mintAmountB = (Math.mulDiv(tokenBToSwap * totalB, 2 ** 112, movingAveragePriceA) + (tokenBToSwap * totalA))
             / (totalA - Math.mulDiv(tokenBToSwap, 2 ** 112, movingAveragePriceA));
     }
+
+    /// @dev Refer to [swap-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/swap-math.md) for more detail.
+    function getSwapOutputAmount(uint256 inputAmount, uint256 poolInput, uint256 poolOutput)
+        internal
+        pure
+        returns (uint256 outputAmount)
+    {
+        outputAmount = (poolOutput * inputAmount * 997) / ((poolInput * 1000) + (inputAmount * 997));
+    }
 }

@@ -40,7 +40,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
      * @notice Whether the Pair is currently paused
      * @return isPaused The paused state
      */
-    function isPaused() external view returns (uint128 isPaused);
+    function isPaused() external view returns (uint8 isPaused);
 
     /**
      * @notice The time-weighted average price of the Pair.
@@ -74,7 +74,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
      *   it is clearer what the market considers the price to be.
      * @return singleSidedTimelockDeadline The current deadline timestamp
      */
-    function singleSidedTimelockDeadline() external view returns (uint128 singleSidedTimelockDeadline);
+    function singleSidedTimelockDeadline() external view returns (uint120 singleSidedTimelockDeadline);
 
     /**
      * @notice The timestamp by which the amount of reservoir tokens that can be exchanged during a single-sided operation
@@ -86,7 +86,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     function swappableReservoirLimitReachesMaxDeadline()
         external
         view
-        returns (uint128 swappableReservoirLimitReachesMaxDeadline);
+        returns (uint120 swappableReservoirLimitReachesMaxDeadline);
 
     /**
      * @notice Returns the current limit on the number of reservoir tokens that can be exchanged during a single-sided mint/burn operation.
