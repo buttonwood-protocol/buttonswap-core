@@ -307,7 +307,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
                     (priceDifference * BPS * (MAX_TIMELOCK_DURATION - MIN_TIMELOCK_DURATION))
                         / (_movingAveragePrice0 * MAX_VOLATILITY_BPS)
                 ),
-                MAX_TIMELOCK_DURATION
+            MAX_TIMELOCK_DURATION
         );
         uint120 timelockDeadline = uint120(block.timestamp + timelock);
         if (timelockDeadline > singleSidedTimelockDeadline) {
