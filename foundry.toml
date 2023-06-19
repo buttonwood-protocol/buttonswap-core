@@ -3,6 +3,10 @@ solc = "0.8.19"
 src = 'src'
 out = 'out'
 libs = ['lib']
+# Disable the following Solidity feature: https://docs.soliditylang.org/en/v0.8.19/metadata.html#encoding-of-the-metadata-hash-in-the-bytecode
+# It interferes with our init code hash in buttonswap-periphery
+cbor_metadata = false
+bytecodeHash = "none"
 
 [fuzz]
 # The number of fuzz runs for fuzz tests
