@@ -121,10 +121,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     uint120 public swappableReservoirLimitReachesMaxDeadline;
 
     /**
-     * @notice Whether or not the pair is isPaused (paused = 1, unPaused = 0).
+     * @dev Whether or not the pair is isPaused (paused = 1, unPaused = 0).
      * When paused, all operations other than dual-sided burning LP tokens are disabled.
      */
-    uint8 public isPaused;
+    uint8 internal _isPaused;
 
     /**
      * @dev Value to track the state of the re-entrancy guard.
@@ -157,7 +157,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      * @dev Prevents operations from being executed if the Pair is currently paused.
      */
     modifier checkPaused() {
-        if (isPaused == 1) {
+        if (_isPaused == 1) {
             revert Paused();
         }
         _;
@@ -181,7 +181,6 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     constructor() {
         factory = msg.sender;
         (token0, token1) = IButtonswapFactory(factory).lastCreatedPairTokens();
-        updateIsPaused();
     }
 
     /**
@@ -384,6 +383,23 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             //   delay is still applied
             swappableReservoirLimitReachesMaxDeadline = uint120(block.timestamp + delay);
         }
+    }
+
+    /**
+     * @inheritdoc IButtonswapPair
+     */
+    function getIsPaused() external view returns (bool isPaused) {
+        isPaused = _isPaused == 1;
+    }
+
+    /**
+     * @inheritdoc IButtonswapPair
+     */
+    function setIsPaused(bool isPausedNew) external {
+        if (msg.sender != factory) {
+            revert Forbidden();
+        }
+        _isPaused = isPausedNew ? 1 : 0;
     }
 
     /**
@@ -724,12 +740,5 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             pool1Last = uint112(pool1New);
         }
         emit Swap(msg.sender, amountIn0, amountIn1, amountOut0, amountOut1, to);
-    }
-
-    /**
-     * @inheritdoc IButtonswapPair
-     */
-    function updateIsPaused() public {
-        isPaused = IButtonswapFactory(factory).isPaused() ? 1 : 0;
     }
 }
