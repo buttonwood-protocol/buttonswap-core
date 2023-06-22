@@ -419,7 +419,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         bool isPausedNew
     ) public {
         vm.assume(initialFeeToSetter != address(this));
-        vm.assume(tokenA != tokenB);
+        vm.assume(tokenA != tokenB && tokenA != address(0) && tokenB != address(0));
         ButtonswapFactory buttonswapFactory = new ButtonswapFactory(initialFeeToSetter);
         address pairAddress = buttonswapFactory.createPair(tokenA, tokenB);
         address[] memory pairAddresses = new address[](1);
