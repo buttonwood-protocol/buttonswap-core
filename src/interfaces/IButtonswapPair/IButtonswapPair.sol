@@ -90,9 +90,9 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
 
     /**
      * @notice Whether the Pair is currently paused
-     * @return isPaused The paused state
+     * @return _isPaused The paused state
      */
-    function getIsPaused() external view returns (bool isPaused);
+    function getIsPaused() external view returns (bool _isPaused);
 
     /**
      * @notice Updates the pause state.

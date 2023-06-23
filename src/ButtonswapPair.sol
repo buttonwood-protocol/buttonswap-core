@@ -124,7 +124,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      * @dev Whether or not the pair is isPaused (paused = 1, unPaused = 0).
      * When paused, all operations other than dual-sided burning LP tokens are disabled.
      */
-    uint8 internal _isPaused;
+    uint8 internal isPaused;
 
     /**
      * @dev Value to track the state of the re-entrancy guard.
@@ -157,7 +157,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      * @dev Prevents operations from being executed if the Pair is currently paused.
      */
     modifier checkPaused() {
-        if (_isPaused == 1) {
+        if (isPaused == 1) {
             revert Paused();
         }
         _;
@@ -388,8 +388,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function getIsPaused() external view returns (bool isPaused) {
-        isPaused = _isPaused == 1;
+    function getIsPaused() external view returns (bool _isPaused) {
+        _isPaused = isPaused == 1;
     }
 
     /**
@@ -399,7 +399,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         if (msg.sender != factory) {
             revert Forbidden();
         }
-        _isPaused = isPausedNew ? 1 : 0;
+        isPaused = isPausedNew ? 1 : 0;
     }
 
     /**
