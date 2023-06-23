@@ -9,7 +9,6 @@ contract MockButtonswapFactory is IButtonswapFactory {
     address public feeTo;
     address public feeToSetter;
     bool public isCreationRestricted;
-    bool public isPaused;
 
     mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
@@ -51,11 +50,13 @@ contract MockButtonswapFactory is IButtonswapFactory {
         isCreationRestricted = _isCreationRestricted;
     }
 
-    function setIsPaused(bool _isPaused) external {
+    function setIsPaused(address[] calldata pairs, bool isPausedNew) external {
         if (msg.sender != feeToSetter) {
             revert Forbidden();
         }
-        isPaused = _isPaused;
+        for (uint256 i = 0; i < pairs.length; i++) {
+            IButtonswapPair(pairs[i]).setIsPaused(isPausedNew);
+        }
     }
 
     function lastCreatedPairTokens() external view returns (address token0, address token1) {

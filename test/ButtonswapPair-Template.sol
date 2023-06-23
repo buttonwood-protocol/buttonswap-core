@@ -3886,28 +3886,42 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         }
     }
 
-    function test_updateIsPaused(bool factoryIsPaused) public {
+    function test_setIsPaused(bool isPausedNew) public {
         // Setup
         TestVariables memory vars;
         vars.feeToSetter = userA;
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
-        vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
-        vars.token1 = MockERC20(vars.pair.token1());
 
-        // Confirm factory is unpaused and the pair is unpaused
-        assert(!vars.factory.isPaused());
-        assertEq(vars.pair.isPaused(), 0, "Pair should not be paused");
+        assertEq(vars.pair.getIsPaused(), false, "Pair should not be paused");
+
+        address[] memory pairAddresses = new address[](1);
+        pairAddresses[0] = address(vars.pair);
 
         // Change the factory paused state
         vm.prank(vars.feeToSetter);
-        vars.factory.setIsPaused(factoryIsPaused);
-
-        // Update the pair isPaused state
-        vars.pair.updateIsPaused();
+        vars.factory.setIsPaused(pairAddresses, isPausedNew);
 
         // Confirm that the pair's pause state is correct
-        assertEq(vars.pair.isPaused(), factoryIsPaused ? 1 : 0, "Pair pause state should match factory");
+        assertEq(vars.pair.getIsPaused(), isPausedNew, "Pair pause state should match");
+    }
+
+    function test_setIsPaused_CannotCallFromNonFactoryAddress(bool isPausedNew, address caller) public {
+        // Setup
+        TestVariables memory vars;
+        vars.feeToSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+
+        vm.assume(caller != address(vars.factory));
+
+        address[] memory pairAddresses = new address[](1);
+        pairAddresses[0] = address(vars.pair);
+
+        // Change the factory paused state
+        vm.prank(caller);
+        vm.expectRevert(Forbidden.selector);
+        vars.factory.setIsPaused(pairAddresses, isPausedNew);
     }
 
     function test_checkPaused_cannotMintWhenPaused(uint256 amount00, uint256 amount01) public {
@@ -3917,12 +3931,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.minter1 = userB;
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
 
-        // Change the factory paused state
-        vm.prank(vars.feeToSetter);
-        vars.factory.setIsPaused(true);
-
         // Create the pair
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+
+        // Change the paused state
+        vm.prank(address(vars.factory));
+        vars.pair.setIsPaused(true);
 
         // Attempt to mint
         vm.startPrank(vars.minter1);
@@ -3938,12 +3952,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.minter1 = userB;
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
 
-        // Change the factory paused state
-        vm.prank(vars.feeToSetter);
-        vars.factory.setIsPaused(true);
-
         // Create the pair
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+
+        // Change the paused state
+        vm.prank(address(vars.factory));
+        vars.pair.setIsPaused(true);
 
         // Attempt to mint with reservoir
         vm.startPrank(vars.minter1);
@@ -3959,12 +3973,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.burner1 = userB;
         vars.factory = new MockButtonswapFactory(vars.feeToSetter);
 
-        // Change the factory paused state
-        vm.prank(vars.feeToSetter);
-        vars.factory.setIsPaused(true);
-
         // Create the pair
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
+
+        // Change the paused state
+        vm.prank(address(vars.factory));
+        vars.pair.setIsPaused(true);
 
         // Attempt to burn from reservoir
         vm.startPrank(vars.burner1);
@@ -4008,12 +4022,9 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(amountOut0 > 0);
         vm.assume(amountOut1 > 0);
 
-        // Change the factory paused state to paused
-        vm.prank(vars.feeToSetter);
-        vars.factory.setIsPaused(true);
-
-        // Update the pair isPaused state to paused
-        vars.pair.updateIsPaused();
+        // Change the paused state
+        vm.prank(address(vars.factory));
+        vars.pair.setIsPaused(true);
 
         // Burning all of minter1's LP tokens
         vm.startPrank(vars.minter1);

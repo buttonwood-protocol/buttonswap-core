@@ -27,13 +27,6 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function isCreationRestricted() external view returns (bool _isCreationRestricted);
 
     /**
-     * @notice Returns the current default pause state of Pairs
-     * New pairs are created with this value as their initial pause state
-     * @return _isPaused The `isPaused` state
-     */
-    function isPaused() external view returns (bool _isPaused);
-
-    /**
      * @notice Get the (unique) Pair address created for the given combination of `tokenA` and `tokenB`.
      * If the Pair does not exist then zero address is returned.
      * @param tokenA The first unsorted token
@@ -86,11 +79,12 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function setIsCreationRestricted(bool _isCreationRestricted) external;
 
     /**
-     * @notice Updates the default pause state of Pairs.
+     * @notice Updates the pause state of given Pairs.
      * This can only be called by the `feeToSetter` address.
-     * @param _isPaused The new state
+     * @param pairs A list of addresses for the pairs that should be updated
+     * @param isPausedNew The new pause state
      */
-    function setIsPaused(bool _isPaused) external;
+    function setIsPaused(address[] calldata pairs, bool isPausedNew) external;
 
     /**
      * @notice Returns the last token pair created.
