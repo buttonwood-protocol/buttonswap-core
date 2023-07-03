@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.13;
 
 import {UQ112x112} from "../../src/libraries/UQ112x112.sol";
