@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-only
 pragma solidity ^0.8.13;
 
 import {IButtonswapERC20Events} from "../IButtonswapERC20/IButtonswapERC20Events.sol";
