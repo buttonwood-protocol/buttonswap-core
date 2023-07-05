@@ -189,7 +189,15 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
 
     constructor() {
         factory = msg.sender;
-        (token0, token1) = IButtonswapFactory(factory).lastCreatedPairTokens();
+        (
+            token0,
+            token1,
+            maxVolatilityBps,
+            minTimelockDuration,
+            maxTimelockDuration,
+            maxSwappableReservoirLimitBps,
+            swappableReservoirGrowthWindow
+        ) = IButtonswapFactory(factory).lastCreatedTokensAndParameters();
     }
 
     /**

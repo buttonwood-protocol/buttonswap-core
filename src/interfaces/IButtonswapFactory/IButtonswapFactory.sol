@@ -115,9 +115,127 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function setIsPaused(address[] calldata pairs, bool isPausedNew) external;
 
     /**
-     * @notice Returns the last token pair created.
+     * @notice Returns the current address for `paramSetter`.
+     * The owner of this address has the power to update `paramSetter`, default parameters, and current parameters on existing pairs
+     * @return _paramSetter The `paramSetter` address
+     */
+    function paramSetter() external view returns (address _paramSetter);
+
+    /**
+     * @notice Updates the address that has the power to set the `paramSetter` and update the default params.
+     * This can only be called by the `paramSetter` address.
+     * @param _paramSetter The new address
+     */
+    function setParamSetter(address _paramSetter) external;
+
+    /**
+     * @notice Returns the default value of `maxVolatilityBps` used for new pairs.
+    * @return _defaultMaxVolatilityBps The `defaultMaxVolatilityBps` value
+     */
+    function defaultMaxVolatilityBps() external view returns (uint256 _defaultMaxVolatilityBps);
+
+    /**
+     * @notice Returns the default value of `minTimelockDuration` used for new pairs.
+    * @return _defaultMinTimelockDuration The `defaultMinTimelockDuration` value
+     */
+    function defaultMinTimelockDuration() external view returns (uint256 _defaultMinTimelockDuration);
+
+    /**
+     * @notice Returns the default value of `maxTimelockDuration` used for new pairs.
+    * @return _defaultMaxTimelockDuration The `defaultMaxTimelockDuration` value
+     */
+    function defaultMaxTimelockDuration() external view returns (uint256 _defaultMaxTimelockDuration);
+
+    /**
+     * @notice Returns the default value of `maxSwappableReservoirLimitBps` used for new pairs.
+    * @return _defaultMaxSwappableReservoirLimitBps The `defaultMaxSwappableReservoirLimitBps` value
+     */
+    function defaultMaxSwappableReservoirLimitBps() external view returns (uint256 _defaultMaxSwappableReservoirLimitBps);
+
+    /**
+     * @notice Returns the default value of `swappableReservoirGrowthWindow` used for new pairs.
+    * @return _defaultSwappableReservoirGrowthWindow The `defaultSwappableReservoirGrowthWindow` value
+     */
+    function defaultSwappableReservoirGrowthWindow() external view returns (uint256 _defaultSwappableReservoirGrowthWindow);
+
+    /**
+     * @notice Updates the default parameters used for new pairs.
+     * This can only be called by the `paramSetter` address.
+     * @param _defaultMaxVolatilityBps The new defaultMaxVolatilityBps
+     * @param _defaultMinTimelockDuration The new defaultMinTimelockDuration
+     * @param _defaultMaxTimelockDuration The new defaultMaxTimelockDuration
+     * @param _defaultMaxSwappableReservoirLimitBps The new defaultMaxSwappableReservoirLimitBps
+     * @param _defaultSwappableReservoirGrowthWindow The new defaultSwappableReservoirGrowthWindow
+     */
+    function setDefaultParameters(
+        uint256 _defaultMaxVolatilityBps,
+        uint256 _defaultMinTimelockDuration,
+        uint256 _defaultMaxTimelockDuration,
+        uint256 _defaultMaxSwappableReservoirLimitBps,
+        uint256 _defaultSwappableReservoirGrowthWindow
+    ) external;
+
+    /**
+     * @notice Updates the `maxVolatilityBps` value of given Pairs.
+     * This can only be called by the `paramSetter` address.
+     * @param pairs A list of addresses for the pairs that should be updated
+     * @param newMaxVolatilityBps The new `maxVolatilityBps` value
+     */
+    function setMaxVolatilityBps(address[] calldata pairs, uint256 newMaxVolatilityBps) external;
+
+    /**
+     * @notice Updates the `minTimelockDuration` value of given Pairs.
+     * This can only be called by the `paramSetter` address.
+     * @param pairs A list of addresses for the pairs that should be updated
+     * @param newMinTimelockDuration The new `minTimelockDuration` value
+     */
+    function setMinTimelockDuration(address[] calldata pairs, uint256 newMinTimelockDuration) external;
+
+    /**
+     * @notice Updates the `maxTimelockDuration` value of given Pairs.
+     * This can only be called by the `paramSetter` address.
+     * @param pairs A list of addresses for the pairs that should be updated
+     * @param newMaxTimelockDuration The new `maxTimelockDuration` value
+     */
+    function setMaxTimelockDuration(address[] calldata pairs, uint256 newMaxTimelockDuration) external;
+
+    /**
+     * @notice Updates the `maxSwappableReservoirLimitBps` value of given Pairs.
+     * This can only be called by the `paramSetter` address.
+     * @param pairs A list of addresses for the pairs that should be updated
+     * @param newMaxSwappableReservoirLimitBps The new `maxSwappableReservoirLimitBps` value
+     */
+    function setMaxSwappableReservoirLimitBps(address[] calldata pairs, uint256 newMaxSwappableReservoirLimitBps)
+        external;
+
+    /**
+     * @notice Updates the `swappableReservoirGrowthWindow` value of given Pairs.
+     * This can only be called by the `paramSetter` address.
+     * @param pairs A list of addresses for the pairs that should be updated
+     * @param newSwappableReservoirGrowthWindow The new `swappableReservoirGrowthWindow` value
+     */
+    function setSwappableReservoirGrowthWindow(address[] calldata pairs, uint256 newSwappableReservoirGrowthWindow)
+        external;
+
+    /**
+     * @notice Returns the last token pair created and the parameters used.
      * @return token0 The first token address
      * @return token1 The second token address
+     * @return maxVolatilityBps The max volatility bps
+     * @return minTimelockDuration The minimum time lock duration
+     * @return maxTimelockDuration The maximum time lock duration
+     * @return maxSwappableReservoirLimitBps The max swappable reservoir limit bps
+     * @return swappableReservoirGrowthWindow The swappable reservoir growth window
      */
-    function lastCreatedPairTokens() external returns (address token0, address token1);
+    function lastCreatedTokensAndParameters()
+        external
+        returns (
+            address token0,
+            address token1,
+            uint256 maxVolatilityBps,
+            uint256 minTimelockDuration,
+            uint256 maxTimelockDuration,
+            uint256 maxSwappableReservoirLimitBps,
+            uint256 swappableReservoirGrowthWindow
+        );
 }

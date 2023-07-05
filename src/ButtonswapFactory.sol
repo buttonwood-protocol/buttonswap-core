@@ -33,6 +33,36 @@ contract ButtonswapFactory is IButtonswapFactory {
     /**
      * @inheritdoc IButtonswapFactory
      */
+    address public paramSetter;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    uint256 public defaultMaxVolatilityBps;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    uint256 public defaultMinTimelockDuration;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    uint256 public defaultMaxTimelockDuration;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    uint256 public defaultMaxSwappableReservoirLimitBps;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    uint256 public defaultSwappableReservoirGrowthWindow;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
     bool public isCreationRestricted;
 
     /**
@@ -49,11 +79,19 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @dev `feeTo` is not initialised during deployment, and must be set separately by a call to {setFeeTo}.
      * @param _feeToSetter The account that has the ability to set `feeToSetter` and `feeTo`
      * @param _isCreationRestrictedSetter The account that has the ability to set `isCreationRestrictedSetter` and `isCreationRestricted`
+     * @param _isPausedSetter The account that has the ability to set `isPausedSetter` and `isPaused`
+     * @param _paramSetter The account that has the ability to set `paramSetter`, default parameters, and current parameters on existing pairs
      */
-    constructor(address _feeToSetter, address _isCreationRestrictedSetter, address _isPausedSetter) {
+    constructor(
+        address _feeToSetter,
+        address _isCreationRestrictedSetter,
+        address _isPausedSetter,
+        address _paramSetter
+    ) {
         feeToSetter = _feeToSetter;
         isCreationRestrictedSetter = _isCreationRestrictedSetter;
         isPausedSetter = _isPausedSetter;
+        paramSetter = _paramSetter;
     }
 
     /**
@@ -160,8 +198,122 @@ contract ButtonswapFactory is IButtonswapFactory {
         }
     }
 
-    function lastCreatedPairTokens() external view returns (address token0, address token1) {
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setParamSetter(address _paramSetter) external {
+        if (msg.sender != paramSetter) {
+            revert Forbidden();
+        }
+        paramSetter = _paramSetter;
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setDefaultParameters(
+        uint256 _defaultMaxVolatilityBps,
+        uint256 _defaultMinTimelockDuration,
+        uint256 _defaultMaxTimelockDuration,
+        uint256 _defaultMaxSwappableReservoirLimitBps,
+        uint256 _defaultSwappableReservoirGrowthWindow
+    ) external {
+        if (msg.sender != paramSetter) {
+            revert Forbidden();
+        }
+        defaultMaxVolatilityBps = _defaultMaxVolatilityBps;
+        defaultMinTimelockDuration = _defaultMinTimelockDuration;
+        defaultMaxTimelockDuration = _defaultMaxTimelockDuration;
+        defaultMaxSwappableReservoirLimitBps = _defaultMaxSwappableReservoirLimitBps;
+        defaultSwappableReservoirGrowthWindow = _defaultSwappableReservoirGrowthWindow;
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setMaxVolatilityBps(address[] calldata pairs, uint256 newMaxVolatilityBps) external {
+        if (msg.sender != paramSetter) {
+            revert Forbidden();
+        }
+        for (uint256 i = 0; i < pairs.length; i++) {
+            IButtonswapPair(pairs[i]).setMaxVolatilityBps(newMaxVolatilityBps);
+        }
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setMinTimelockDuration(address[] calldata pairs, uint256 newMinTimelockDuration) external {
+        if (msg.sender != paramSetter) {
+            revert Forbidden();
+        }
+        for (uint256 i = 0; i < pairs.length; i++) {
+            IButtonswapPair(pairs[i]).setMinTimelockDuration(newMinTimelockDuration);
+        }
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setMaxTimelockDuration(address[] calldata pairs, uint256 newMaxTimelockDuration) external {
+        if (msg.sender != paramSetter) {
+            revert Forbidden();
+        }
+        for (uint256 i = 0; i < pairs.length; i++) {
+            IButtonswapPair(pairs[i]).setMaxTimelockDuration(newMaxTimelockDuration);
+        }
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setMaxSwappableReservoirLimitBps(address[] calldata pairs, uint256 newMaxSwappableReservoirLimitBps)
+        external
+    {
+        if (msg.sender != paramSetter) {
+            revert Forbidden();
+        }
+        for (uint256 i = 0; i < pairs.length; i++) {
+            IButtonswapPair(pairs[i]).setMaxSwappableReservoirLimitBps(newMaxSwappableReservoirLimitBps);
+        }
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setSwappableReservoirGrowthWindow(address[] calldata pairs, uint256 newSwappableReservoirGrowthWindow)
+        external
+    {
+        if (msg.sender != paramSetter) {
+            revert Forbidden();
+        }
+        for (uint256 i = 0; i < pairs.length; i++) {
+            IButtonswapPair(pairs[i]).setSwappableReservoirGrowthWindow(newSwappableReservoirGrowthWindow);
+        }
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function lastCreatedTokensAndParameters()
+        external
+        view
+        returns (
+            address token0,
+            address token1,
+            uint256 maxVolatilityBps,
+            uint256 minTimelockDuration,
+            uint256 maxTimelockDuration,
+            uint256 maxSwappableReservoirLimitBps,
+            uint256 swappableReservoirGrowthWindow
+        )
+    {
         token0 = lastToken0;
         token1 = lastToken1;
+        maxVolatilityBps = defaultMaxVolatilityBps;
+        minTimelockDuration = defaultMinTimelockDuration;
+        maxTimelockDuration = defaultMaxTimelockDuration;
+        maxSwappableReservoirLimitBps = defaultMaxSwappableReservoirLimitBps;
+        swappableReservoirGrowthWindow = defaultSwappableReservoirGrowthWindow;
     }
 }
