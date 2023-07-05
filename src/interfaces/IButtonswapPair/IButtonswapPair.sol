@@ -18,6 +18,72 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     function MINIMUM_LIQUIDITY() external pure returns (uint256 MINIMUM_LIQUIDITY);
 
     /**
+     * @notice Numerator (over 10_000) of the threshold when price volatility triggers maximum single-sided timelock duration.
+     * @return _maxVolatilityBps The value of maxVolatilityBps
+     */
+    function maxVolatilityBps() external view returns (uint16 _maxVolatilityBps);
+
+    /**
+     * @notice Updates the maxVolatilityBps parameter of the pair.
+     * This can only be called by the Factory address.
+     * @param  _maxVolatilityBps The new value for maxVolatilityBps
+     */
+    function setMaxVolatilityBps(uint16 _maxVolatilityBps) external;
+
+    /**
+     * @notice How long the minimum singled-sided timelock lasts for.
+     * @return _minTimelockDuration The value of minTimelockDuration
+     */
+    function minTimelockDuration() external view returns (uint32 _minTimelockDuration);
+
+    /**
+     * @notice Updates the minTimelockDuration parameter of the pair.
+     * This can only be called by the Factory address.
+     * @param  _minTimelockDuration The new value for minTimelockDuration
+     */
+    function setMinTimelockDuration(uint32 _minTimelockDuration) external;
+
+    /**
+     * @notice How long the maximum singled-sided timelock lasts for.
+     * @return _maxTimelockDuration The value of maxTimelockDuration
+     */
+    function maxTimelockDuration() external view returns (uint32 _maxTimelockDuration);
+
+    /**
+     * @notice Updates the maxTimelockDuration parameter of the pair.
+     * This can only be called by the Factory address.
+     * @param  _maxTimelockDuration The new value for maxTimelockDuration
+     */
+    function setMaxTimelockDuration(uint32 _maxTimelockDuration) external;
+
+    /**
+     * @notice Numerator (over 10_000) of the fraction of the pool balance that acts as the maximum limit on how much of the reservoir
+     * can be swapped in a given timeframe.
+     * @return _maxSwappableReservoirLimitBps The value of maxSwappableReservoirLimitBps
+     */
+    function maxSwappableReservoirLimitBps() external view returns (uint16 _maxSwappableReservoirLimitBps);
+
+    /**
+     * @notice Updates the maxSwappableReservoirLimitBps parameter of the pair.
+     * This can only be called by the Factory address.
+     * @param  _maxSwappableReservoirLimitBps The new value for maxSwappableReservoirLimitBps
+     */
+    function setMaxSwappableReservoirLimitBps(uint16 _maxSwappableReservoirLimitBps) external;
+
+    /**
+     * @notice How much time it takes for the swappable reservoir value to grow from nothing to its maximum value.
+     * @return _swappableReservoirGrowthWindow The value of swappableReservoirGrowthWindow
+     */
+    function swappableReservoirGrowthWindow() external view returns (uint32 _swappableReservoirGrowthWindow);
+
+    /**
+     * @notice Updates the swappableReservoirGrowthWindow parameter of the pair.
+     * This can only be called by the Factory address.
+     * @param  _swappableReservoirGrowthWindow The new value for swappableReservoirGrowthWindow
+     */
+    function setSwappableReservoirGrowthWindow(uint32 _swappableReservoirGrowthWindow) external;
+
+    /**
      * @notice The address of the {ButtonswapFactory} instance used to create this Pair.
      * @dev Set to `msg.sender` in the Pair constructor.
      * @return factory The factory address

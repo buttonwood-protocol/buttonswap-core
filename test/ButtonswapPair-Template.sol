@@ -4030,4 +4030,191 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
         assertEq(vars.pair.balanceOf(vars.minter1), 0, "Minter1 should have no LP tokens left");
     }
+
+    function test_setMaxVolatilityBps(uint16 newMaxVolatilityBps) public {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+
+        vm.prank(address(vars.factory));
+        vars.pair.setMaxVolatilityBps(newMaxVolatilityBps);
+        assertEq(vars.pair.maxVolatilityBps(), newMaxVolatilityBps, "maxVolatilityBps value should match new one.");
+    }
+
+    function test_setMaxVolatilityBps_CannotCallFromNonFactoryAddress(address caller, uint16 newMaxVolatilityBps)
+        public
+    {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        uint16 initialMaxVolatilityBps = vars.pair.maxVolatilityBps();
+
+        // Ensure caller is not the factory
+        vm.assume(caller != address(vars.factory));
+
+        vm.prank(caller);
+        vm.expectRevert(Forbidden.selector);
+        vars.pair.setMaxVolatilityBps(newMaxVolatilityBps);
+        assertEq(
+            vars.pair.maxVolatilityBps(), initialMaxVolatilityBps, "maxVolatilityBps values should match initial one."
+        );
+    }
+
+    function test_setMinTimelockDuration(uint32 newMinTimelockDuration) public {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+
+        vm.prank(address(vars.factory));
+        vars.pair.setMinTimelockDuration(newMinTimelockDuration);
+        assertEq(
+            vars.pair.minTimelockDuration(), newMinTimelockDuration, "minTimelockDuration value should match new one."
+        );
+    }
+
+    function test_setMinTimelockDuration_CannotCallFromNonFactoryAddress(address caller, uint32 newMinTimelockDuration)
+        public
+    {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        uint32 initialMinTimelockDuration = vars.pair.minTimelockDuration();
+
+        // Ensure caller is not the factory
+        vm.assume(caller != address(vars.factory));
+
+        vm.prank(caller);
+        vm.expectRevert(Forbidden.selector);
+        vars.pair.setMinTimelockDuration(newMinTimelockDuration);
+        assertEq(
+            vars.pair.minTimelockDuration(),
+            initialMinTimelockDuration,
+            "minTimelockDuration values should match initial one."
+        );
+    }
+
+    function test_setMaxTimelockDuration(uint32 newMaxTimelockDuration) public {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+
+        vm.prank(address(vars.factory));
+        vars.pair.setMaxTimelockDuration(newMaxTimelockDuration);
+        assertEq(
+            vars.pair.maxTimelockDuration(), newMaxTimelockDuration, "maxTimelockDuration value should match new one."
+        );
+    }
+
+    function test_setMaxTimelockDuration_CannotCallFromNonFactoryAddress(address caller, uint32 newMaxTimelockDuration)
+        public
+    {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        uint32 initialMaxTimelockDuration = vars.pair.maxTimelockDuration();
+
+        // Ensure caller is not the factory
+        vm.assume(caller != address(vars.factory));
+
+        vm.prank(caller);
+        vm.expectRevert(Forbidden.selector);
+        vars.pair.setMaxTimelockDuration(newMaxTimelockDuration);
+        assertEq(
+            vars.pair.maxTimelockDuration(),
+            initialMaxTimelockDuration,
+            "maxTimelockDuration values should match initial one."
+        );
+    }
+
+    function test_setMaxSwappableReservoirLimitBps(uint16 newMaxSwappableReservoirLimitBps) public {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+
+        vm.prank(address(vars.factory));
+        vars.pair.setMaxSwappableReservoirLimitBps(newMaxSwappableReservoirLimitBps);
+        assertEq(
+            vars.pair.maxSwappableReservoirLimitBps(),
+            newMaxSwappableReservoirLimitBps,
+            "maxSwappableReservoirLimitBps value should match new one."
+        );
+    }
+
+    function test_setMaxSwappableReservoirLimitBps_CannotCallFromNonFactoryAddress(
+        address caller,
+        uint16 newMaxSwappableReservoirLimitBps
+    ) public {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        uint16 initialMaxSwappableReservoirLimitBps = vars.pair.maxSwappableReservoirLimitBps();
+
+        // Ensure caller is not the factory
+        vm.assume(caller != address(vars.factory));
+
+        vm.prank(caller);
+        vm.expectRevert(Forbidden.selector);
+        vars.pair.setMaxSwappableReservoirLimitBps(newMaxSwappableReservoirLimitBps);
+        assertEq(
+            vars.pair.maxSwappableReservoirLimitBps(),
+            initialMaxSwappableReservoirLimitBps,
+            "maxSwappableReservoirLimitBps values should match initial one."
+        );
+    }
+
+    function test_setSwappableReservoirGrowthWindow(uint32 newSwappableReservoirGrowthWindow) public {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+
+        vm.prank(address(vars.factory));
+        vars.pair.setSwappableReservoirGrowthWindow(newSwappableReservoirGrowthWindow);
+        assertEq(
+            vars.pair.swappableReservoirGrowthWindow(),
+            newSwappableReservoirGrowthWindow,
+            "swappableReservoirGrowthWindow value should match new one."
+        );
+    }
+
+    function test_setSwappableReservoirGrowthWindow_CannotCallFromNonFactoryAddress(
+        address caller,
+        uint32 newSwappableReservoirGrowthWindow
+    ) public {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        uint32 initialSwappableReservoirGrowthWindow = vars.pair.swappableReservoirGrowthWindow();
+
+        // Ensure caller is not the factory
+        vm.assume(caller != address(vars.factory));
+
+        vm.prank(caller);
+        vm.expectRevert(Forbidden.selector);
+        vars.pair.setSwappableReservoirGrowthWindow(newSwappableReservoirGrowthWindow);
+        assertEq(
+            vars.pair.swappableReservoirGrowthWindow(),
+            initialSwappableReservoirGrowthWindow,
+            "swappableReservoirGrowthWindow values should match initial one."
+        );
+    }
 }
