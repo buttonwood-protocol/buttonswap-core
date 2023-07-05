@@ -31,6 +31,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
     function test_createPair(
         address initialFeeToSetter,
         address initialIsCreationRestrictedSetter,
+        address initialIsPausedSetter,
         address token0A,
         address token0B,
         address token1A,
@@ -67,9 +68,9 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
 
         // Two factories so we can test that token param order doesn't matter
         ButtonswapFactory buttonswapFactory1 =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
         ButtonswapFactory buttonswapFactory2 =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
 
         assertEq(buttonswapFactory1.allPairsLength(), 0);
         vm.expectRevert();
@@ -218,10 +219,11 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
     function test_createPair_CannotCreatePairWithIdenticalTokens(
         address initialFeeToSetter,
         address initialIsCreationRestrictedSetter,
+        address initialIsPausedSetter,
         address token
     ) public {
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
 
         assertEq(buttonswapFactory.allPairsLength(), 0);
         vm.expectRevert();
@@ -241,12 +243,13 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
     function test_createPair_CannotCreatePairWithZeroAddressTokens(
         address initialFeeToSetter,
         address initialIsCreationRestrictedSetter,
+        address initialIsPausedSetter,
         address token
     ) public {
         // Ensure fuzzed address is non-zero
         vm.assume(token != address(0));
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
 
         assertEq(buttonswapFactory.allPairsLength(), 0);
         vm.expectRevert();
@@ -276,6 +279,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
     function test_createPair_CannotCreatePairThatWasAlreadyCreated(
         address initialFeeToSetter,
         address initialIsCreationRestrictedSetter,
+        address initialIsPausedSetter,
         address tokenA,
         address tokenB
     ) public {
@@ -287,7 +291,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         // Calculate sorted token pairs
         Tokens memory tokens = getTokens(tokenA, tokenB);
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
 
         assertEq(buttonswapFactory.allPairsLength(), 0);
         vm.expectRevert();
@@ -332,6 +336,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address tokenB
     ) public {
         address initialFeeToSetter = address(0);
+        address initialIsPausedSetter = address(0);
         vm.assume(pairCreator != initialIsCreationRestrictedSetter);
         // Ensure fuzzed addresses are non-zero
         vm.assume(tokenA != address(0));
@@ -341,7 +346,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         // Calculate sorted token pairs
         Tokens memory tokens = getTokens(tokenA, tokenB);
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
 
         // IsCreationRestrictedSetter locking pair creation
         vm.prank(initialIsCreationRestrictedSetter);
@@ -360,6 +365,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address tokenB
     ) public {
         address initialFeeToSetter = address(0);
+        address initialIsPausedSetter = address(0);
         // Ensure fuzzed addresses are non-zero
         vm.assume(tokenA != address(0));
         vm.assume(tokenB != address(0));
@@ -368,7 +374,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         // Calculate sorted token pairs
         Tokens memory tokens = getTokens(tokenA, tokenB);
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
 
         // IsCreationRestrictedSetter locking pair creation
         vm.prank(initialIsCreationRestrictedSetter);
@@ -384,8 +390,9 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
 
     function test_setFeeTo(address initialFeeToSetter, address feeTo) public {
         address initialIsCreationRestrictedSetter = address(0);
+        address initialIsPausedSetter = address(0);
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
         assertEq(buttonswapFactory.feeTo(), address(0));
 
         vm.prank(initialFeeToSetter);
@@ -397,10 +404,10 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         public
     {
         vm.assume(caller != initialFeeToSetter);
-
         address initialIsCreationRestrictedSetter = address(0);
+        address initialIsPausedSetter = address(0);
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
         assertEq(buttonswapFactory.feeTo(), address(0));
 
         vm.startPrank(caller);
@@ -412,8 +419,9 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
 
     function test_setFeeToSetter(address initialFeeToSetter, address newFeeToSetter) public {
         address initialIsCreationRestrictedSetter = address(0);
+        address initialIsPausedSetter = address(0);
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
         assertEq(buttonswapFactory.feeToSetter(), initialFeeToSetter);
 
         vm.prank(initialFeeToSetter);
@@ -428,8 +436,9 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
     ) public {
         vm.assume(caller != initialFeeToSetter);
         address initialIsCreationRestrictedSetter = address(0);
+        address initialIsPausedSetter = address(0);
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
         assertEq(buttonswapFactory.feeToSetter(), initialFeeToSetter);
 
         vm.startPrank(caller);
@@ -443,8 +452,9 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         public
     {
         address initialFeeToSetter = address(0);
+        address initialIsPausedSetter = address(0);
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
         assertEq(buttonswapFactory.isCreationRestricted(), false);
 
         vm.prank(initialIsCreationRestrictedSetter);
@@ -457,9 +467,11 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address caller,
         bool isCreationRestricted
     ) public {
+        vm.assume(caller != initialIsCreationRestrictedSetter);
         address initialFeeToSetter = address(0);
+        address initialIsPausedSetter = address(0);
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
         assertEq(buttonswapFactory.isCreationRestricted(), false);
 
         vm.startPrank(caller);
@@ -474,8 +486,9 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address newIsCreationRestrictedSetter
     ) public {
         address initialFeeToSetter = address(0);
+        address initialIsPausedSetter = address(0);
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
         assertEq(buttonswapFactory.isCreationRestrictedSetter(), initialIsCreationRestrictedSetter);
 
         vm.prank(initialIsCreationRestrictedSetter);
@@ -490,8 +503,9 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
     ) public {
         vm.assume(caller != initialIsCreationRestrictedSetter);
         address initialFeeToSetter = address(0);
+        address initialIsPausedSetter = address(0);
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
         assertEq(buttonswapFactory.isCreationRestrictedSetter(), initialIsCreationRestrictedSetter);
 
         vm.startPrank(caller);
@@ -503,17 +517,18 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
 
     // If isPaused is true, then new pairs are created paused
     function test_setIsPaused_onlyFeeToSetterCanCall(
-        address initialFeeToSetter,
+        address initialIsPausedSetter,
         address setIsPausedCaller,
         address tokenA,
         address tokenB,
         bool isPausedNew
     ) public {
+        address initialFeeToSetter = address(0);
         address initialIsCreationRestrictedSetter = address(0);
-        vm.assume(initialFeeToSetter != address(this));
+
         vm.assume(tokenA != tokenB && tokenA != address(0) && tokenB != address(0));
         ButtonswapFactory buttonswapFactory =
-            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
         address pairAddress = buttonswapFactory.createPair(tokenA, tokenB);
         address[] memory pairAddresses = new address[](1);
         pairAddresses[0] = pairAddress;
@@ -528,5 +543,36 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
             assertEq(IButtonswapPair(pairAddress).getIsPaused(), isPausedNew, "isPaused should have updated");
         }
         vm.stopPrank();
+    }
+
+    function test_setIsPausedSetter(address initialIsPausedSetter, address newIsPausedSetter) public {
+        address initialFeeToSetter = address(0);
+        address initialIsCreationRestrictedSetter = address(0);
+        ButtonswapFactory buttonswapFactory =
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
+        assertEq(buttonswapFactory.isPausedSetter(), initialIsPausedSetter);
+
+        vm.prank(initialIsPausedSetter);
+        buttonswapFactory.setIsPausedSetter(newIsPausedSetter);
+        assertEq(buttonswapFactory.isPausedSetter(), newIsPausedSetter);
+    }
+
+    function test_setIsPausedSetter_CannotCallWhenNotIsPausedSetter(
+        address initialIsPausedSetter,
+        address caller,
+        address newIsPausedSetter
+    ) public {
+        vm.assume(caller != initialIsPausedSetter);
+        address initialFeeToSetter = address(0);
+        address initialIsCreationRestrictedSetter = address(0);
+        ButtonswapFactory buttonswapFactory =
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
+        assertEq(buttonswapFactory.isPausedSetter(), initialIsPausedSetter);
+
+        vm.startPrank(caller);
+        vm.expectRevert(Forbidden.selector);
+        buttonswapFactory.setIsPausedSetter(newIsPausedSetter);
+        vm.stopPrank();
+        assertEq(buttonswapFactory.isPausedSetter(), initialIsPausedSetter);
     }
 }

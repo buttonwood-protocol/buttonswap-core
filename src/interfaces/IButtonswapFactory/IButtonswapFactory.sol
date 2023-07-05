@@ -93,6 +93,20 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function setIsCreationRestrictedSetter(address _isCreationRestrictedSetter) external;
 
     /**
+     * @notice Returns the current address for `isPausedSetter`.
+     * The owner of this address has the power to update both `isPausedSetter` and call `setIsPaused`.
+     * @return _isPausedSetter The `isPausedSetter` address
+     */
+    function isPausedSetter() external view returns (address _isPausedSetter);
+
+    /**
+     * @notice Updates the address that has the power to set the `isPausedSetter` and call `setIsPaused`.
+     * This can only be called by the `isPausedSetter` address.
+     * @param _isPausedSetter The new address
+     */
+    function setIsPausedSetter(address _isPausedSetter) external;
+
+    /**
      * @notice Updates the pause state of given Pairs.
      * This can only be called by the `feeToSetter` address.
      * @param pairs A list of addresses for the pairs that should be updated

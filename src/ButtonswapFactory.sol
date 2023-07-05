@@ -41,13 +41,19 @@ contract ButtonswapFactory is IButtonswapFactory {
     address public isCreationRestrictedSetter;
 
     /**
+     * @inheritdoc IButtonswapFactory
+     */
+    address public isPausedSetter;
+
+    /**
      * @dev `feeTo` is not initialised during deployment, and must be set separately by a call to {setFeeTo}.
      * @param _feeToSetter The account that has the ability to set `feeToSetter` and `feeTo`
      * @param _isCreationRestrictedSetter The account that has the ability to set `isCreationRestrictedSetter` and `isCreationRestricted`
      */
-    constructor(address _feeToSetter, address _isCreationRestrictedSetter) {
+    constructor(address _feeToSetter, address _isCreationRestrictedSetter, address _isPausedSetter) {
         feeToSetter = _feeToSetter;
         isCreationRestrictedSetter = _isCreationRestrictedSetter;
+        isPausedSetter = _isPausedSetter;
     }
 
     /**
@@ -135,8 +141,18 @@ contract ButtonswapFactory is IButtonswapFactory {
     /**
      * @inheritdoc IButtonswapFactory
      */
+    function setIsPausedSetter(address _isPausedSetter) external {
+        if (msg.sender != isPausedSetter) {
+            revert Forbidden();
+        }
+        isPausedSetter = _isPausedSetter;
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
     function setIsPaused(address[] calldata pairs, bool isPausedNew) external {
-        if (msg.sender != feeToSetter) {
+        if (msg.sender != isPausedSetter) {
             revert Forbidden();
         }
         for (uint256 i = 0; i < pairs.length; i++) {
