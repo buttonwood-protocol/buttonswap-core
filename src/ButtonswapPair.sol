@@ -40,27 +40,27 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    uint256 public maxVolatilityBps = 700;
+    uint256 public maxVolatilityBps;
 
     /**
      * @inheritdoc IButtonswapPair
      */
-    uint256 public minTimelockDuration = 24 seconds;
+    uint256 public minTimelockDuration;
 
     /**
      * @inheritdoc IButtonswapPair
      */
-    uint256 public maxTimelockDuration = 24 hours;
+    uint256 public maxTimelockDuration;
 
     /**
      * @inheritdoc IButtonswapPair
      */
-    uint256 public maxSwappableReservoirLimitBps = 1000;
+    uint256 public maxSwappableReservoirLimitBps;
 
     /**
      * @inheritdoc IButtonswapPair
      */
-    uint256 public swappableReservoirGrowthWindow = 24 hours;
+    uint256 public swappableReservoirGrowthWindow;
 
     /**
      * @inheritdoc IButtonswapPair

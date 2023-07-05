@@ -38,27 +38,27 @@ contract ButtonswapFactory is IButtonswapFactory {
     /**
      * @inheritdoc IButtonswapFactory
      */
-    uint256 public defaultMaxVolatilityBps;
+    uint256 public defaultMaxVolatilityBps = 700;
 
     /**
      * @inheritdoc IButtonswapFactory
      */
-    uint256 public defaultMinTimelockDuration;
+    uint256 public defaultMinTimelockDuration = 24 seconds;
 
     /**
      * @inheritdoc IButtonswapFactory
      */
-    uint256 public defaultMaxTimelockDuration;
+    uint256 public defaultMaxTimelockDuration = 24 hours;
 
     /**
      * @inheritdoc IButtonswapFactory
      */
-    uint256 public defaultMaxSwappableReservoirLimitBps;
+    uint256 public defaultMaxSwappableReservoirLimitBps = 1000;
 
     /**
      * @inheritdoc IButtonswapFactory
      */
-    uint256 public defaultSwappableReservoirGrowthWindow;
+    uint256 public defaultSwappableReservoirGrowthWindow = 24 hours;
 
     /**
      * @inheritdoc IButtonswapFactory

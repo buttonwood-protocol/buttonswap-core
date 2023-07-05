@@ -130,33 +130,39 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
 
     /**
      * @notice Returns the default value of `maxVolatilityBps` used for new pairs.
-    * @return _defaultMaxVolatilityBps The `defaultMaxVolatilityBps` value
+     * @return _defaultMaxVolatilityBps The `defaultMaxVolatilityBps` value
      */
     function defaultMaxVolatilityBps() external view returns (uint256 _defaultMaxVolatilityBps);
 
     /**
      * @notice Returns the default value of `minTimelockDuration` used for new pairs.
-    * @return _defaultMinTimelockDuration The `defaultMinTimelockDuration` value
+     * @return _defaultMinTimelockDuration The `defaultMinTimelockDuration` value
      */
     function defaultMinTimelockDuration() external view returns (uint256 _defaultMinTimelockDuration);
 
     /**
      * @notice Returns the default value of `maxTimelockDuration` used for new pairs.
-    * @return _defaultMaxTimelockDuration The `defaultMaxTimelockDuration` value
+     * @return _defaultMaxTimelockDuration The `defaultMaxTimelockDuration` value
      */
     function defaultMaxTimelockDuration() external view returns (uint256 _defaultMaxTimelockDuration);
 
     /**
      * @notice Returns the default value of `maxSwappableReservoirLimitBps` used for new pairs.
-    * @return _defaultMaxSwappableReservoirLimitBps The `defaultMaxSwappableReservoirLimitBps` value
+     * @return _defaultMaxSwappableReservoirLimitBps The `defaultMaxSwappableReservoirLimitBps` value
      */
-    function defaultMaxSwappableReservoirLimitBps() external view returns (uint256 _defaultMaxSwappableReservoirLimitBps);
+    function defaultMaxSwappableReservoirLimitBps()
+        external
+        view
+        returns (uint256 _defaultMaxSwappableReservoirLimitBps);
 
     /**
      * @notice Returns the default value of `swappableReservoirGrowthWindow` used for new pairs.
-    * @return _defaultSwappableReservoirGrowthWindow The `defaultSwappableReservoirGrowthWindow` value
+     * @return _defaultSwappableReservoirGrowthWindow The `defaultSwappableReservoirGrowthWindow` value
      */
-    function defaultSwappableReservoirGrowthWindow() external view returns (uint256 _defaultSwappableReservoirGrowthWindow);
+    function defaultSwappableReservoirGrowthWindow()
+        external
+        view
+        returns (uint256 _defaultSwappableReservoirGrowthWindow);
 
     /**
      * @notice Updates the default parameters used for new pairs.
