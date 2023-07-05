@@ -38,30 +38,29 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     uint256 private constant BPS = 10_000;
 
     /**
-     * @dev Numerator for when price volatility triggers maximum single-sided timelock duration.
+     * @inheritdoc IButtonswapPair
      */
-    uint256 private constant MAX_VOLATILITY_BPS = 700;
+    uint256 public maxVolatilityBps = 700;
 
     /**
-     * @dev How long the minimum singled-sided timelock lasts for.
+     * @inheritdoc IButtonswapPair
      */
-    uint256 private constant MIN_TIMELOCK_DURATION = 24 seconds;
+    uint256 public minTimelockDuration = 24 seconds;
 
     /**
-     * @dev How long the maximum singled-sided timelock lasts for.
+     * @inheritdoc IButtonswapPair
      */
-    uint256 private constant MAX_TIMELOCK_DURATION = 24 hours;
+    uint256 public maxTimelockDuration = 24 hours;
 
     /**
-     * @dev Numerator for the fraction of the pool balance that acts as the maximum limit on how much of the reservoir
-     * can be swapped in a given timeframe.
+     * @inheritdoc IButtonswapPair
      */
-    uint256 private constant MAX_SWAPPABLE_RESERVOIR_LIMIT_BPS = 1000;
+    uint256 public maxSwappableReservoirLimitBps = 1000;
 
     /**
-     * @dev How much time it takes for the swappable reservoir value to grow from nothing to its maximum value.
+     * @inheritdoc IButtonswapPair
      */
-    uint256 private constant SWAPPABLE_RESERVOIR_GROWTH_WINDOW = 24 hours;
+    uint256 public swappableReservoirGrowthWindow = 24 hours;
 
     /**
      * @inheritdoc IButtonswapPair
@@ -174,6 +173,16 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             _transfer(address(this), feeTo, balanceOf[address(this)]);
         } else {
             _burn(address(this), balanceOf[address(this)]);
+        }
+        _;
+    }
+
+    /**
+    * @dev Prevents operations from being executed if the caller is not the factory.
+    */
+    modifier onlyFactory() {
+        if (msg.sender != factory) {
+            revert Forbidden();
         }
         _;
     }
@@ -299,14 +308,14 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         } else {
             priceDifference = _movingAveragePrice0 - newPrice0;
         }
-        // priceDifference / ((_movingAveragePrice0 * MAX_VOLATILITY_BPS)/BPS)
+        // priceDifference / ((_movingAveragePrice0 * maxVolatilityBps)/BPS)
         uint256 timelock = Math.min(
-            MIN_TIMELOCK_DURATION
+            minTimelockDuration
                 + (
-                    (priceDifference * BPS * (MAX_TIMELOCK_DURATION - MIN_TIMELOCK_DURATION))
-                        / (_movingAveragePrice0 * MAX_VOLATILITY_BPS)
+                    (priceDifference * BPS * (maxTimelockDuration - minTimelockDuration))
+                        / (_movingAveragePrice0 * maxVolatilityBps)
                 ),
-            MAX_TIMELOCK_DURATION
+            maxTimelockDuration
         );
         uint120 timelockDeadline = uint120(block.timestamp + timelock);
         if (timelockDeadline > singleSidedTimelockDeadline) {
@@ -323,14 +332,14 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      */
     function _getSwappableReservoirLimit(uint256 poolA) internal view returns (uint256 swappableReservoir) {
         // Calculate the maximum the limit can be as a fraction of the corresponding active liquidity
-        uint256 maxSwappableReservoirLimit = (poolA * MAX_SWAPPABLE_RESERVOIR_LIMIT_BPS) / BPS;
+        uint256 maxSwappableReservoirLimit = (poolA * maxSwappableReservoirLimitBps) / BPS;
         uint256 _swappableReservoirLimitReachesMaxDeadline = swappableReservoirLimitReachesMaxDeadline;
         if (_swappableReservoirLimitReachesMaxDeadline > block.timestamp) {
             // If the current deadline is still active then calculate the progress towards reaching it
             uint256 progress =
-                SWAPPABLE_RESERVOIR_GROWTH_WINDOW - (_swappableReservoirLimitReachesMaxDeadline - block.timestamp);
+                swappableReservoirGrowthWindow - (_swappableReservoirLimitReachesMaxDeadline - block.timestamp);
             // The greater the progress, the closer to the max limit we get
-            swappableReservoir = (maxSwappableReservoirLimit * progress) / SWAPPABLE_RESERVOIR_GROWTH_WINDOW;
+            swappableReservoir = (maxSwappableReservoirLimit * progress) / swappableReservoirGrowthWindow;
         } else {
             // If the current deadline has expired then the full limit is available
             swappableReservoir = maxSwappableReservoirLimit;
@@ -362,16 +371,16 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      */
     function _updateSwappableReservoirDeadline(uint256 poolA, uint256 swappedAmountA) internal {
         // Calculate the maximum the limit can be as a fraction of the corresponding active liquidity
-        uint256 maxSwappableReservoirLimit = (poolA * MAX_SWAPPABLE_RESERVOIR_LIMIT_BPS) / BPS;
+        uint256 maxSwappableReservoirLimit = (poolA * maxSwappableReservoirLimitBps) / BPS;
         // Calculate how much time delay the swap instigates
         uint256 delay;
         // Check non-zero to avoid div by zero error
         if (maxSwappableReservoirLimit > 0) {
-            // Since `swappedAmountA/maxSwappableReservoirLimit <= 1`, `delay <= SWAPPABLE_RESERVOIR_GROWTH_WINDOW`
-            delay = (SWAPPABLE_RESERVOIR_GROWTH_WINDOW * swappedAmountA) / maxSwappableReservoirLimit;
+            // Since `swappedAmountA/maxSwappableReservoirLimit <= 1`, `delay <= swappableReservoirGrowthWindow`
+            delay = (swappableReservoirGrowthWindow * swappedAmountA) / maxSwappableReservoirLimit;
         } else {
             // If it is zero then it's in an extreme condition and a delay is most appropriate way to handle it
-            delay = SWAPPABLE_RESERVOIR_GROWTH_WINDOW;
+            delay = swappableReservoirGrowthWindow;
         }
         // Apply the delay
         uint256 _swappableReservoirLimitReachesMaxDeadline = swappableReservoirLimitReachesMaxDeadline;
@@ -395,10 +404,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function setIsPaused(bool isPausedNew) external {
-        if (msg.sender != factory) {
-            revert Forbidden();
-        }
+    function setIsPaused(bool isPausedNew) onlyFactory external {
         isPaused = isPausedNew ? 1 : 0;
     }
 
@@ -741,4 +747,40 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         }
         emit Swap(msg.sender, amountIn0, amountIn1, amountOut0, amountOut1, to);
     }
+
+    /**
+     * @inheritdoc IButtonswapPair
+     */
+    function setMaxVolatilityBps(uint256 _maxVolatilityBps) onlyFactory external {
+        maxVolatilityBps = _maxVolatilityBps;
+    }
+
+    /**
+    * @inheritdoc IButtonswapPair
+    */
+    function setMinTimelockDuration(uint256 _minTimelockDuration) onlyFactory external {
+        minTimelockDuration = _minTimelockDuration;
+    }
+
+    /**
+    * @inheritdoc IButtonswapPair
+    */
+    function setMaxTimelockDuration(uint256 _maxTimelockDuration) onlyFactory external {
+        maxTimelockDuration = _maxTimelockDuration;
+    }
+
+    /**
+    * @inheritdoc IButtonswapPair
+    */
+    function setMaxSwappableReservoirLimitBps(uint256 _maxSwappableReservoirLimitBps) onlyFactory external {
+        maxSwappableReservoirLimitBps = _maxSwappableReservoirLimitBps;
+    }
+
+    /**
+    * @inheritdoc IButtonswapPair
+    */
+    function setSwappableReservoirGrowthWindow(uint256 _swappableReservoirGrowthWindow) onlyFactory external {
+        swappableReservoirGrowthWindow = _swappableReservoirGrowthWindow;
+    }
+
 }
