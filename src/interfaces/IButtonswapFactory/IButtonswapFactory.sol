@@ -27,6 +27,13 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function isCreationRestricted() external view returns (bool _isCreationRestricted);
 
     /**
+     * @notice Returns the current address for `isCreationRestrictedSetter`.
+     * The owner of this address has the power to update both `isCreationRestrictedSetter` and `isCreationRestricted`.
+     * @return _isCreationRestrictedSetter The `isCreationRestrictedSetter` address
+     */
+    function isCreationRestrictedSetter() external view returns (address _isCreationRestrictedSetter);
+
+    /**
      * @notice Get the (unique) Pair address created for the given combination of `tokenA` and `tokenB`.
      * If the Pair does not exist then zero address is returned.
      * @param tokenA The first unsorted token
@@ -77,6 +84,13 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @param _isCreationRestricted The new state
      */
     function setIsCreationRestricted(bool _isCreationRestricted) external;
+
+    /**
+     * @notice Updates the address that has the power to set the `isCreationRestrictedSetter` and `isCreationRestricted`.
+     * This can only be called by the `isCreationRestrictedSetter` address.
+     * @param _isCreationRestrictedSetter The new address
+     */
+    function setIsCreationRestrictedSetter(address _isCreationRestrictedSetter) external;
 
     /**
      * @notice Updates the pause state of given Pairs.

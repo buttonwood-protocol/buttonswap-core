@@ -36,11 +36,18 @@ contract ButtonswapFactory is IButtonswapFactory {
     bool public isCreationRestricted;
 
     /**
+     * @inheritdoc IButtonswapFactory
+     */
+    address public isCreationRestrictedSetter;
+
+    /**
      * @dev `feeTo` is not initialised during deployment, and must be set separately by a call to {setFeeTo}.
      * @param _feeToSetter The account that has the ability to set `feeToSetter` and `feeTo`
+     * @param _isCreationRestrictedSetter The account that has the ability to set `isCreationRestrictedSetter` and `isCreationRestricted`
      */
-    constructor(address _feeToSetter) {
+    constructor(address _feeToSetter, address _isCreationRestrictedSetter) {
         feeToSetter = _feeToSetter;
+        isCreationRestrictedSetter = _isCreationRestrictedSetter;
     }
 
     /**
@@ -54,7 +61,7 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @inheritdoc IButtonswapFactory
      */
     function createPair(address tokenA, address tokenB) external returns (address pair) {
-        if (isCreationRestricted && msg.sender != feeToSetter) {
+        if (isCreationRestricted && msg.sender != isCreationRestrictedSetter) {
             revert Forbidden();
         }
         if (tokenA == tokenB) {
@@ -109,10 +116,20 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @inheritdoc IButtonswapFactory
      */
     function setIsCreationRestricted(bool _isCreationRestricted) external {
-        if (msg.sender != feeToSetter) {
+        if (msg.sender != isCreationRestrictedSetter) {
             revert Forbidden();
         }
         isCreationRestricted = _isCreationRestricted;
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setIsCreationRestrictedSetter(address _isCreationRestrictedSetter) external {
+        if (msg.sender != isCreationRestrictedSetter) {
+            revert Forbidden();
+        }
+        isCreationRestrictedSetter = _isCreationRestrictedSetter;
     }
 
     /**

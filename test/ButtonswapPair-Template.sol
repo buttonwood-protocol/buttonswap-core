@@ -20,7 +20,7 @@ import {UQ112x112} from "../src/libraries/UQ112x112.sol";
 abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswapPairErrors {
     struct TestVariables {
         address zeroAddress;
-        address feeToSetter;
+        address permissionSetter;
         address feeTo;
         address minter1;
         address minter2;
@@ -204,11 +204,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(Math.sqrt(amount0 * amount1) > 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -230,7 +230,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(liquidity1, expectedLiquidityOut);
         assertEq(vars.pair.totalSupply(), liquidity1 + 1000);
         assertEq(vars.pair.balanceOf(vars.zeroAddress), 1000);
-        assertEq(vars.pair.balanceOf(vars.feeToSetter), 0);
+        assertEq(vars.pair.balanceOf(vars.permissionSetter), 0);
         assertEq(vars.pair.balanceOf(vars.feeTo), 0);
         assertEq(vars.pair.balanceOf(vars.minter1), liquidity1);
         (uint256 pool0, uint256 pool1, uint256 reservoir0, uint256 reservoir1,) = vars.pair.getLiquidityBalances();
@@ -257,11 +257,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(Math.sqrt(amount0 * amount1) == 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -288,11 +288,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(Math.sqrt(amount0 * amount1) < 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -321,12 +321,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         uint256 amount11 = amount01 * 3;
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -366,7 +366,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // 1000 liquidity was minted to zero address instead of minter1
         assertEq(vars.pair.totalSupply(), vars.liquidity1 + vars.liquidity2 + 1000, "totalSupply");
         assertEq(vars.pair.balanceOf(vars.zeroAddress), 1000);
-        assertEq(vars.pair.balanceOf(vars.feeToSetter), 0);
+        assertEq(vars.pair.balanceOf(vars.permissionSetter), 0);
         assertEq(vars.pair.balanceOf(vars.feeTo), 0);
         assertEq(vars.pair.balanceOf(vars.minter1), vars.liquidity1);
         assertEq(vars.pair.balanceOf(vars.minter2), vars.liquidity2);
@@ -394,12 +394,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(amount01 > 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -457,12 +457,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(rebaseDenominator > 0 && rebaseDenominator < 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -512,7 +512,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // 1000 liquidity was minted to zero address instead of minter1
         assertEq(vars.pair.totalSupply(), vars.liquidity1 + vars.liquidity2 + 1000);
         assertEq(vars.pair.balanceOf(vars.zeroAddress), 1000);
-        assertEq(vars.pair.balanceOf(vars.feeToSetter), 0);
+        assertEq(vars.pair.balanceOf(vars.permissionSetter), 0);
         // There should be no fee collected on balance increases that occur outside of a swap
         assertEq(vars.pair.balanceOf(vars.feeTo), 0);
         assertEq(vars.pair.balanceOf(vars.minter1), vars.liquidity1);
@@ -554,12 +554,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator1 = bound(rebaseDenominator1, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -611,7 +611,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // 1000 liquidity was minted to zero address instead of minter1
         assertEq(vars.pair.totalSupply(), vars.liquidity1 + vars.liquidity2 + 1000, "totalSupply");
         assertEq(vars.pair.balanceOf(vars.zeroAddress), 1000);
-        assertEq(vars.pair.balanceOf(vars.feeToSetter), 0);
+        assertEq(vars.pair.balanceOf(vars.permissionSetter), 0);
         // There should be no fee collected on balance increases that occur outside of a swap
         assertEq(vars.pair.balanceOf(vars.feeTo), 0);
         assertEq(vars.pair.balanceOf(vars.minter1), vars.liquidity1);
@@ -657,12 +657,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator1 = bound(rebaseDenominator1, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -755,12 +755,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -844,7 +844,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // 1000 liquidity was minted to zero address instead of minter1
         assertEq(vars.pair.totalSupply(), vars.liquidity1 + vars.liquidity2 + 1000);
         assertEq(vars.pair.balanceOf(vars.zeroAddress), 1000);
-        assertEq(vars.pair.balanceOf(vars.feeToSetter), 0);
+        assertEq(vars.pair.balanceOf(vars.permissionSetter), 0);
         // There should be no fee collected on balance increases that occur outside of a swap
         assertEq(vars.pair.balanceOf(vars.feeTo), 0);
         assertEq(vars.pair.balanceOf(vars.minter2), vars.liquidity2, "minter2 has liquidity2");
@@ -874,12 +874,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -1017,12 +1017,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -1139,12 +1139,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -1254,12 +1254,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -1303,11 +1303,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume((amount0 == 0 && amount1 != 0) || (amount0 != 0 && amount1 == 0));
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -1349,12 +1349,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 999);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -1477,12 +1477,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -1575,12 +1575,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(burnAmount > 0);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.receiver = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -1638,12 +1638,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(mintAmount1 > 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.receiver = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -1698,12 +1698,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.receiver = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -1794,13 +1794,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -1922,12 +1922,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.receiver = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -2026,12 +2026,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.receiver = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -2120,12 +2120,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.receiver = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -2243,12 +2243,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(burnAmount > 0);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.receiver = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -2318,12 +2318,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.receiver = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -2425,13 +2425,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(vars.amount0Out > 0);
         }
 
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -2512,13 +2512,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(vars.amount0Out < mintAmount0);
         vm.assume(vars.amount1Out < mintAmount1);
 
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -2582,13 +2582,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -2684,13 +2684,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(vars.amount0Out == 0);
         }
 
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -2746,13 +2746,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(vars.amount0Out >= mintAmount0);
         }
 
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -2803,12 +2803,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.amount1Out = PairMathExtended.getSwapOutputAmount(inputAmount, mintAmount0, mintAmount1);
         vm.assume(vars.amount1Out > 0);
 
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -2871,13 +2871,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(vars.amount0Out > 0);
         }
 
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -2934,13 +2934,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(vars.amount0Out > 0);
         }
 
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -2994,13 +2994,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(vars.amount0Out > 0);
         }
 
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -3071,13 +3071,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(vars.amount0Out > 0);
         }
 
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -3163,13 +3163,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(vars.amount0Out > 0);
         }
 
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -3252,13 +3252,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         mintAmount1 = bound(mintAmount1, 1001, uint256(2 ** 112) / 3);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
         vars.swapper1 = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(rebasingTokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -3364,13 +3364,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(vars.amount0Out > 0);
         }
 
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -3441,13 +3441,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(mintAmount1 > 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -3509,12 +3509,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         } else {
             vars.amount1In = inputAmount;
         }
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -3637,13 +3637,13 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(mintAmount1 > 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.swapper1 = userD;
         vars.receiver = userE;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -3702,11 +3702,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(Math.sqrt(amount0 * amount1) > 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());
@@ -3756,12 +3756,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebaseDenominator = bound(rebaseDenominator, 1, 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
         vars.minter2 = userD;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
         vars.rebasingToken0 = ICommonMockRebasingERC20(vars.pair.token0());
@@ -3889,8 +3889,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
     function test_setIsPaused(bool isPausedNew) public {
         // Setup
         TestVariables memory vars;
-        vars.feeToSetter = userA;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
 
         assertEq(vars.pair.getIsPaused(), false, "Pair should not be paused");
@@ -3899,7 +3899,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         pairAddresses[0] = address(vars.pair);
 
         // Change the factory paused state
-        vm.prank(vars.feeToSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setIsPaused(pairAddresses, isPausedNew);
 
         // Confirm that the pair's pause state is correct
@@ -3909,8 +3909,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
     function test_setIsPaused_CannotCallFromNonFactoryAddress(bool isPausedNew, address caller) public {
         // Setup
         TestVariables memory vars;
-        vars.feeToSetter = userA;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
 
         vm.assume(caller != address(vars.factory));
@@ -3927,9 +3927,9 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
     function test_checkPaused_cannotMintWhenPaused(uint256 amount00, uint256 amount01) public {
         // Setup
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.minter1 = userB;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
 
         // Create the pair
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
@@ -3948,9 +3948,9 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
     function test_checkPaused_cannotMintWithReservoirWhenPaused(uint256 amountIn) public {
         // Setup
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.minter1 = userB;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
 
         // Create the pair
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
@@ -3969,9 +3969,9 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
     function test_checkPaused_cannotBurnWithReservoirWhenPaused(uint256 liquidityIn) public {
         // Setup
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.burner1 = userB;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
 
         // Create the pair
         vars.pair = ButtonswapPair(vars.factory.createPair(address(rebasingTokenA), address(tokenB)));
@@ -3997,11 +3997,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.assume(Math.sqrt(amountIn0 * amountIn1) > 1000);
 
         TestVariables memory vars;
-        vars.feeToSetter = userA;
+        vars.permissionSetter = userA;
         vars.feeTo = userB;
         vars.minter1 = userC;
-        vars.factory = new MockButtonswapFactory(vars.feeToSetter);
-        vm.prank(vars.feeToSetter);
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vm.prank(vars.permissionSetter);
         vars.factory.setFeeTo(vars.feeTo);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
         vars.token0 = MockERC20(vars.pair.token0());

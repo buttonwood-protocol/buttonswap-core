@@ -9,6 +9,7 @@ contract MockButtonswapFactory is IButtonswapFactory {
     address public feeTo;
     address public feeToSetter;
     bool public isCreationRestricted;
+    address public isCreationRestrictedSetter;
 
     mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
@@ -16,8 +17,10 @@ contract MockButtonswapFactory is IButtonswapFactory {
     address lastTokenA;
     address lastTokenB;
 
-    constructor(address _feeToSetter) {
-        feeToSetter = _feeToSetter;
+    // Simplified constructor for testing
+    constructor(address _permissionSetter) {
+        feeToSetter = _permissionSetter;
+        isCreationRestrictedSetter = _permissionSetter;
     }
 
     function allPairsLength() external view returns (uint256) {
@@ -48,6 +51,13 @@ contract MockButtonswapFactory is IButtonswapFactory {
 
     function setIsCreationRestricted(bool _isCreationRestricted) external {
         isCreationRestricted = _isCreationRestricted;
+    }
+
+    function setIsCreationRestrictedSetter(address _isCreationRestrictedSetter) external {
+        if (msg.sender != isCreationRestrictedSetter) {
+            revert Forbidden();
+        }
+        isCreationRestrictedSetter = _isCreationRestrictedSetter;
     }
 
     function setIsPaused(address[] calldata pairs, bool isPausedNew) external {
