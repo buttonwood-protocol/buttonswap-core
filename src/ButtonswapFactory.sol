@@ -49,6 +49,7 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @dev `feeTo` is not initialised during deployment, and must be set separately by a call to {setFeeTo}.
      * @param _feeToSetter The account that has the ability to set `feeToSetter` and `feeTo`
      * @param _isCreationRestrictedSetter The account that has the ability to set `isCreationRestrictedSetter` and `isCreationRestricted`
+     * @param _isPausedSetter The account that has the ability to set `isPausedSetter` and `isPaused`
      */
     constructor(address _feeToSetter, address _isCreationRestrictedSetter, address _isPausedSetter) {
         feeToSetter = _feeToSetter;
@@ -141,16 +142,6 @@ contract ButtonswapFactory is IButtonswapFactory {
     /**
      * @inheritdoc IButtonswapFactory
      */
-    function setIsPausedSetter(address _isPausedSetter) external {
-        if (msg.sender != isPausedSetter) {
-            revert Forbidden();
-        }
-        isPausedSetter = _isPausedSetter;
-    }
-
-    /**
-     * @inheritdoc IButtonswapFactory
-     */
     function setIsPaused(address[] calldata pairs, bool isPausedNew) external {
         if (msg.sender != isPausedSetter) {
             revert Forbidden();
@@ -158,6 +149,16 @@ contract ButtonswapFactory is IButtonswapFactory {
         for (uint256 i = 0; i < pairs.length; i++) {
             IButtonswapPair(pairs[i]).setIsPaused(isPausedNew);
         }
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setIsPausedSetter(address _isPausedSetter) external {
+        if (msg.sender != isPausedSetter) {
+            revert Forbidden();
+        }
+        isPausedSetter = _isPausedSetter;
     }
 
     function lastCreatedPairTokens() external view returns (address token0, address token1) {

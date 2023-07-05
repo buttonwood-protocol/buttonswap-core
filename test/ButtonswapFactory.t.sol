@@ -515,19 +515,13 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         assertEq(buttonswapFactory.isCreationRestrictedSetter(), initialIsCreationRestrictedSetter);
     }
 
-    // If isPaused is true, then new pairs are created paused
-    function test_setIsPaused(
-        address initialIsPausedSetter,
-        address tokenA,
-        address tokenB,
-        bool isPausedNew
-    ) public {
+    function test_setIsPaused(address initialIsPausedSetter, address tokenA, address tokenB, bool isPausedNew) public {
         address initialFeeToSetter = address(0);
         address initialIsCreationRestrictedSetter = address(0);
 
         vm.assume(tokenA != tokenB && tokenA != address(0) && tokenB != address(0));
         ButtonswapFactory buttonswapFactory =
-        new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
+            new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
         address pairAddress = buttonswapFactory.createPair(tokenA, tokenB);
         address[] memory pairAddresses = new address[](1);
         pairAddresses[0] = pairAddress;
@@ -538,7 +532,6 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         vm.stopPrank();
     }
 
-    // If isPaused is true, then new pairs are created paused
     function test_setIsPaused_CannotCallIfNotIsPausedSetter(
         address initialIsPausedSetter,
         address setIsPausedCaller,
