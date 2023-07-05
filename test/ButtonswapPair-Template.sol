@@ -4031,7 +4031,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(vars.pair.balanceOf(vars.minter1), 0, "Minter1 should have no LP tokens left");
     }
 
-    function test_setMaxVolatilityBps(uint256 newMaxVolatilityBps) public {
+    function test_setMaxVolatilityBps(uint16 newMaxVolatilityBps) public {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
@@ -4043,7 +4043,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(vars.pair.maxVolatilityBps(), newMaxVolatilityBps, "maxVolatilityBps value should match new one.");
     }
 
-    function test_setMaxVolatilityBps_CannotCallFromNonFactoryAddress(address caller, uint256 newMaxVolatilityBps)
+    function test_setMaxVolatilityBps_CannotCallFromNonFactoryAddress(address caller, uint16 newMaxVolatilityBps)
         public
     {
         // Setup
@@ -4051,7 +4051,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.permissionSetter = userA;
         vars.factory = new MockButtonswapFactory(vars.permissionSetter);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
-        uint256 initialMaxVolatilityBps = vars.pair.maxVolatilityBps();
+        uint16 initialMaxVolatilityBps = vars.pair.maxVolatilityBps();
 
         // Ensure caller is not the factory
         vm.assume(caller != address(vars.factory));
@@ -4064,7 +4064,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         );
     }
 
-    function test_setMinTimelockDuration(uint256 newMinTimelockDuration) public {
+    function test_setMinTimelockDuration(uint32 newMinTimelockDuration) public {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
@@ -4078,7 +4078,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         );
     }
 
-    function test_setMinTimelockDuration_CannotCallFromNonFactoryAddress(address caller, uint256 newMinTimelockDuration)
+    function test_setMinTimelockDuration_CannotCallFromNonFactoryAddress(address caller, uint32 newMinTimelockDuration)
         public
     {
         // Setup
@@ -4086,7 +4086,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.permissionSetter = userA;
         vars.factory = new MockButtonswapFactory(vars.permissionSetter);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
-        uint256 initialMinTimelockDuration = vars.pair.minTimelockDuration();
+        uint32 initialMinTimelockDuration = vars.pair.minTimelockDuration();
 
         // Ensure caller is not the factory
         vm.assume(caller != address(vars.factory));
@@ -4101,7 +4101,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         );
     }
 
-    function test_setMaxTimelockDuration(uint256 newMaxTimelockDuration) public {
+    function test_setMaxTimelockDuration(uint32 newMaxTimelockDuration) public {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
@@ -4115,7 +4115,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         );
     }
 
-    function test_setMaxTimelockDuration_CannotCallFromNonFactoryAddress(address caller, uint256 newMaxTimelockDuration)
+    function test_setMaxTimelockDuration_CannotCallFromNonFactoryAddress(address caller, uint32 newMaxTimelockDuration)
         public
     {
         // Setup
@@ -4123,7 +4123,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.permissionSetter = userA;
         vars.factory = new MockButtonswapFactory(vars.permissionSetter);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
-        uint256 initialMaxTimelockDuration = vars.pair.maxTimelockDuration();
+        uint32 initialMaxTimelockDuration = vars.pair.maxTimelockDuration();
 
         // Ensure caller is not the factory
         vm.assume(caller != address(vars.factory));
@@ -4138,7 +4138,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         );
     }
 
-    function test_setMaxSwappableReservoirLimitBps(uint256 newMaxSwappableReservoirLimitBps) public {
+    function test_setMaxSwappableReservoirLimitBps(uint16 newMaxSwappableReservoirLimitBps) public {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
@@ -4156,14 +4156,14 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
     function test_setMaxSwappableReservoirLimitBps_CannotCallFromNonFactoryAddress(
         address caller,
-        uint256 newMaxSwappableReservoirLimitBps
+        uint16 newMaxSwappableReservoirLimitBps
     ) public {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
         vars.factory = new MockButtonswapFactory(vars.permissionSetter);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
-        uint256 initialMaxSwappableReservoirLimitBps = vars.pair.maxSwappableReservoirLimitBps();
+        uint16 initialMaxSwappableReservoirLimitBps = vars.pair.maxSwappableReservoirLimitBps();
 
         // Ensure caller is not the factory
         vm.assume(caller != address(vars.factory));
@@ -4178,7 +4178,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         );
     }
 
-    function test_setSwappableReservoirGrowthWindow(uint256 newSwappableReservoirGrowthWindow) public {
+    function test_setSwappableReservoirGrowthWindow(uint32 newSwappableReservoirGrowthWindow) public {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
@@ -4196,14 +4196,14 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
     function test_setSwappableReservoirGrowthWindow_CannotCallFromNonFactoryAddress(
         address caller,
-        uint256 newSwappableReservoirGrowthWindow
+        uint32 newSwappableReservoirGrowthWindow
     ) public {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
         vars.factory = new MockButtonswapFactory(vars.permissionSetter);
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
-        uint256 initialSwappableReservoirGrowthWindow = vars.pair.swappableReservoirGrowthWindow();
+        uint32 initialSwappableReservoirGrowthWindow = vars.pair.swappableReservoirGrowthWindow();
 
         // Ensure caller is not the factory
         vm.assume(caller != address(vars.factory));

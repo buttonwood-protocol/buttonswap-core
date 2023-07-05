@@ -132,19 +132,19 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @notice Returns the default value of `maxVolatilityBps` used for new pairs.
      * @return _defaultMaxVolatilityBps The `defaultMaxVolatilityBps` value
      */
-    function defaultMaxVolatilityBps() external view returns (uint256 _defaultMaxVolatilityBps);
+    function defaultMaxVolatilityBps() external view returns (uint16 _defaultMaxVolatilityBps);
 
     /**
      * @notice Returns the default value of `minTimelockDuration` used for new pairs.
      * @return _defaultMinTimelockDuration The `defaultMinTimelockDuration` value
      */
-    function defaultMinTimelockDuration() external view returns (uint256 _defaultMinTimelockDuration);
+    function defaultMinTimelockDuration() external view returns (uint32 _defaultMinTimelockDuration);
 
     /**
      * @notice Returns the default value of `maxTimelockDuration` used for new pairs.
      * @return _defaultMaxTimelockDuration The `defaultMaxTimelockDuration` value
      */
-    function defaultMaxTimelockDuration() external view returns (uint256 _defaultMaxTimelockDuration);
+    function defaultMaxTimelockDuration() external view returns (uint32 _defaultMaxTimelockDuration);
 
     /**
      * @notice Returns the default value of `maxSwappableReservoirLimitBps` used for new pairs.
@@ -153,7 +153,7 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function defaultMaxSwappableReservoirLimitBps()
         external
         view
-        returns (uint256 _defaultMaxSwappableReservoirLimitBps);
+        returns (uint16 _defaultMaxSwappableReservoirLimitBps);
 
     /**
      * @notice Returns the default value of `swappableReservoirGrowthWindow` used for new pairs.
@@ -162,7 +162,7 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function defaultSwappableReservoirGrowthWindow()
         external
         view
-        returns (uint256 _defaultSwappableReservoirGrowthWindow);
+        returns (uint32 _defaultSwappableReservoirGrowthWindow);
 
     /**
      * @notice Updates the default parameters used for new pairs.
@@ -174,11 +174,11 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @param _defaultSwappableReservoirGrowthWindow The new defaultSwappableReservoirGrowthWindow
      */
     function setDefaultParameters(
-        uint256 _defaultMaxVolatilityBps,
-        uint256 _defaultMinTimelockDuration,
-        uint256 _defaultMaxTimelockDuration,
-        uint256 _defaultMaxSwappableReservoirLimitBps,
-        uint256 _defaultSwappableReservoirGrowthWindow
+        uint16 _defaultMaxVolatilityBps,
+        uint32 _defaultMinTimelockDuration,
+        uint32 _defaultMaxTimelockDuration,
+        uint16 _defaultMaxSwappableReservoirLimitBps,
+        uint32 _defaultSwappableReservoirGrowthWindow
     ) external;
 
     /**
@@ -187,7 +187,7 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @param pairs A list of addresses for the pairs that should be updated
      * @param newMaxVolatilityBps The new `maxVolatilityBps` value
      */
-    function setMaxVolatilityBps(address[] calldata pairs, uint256 newMaxVolatilityBps) external;
+    function setMaxVolatilityBps(address[] calldata pairs, uint16 newMaxVolatilityBps) external;
 
     /**
      * @notice Updates the `minTimelockDuration` value of given Pairs.
@@ -195,7 +195,7 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @param pairs A list of addresses for the pairs that should be updated
      * @param newMinTimelockDuration The new `minTimelockDuration` value
      */
-    function setMinTimelockDuration(address[] calldata pairs, uint256 newMinTimelockDuration) external;
+    function setMinTimelockDuration(address[] calldata pairs, uint32 newMinTimelockDuration) external;
 
     /**
      * @notice Updates the `maxTimelockDuration` value of given Pairs.
@@ -203,7 +203,7 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @param pairs A list of addresses for the pairs that should be updated
      * @param newMaxTimelockDuration The new `maxTimelockDuration` value
      */
-    function setMaxTimelockDuration(address[] calldata pairs, uint256 newMaxTimelockDuration) external;
+    function setMaxTimelockDuration(address[] calldata pairs, uint32 newMaxTimelockDuration) external;
 
     /**
      * @notice Updates the `maxSwappableReservoirLimitBps` value of given Pairs.
@@ -211,7 +211,7 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @param pairs A list of addresses for the pairs that should be updated
      * @param newMaxSwappableReservoirLimitBps The new `maxSwappableReservoirLimitBps` value
      */
-    function setMaxSwappableReservoirLimitBps(address[] calldata pairs, uint256 newMaxSwappableReservoirLimitBps)
+    function setMaxSwappableReservoirLimitBps(address[] calldata pairs, uint16 newMaxSwappableReservoirLimitBps)
         external;
 
     /**
@@ -220,7 +220,7 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @param pairs A list of addresses for the pairs that should be updated
      * @param newSwappableReservoirGrowthWindow The new `swappableReservoirGrowthWindow` value
      */
-    function setSwappableReservoirGrowthWindow(address[] calldata pairs, uint256 newSwappableReservoirGrowthWindow)
+    function setSwappableReservoirGrowthWindow(address[] calldata pairs, uint32 newSwappableReservoirGrowthWindow)
         external;
 
     /**
@@ -238,10 +238,10 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
         returns (
             address token0,
             address token1,
-            uint256 maxVolatilityBps,
-            uint256 minTimelockDuration,
-            uint256 maxTimelockDuration,
-            uint256 maxSwappableReservoirLimitBps,
-            uint256 swappableReservoirGrowthWindow
+            uint16 maxVolatilityBps,
+            uint32 minTimelockDuration,
+            uint32 maxTimelockDuration,
+            uint16 maxSwappableReservoirLimitBps,
+            uint32 swappableReservoirGrowthWindow
         );
 }

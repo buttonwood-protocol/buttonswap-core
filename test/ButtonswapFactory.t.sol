@@ -639,11 +639,11 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
 
     function test_setDefaultParameters(
         address initialParamSetter,
-        uint256 newDefaultMaxVolatilityBps,
-        uint256 newDefaultMinTimelockDuration,
-        uint256 newDefaultMaxTimelockDuration,
-        uint256 newDefaultMaxSwappableReservoirLimitBps,
-        uint256 newDefaultSwappableReservoirGrowthWindow
+        uint16 newDefaultMaxVolatilityBps,
+        uint32 newDefaultMinTimelockDuration,
+        uint32 newDefaultMaxTimelockDuration,
+        uint16 newDefaultMaxSwappableReservoirLimitBps,
+        uint32 newDefaultSwappableReservoirGrowthWindow
     ) public {
         address initialFeeToSetter = address(0);
         address initialIsCreationRestrictedSetter = address(0);
@@ -670,11 +670,11 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
     function test_setDefaultParameters_CannotCallWhenNotParamSetter(
         address initialParamSetter,
         address caller,
-        uint256 newDefaultMaxVolatilityBps,
-        uint256 newDefaultMinTimelockDuration,
-        uint256 newDefaultMaxTimelockDuration,
-        uint256 newDefaultMaxSwappableReservoirLimitBps,
-        uint256 newDefaultSwappableReservoirGrowthWindow
+        uint16 newDefaultMaxVolatilityBps,
+        uint32 newDefaultMinTimelockDuration,
+        uint32 newDefaultMaxTimelockDuration,
+        uint16 newDefaultMaxSwappableReservoirLimitBps,
+        uint32 newDefaultSwappableReservoirGrowthWindow
     ) public {
         vm.assume(caller != initialParamSetter);
         ButtonswapFactory buttonswapFactory =
@@ -712,7 +712,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address initialParamSetter,
         address tokenA,
         address tokenB,
-        uint256 newMaxVolatilityBps
+        uint16 newMaxVolatilityBps
     ) public {
         address initialFeeToSetter = address(0);
         address initialIsCreationRestrictedSetter = address(0);
@@ -738,7 +738,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address setMaxVolatilityBpsCaller,
         address tokenA,
         address tokenB,
-        uint256 newMaxVolatilityBps
+        uint16 newMaxVolatilityBps
     ) public {
         vm.assume(setMaxVolatilityBpsCaller != initialParamSetter);
         address initialFeeToSetter = address(0);
@@ -761,7 +761,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address initialParamSetter,
         address tokenA,
         address tokenB,
-        uint256 newMinTimelockDuration
+        uint16 newMinTimelockDuration
     ) public {
         address initialFeeToSetter = address(0);
         address initialIsCreationRestrictedSetter = address(0);
@@ -789,7 +789,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address setMinTimelockDurationCaller,
         address tokenA,
         address tokenB,
-        uint256 newMinTimelockDuration
+        uint16 newMinTimelockDuration
     ) public {
         vm.assume(setMinTimelockDurationCaller != initialParamSetter);
         address initialFeeToSetter = address(0);
@@ -812,7 +812,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address initialParamSetter,
         address tokenA,
         address tokenB,
-        uint256 newMaxTimelockDuration
+        uint16 newMaxTimelockDuration
     ) public {
         address initialFeeToSetter = address(0);
         address initialIsCreationRestrictedSetter = address(0);
@@ -840,7 +840,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address setMaxTimelockDurationCaller,
         address tokenA,
         address tokenB,
-        uint256 newMaxTimelockDuration
+        uint16 newMaxTimelockDuration
     ) public {
         vm.assume(setMaxTimelockDurationCaller != initialParamSetter);
         address initialFeeToSetter = address(0);
@@ -863,7 +863,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address initialParamSetter,
         address tokenA,
         address tokenB,
-        uint256 newMaxSwappableReservoirLimitBps
+        uint16 newMaxSwappableReservoirLimitBps
     ) public {
         address initialFeeToSetter = address(0);
         address initialIsCreationRestrictedSetter = address(0);
@@ -891,7 +891,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address setMaxSwappableReservoirLimitBpsCaller,
         address tokenA,
         address tokenB,
-        uint256 newMaxSwappableReservoirLimitBps
+        uint16 newMaxSwappableReservoirLimitBps
     ) public {
         vm.assume(setMaxSwappableReservoirLimitBpsCaller != initialParamSetter);
         address initialFeeToSetter = address(0);
@@ -914,7 +914,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address initialParamSetter,
         address tokenA,
         address tokenB,
-        uint256 newSwappableReservoirGrowthWindow
+        uint32 newSwappableReservoirGrowthWindow
     ) public {
         address initialFeeToSetter = address(0);
         address initialIsCreationRestrictedSetter = address(0);
@@ -942,7 +942,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address setSwappableReservoirGrowthWindowCaller,
         address tokenA,
         address tokenB,
-        uint256 newSwappableReservoirGrowthWindow
+        uint32 newSwappableReservoirGrowthWindow
     ) public {
         vm.assume(setSwappableReservoirGrowthWindowCaller != initialParamSetter);
         address initialFeeToSetter = address(0);
@@ -965,11 +965,11 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address initialParamSetter,
         address tokenA,
         address tokenB,
-        uint256 newDefaultMaxVolatilityBps,
-        uint256 newDefaultMinTimelockDuration,
-        uint256 newDefaultMaxTimelockDuration,
-        uint256 newDefaultMaxSwappableReservoirLimitBps,
-        uint256 newDefaultSwappableReservoirGrowthWindow
+        uint16 newDefaultMaxVolatilityBps,
+        uint32 newDefaultMinTimelockDuration,
+        uint32 newDefaultMaxTimelockDuration,
+        uint16 newDefaultMaxSwappableReservoirLimitBps,
+        uint32 newDefaultSwappableReservoirGrowthWindow
     ) public {
         vm.assume(tokenA != tokenB && tokenA != address(0) && tokenB != address(0));
 

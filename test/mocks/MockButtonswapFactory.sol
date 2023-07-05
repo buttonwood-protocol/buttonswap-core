@@ -12,11 +12,11 @@ contract MockButtonswapFactory is IButtonswapFactory {
     address public isCreationRestrictedSetter;
     address public isPausedSetter;
     address public paramSetter;
-    uint256 public defaultMaxVolatilityBps = 700;
-    uint256 public defaultMinTimelockDuration = 24 seconds;
-    uint256 public defaultMaxTimelockDuration = 24 hours;
-    uint256 public defaultMaxSwappableReservoirLimitBps = 1000;
-    uint256 public defaultSwappableReservoirGrowthWindow = 24 hours;
+    uint16 public defaultMaxVolatilityBps = 700;
+    uint32 public defaultMinTimelockDuration = 24 seconds;
+    uint32 public defaultMaxTimelockDuration = 24 hours;
+    uint16 public defaultMaxSwappableReservoirLimitBps = 1000;
+    uint32 public defaultSwappableReservoirGrowthWindow = 24 hours;
 
     mapping(address => mapping(address => address)) public getPair;
     address[] public allPairs;
@@ -93,11 +93,11 @@ contract MockButtonswapFactory is IButtonswapFactory {
     }
 
     function setDefaultParameters(
-        uint256 _defaultMaxVolatilityBps,
-        uint256 _defaultMinTimelockDuration,
-        uint256 _defaultMaxTimelockDuration,
-        uint256 _defaultMaxSwappableReservoirLimitBps,
-        uint256 _defaultSwappableReservoirGrowthWindow
+        uint16 _defaultMaxVolatilityBps,
+        uint32 _defaultMinTimelockDuration,
+        uint32 _defaultMaxTimelockDuration,
+        uint16 _defaultMaxSwappableReservoirLimitBps,
+        uint32 _defaultSwappableReservoirGrowthWindow
     ) external {
         if (msg.sender != paramSetter) {
             revert Forbidden();
@@ -109,7 +109,7 @@ contract MockButtonswapFactory is IButtonswapFactory {
         defaultSwappableReservoirGrowthWindow = _defaultSwappableReservoirGrowthWindow;
     }
 
-    function setMaxVolatilityBps(address[] calldata pairs, uint256 newMaxVolatilityBps) external {
+    function setMaxVolatilityBps(address[] calldata pairs, uint16 newMaxVolatilityBps) external {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
@@ -118,7 +118,7 @@ contract MockButtonswapFactory is IButtonswapFactory {
         }
     }
 
-    function setMinTimelockDuration(address[] calldata pairs, uint256 newMinTimelockDuration) external {
+    function setMinTimelockDuration(address[] calldata pairs, uint32 newMinTimelockDuration) external {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
@@ -127,7 +127,7 @@ contract MockButtonswapFactory is IButtonswapFactory {
         }
     }
 
-    function setMaxTimelockDuration(address[] calldata pairs, uint256 newMaxTimelockDuration) external {
+    function setMaxTimelockDuration(address[] calldata pairs, uint32 newMaxTimelockDuration) external {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
@@ -136,7 +136,7 @@ contract MockButtonswapFactory is IButtonswapFactory {
         }
     }
 
-    function setMaxSwappableReservoirLimitBps(address[] calldata pairs, uint256 newMaxSwappableReservoirLimitBps)
+    function setMaxSwappableReservoirLimitBps(address[] calldata pairs, uint16 newMaxSwappableReservoirLimitBps)
         external
     {
         if (msg.sender != paramSetter) {
@@ -147,7 +147,7 @@ contract MockButtonswapFactory is IButtonswapFactory {
         }
     }
 
-    function setSwappableReservoirGrowthWindow(address[] calldata pairs, uint256 newSwappableReservoirGrowthWindow)
+    function setSwappableReservoirGrowthWindow(address[] calldata pairs, uint32 newSwappableReservoirGrowthWindow)
         external
     {
         if (msg.sender != paramSetter) {
@@ -164,11 +164,11 @@ contract MockButtonswapFactory is IButtonswapFactory {
         returns (
             address token0,
             address token1,
-            uint256 maxVolatilityBps,
-            uint256 minTimelockDuration,
-            uint256 maxTimelockDuration,
-            uint256 maxSwappableReservoirLimitBps,
-            uint256 swappableReservoirGrowthWindow
+            uint16 maxVolatilityBps,
+            uint32 minTimelockDuration,
+            uint32 maxTimelockDuration,
+            uint16 maxSwappableReservoirLimitBps,
+            uint32 swappableReservoirGrowthWindow
         )
     {
         token0 = lastTokenA;
