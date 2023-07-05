@@ -516,13 +516,37 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
     }
 
     // If isPaused is true, then new pairs are created paused
-    function test_setIsPaused_onlyFeeToSetterCanCall(
+    function test_setIsPaused(
+        address initialIsPausedSetter,
+        address tokenA,
+        address tokenB,
+        bool isPausedNew
+    ) public {
+        address initialFeeToSetter = address(0);
+        address initialIsCreationRestrictedSetter = address(0);
+
+        vm.assume(tokenA != tokenB && tokenA != address(0) && tokenB != address(0));
+        ButtonswapFactory buttonswapFactory =
+        new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter);
+        address pairAddress = buttonswapFactory.createPair(tokenA, tokenB);
+        address[] memory pairAddresses = new address[](1);
+        pairAddresses[0] = pairAddress;
+
+        vm.startPrank(initialIsPausedSetter);
+        buttonswapFactory.setIsPaused(pairAddresses, isPausedNew);
+        assertEq(IButtonswapPair(pairAddress).getIsPaused(), isPausedNew, "isPaused should have updated");
+        vm.stopPrank();
+    }
+
+    // If isPaused is true, then new pairs are created paused
+    function test_setIsPaused_CannotCallIfNotIsPausedSetter(
         address initialIsPausedSetter,
         address setIsPausedCaller,
         address tokenA,
         address tokenB,
         bool isPausedNew
     ) public {
+        vm.assume(setIsPausedCaller != initialIsPausedSetter);
         address initialFeeToSetter = address(0);
         address initialIsCreationRestrictedSetter = address(0);
 
@@ -533,16 +557,9 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address[] memory pairAddresses = new address[](1);
         pairAddresses[0] = pairAddress;
 
-        if (setIsPausedCaller != initialFeeToSetter) {
-            vm.startPrank(setIsPausedCaller);
-            vm.expectRevert(Forbidden.selector);
-            buttonswapFactory.setIsPaused(pairAddresses, isPausedNew);
-        } else {
-            vm.startPrank(setIsPausedCaller);
-            buttonswapFactory.setIsPaused(pairAddresses, isPausedNew);
-            assertEq(IButtonswapPair(pairAddress).getIsPaused(), isPausedNew, "isPaused should have updated");
-        }
-        vm.stopPrank();
+        vm.prank(setIsPausedCaller);
+        vm.expectRevert(Forbidden.selector);
+        buttonswapFactory.setIsPaused(pairAddresses, isPausedNew);
     }
 
     function test_setIsPausedSetter(address initialIsPausedSetter, address newIsPausedSetter) public {

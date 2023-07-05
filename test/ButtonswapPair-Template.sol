@@ -3915,13 +3915,10 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
         vm.assume(caller != address(vars.factory));
 
-        address[] memory pairAddresses = new address[](1);
-        pairAddresses[0] = address(vars.pair);
-
-        // Change the factory paused state
+        // Attempt to call setIsPaused() as non-factory caller
         vm.prank(caller);
         vm.expectRevert(Forbidden.selector);
-        vars.factory.setIsPaused(pairAddresses, isPausedNew);
+        vars.pair.setIsPaused(isPausedNew);
     }
 
     function test_checkPaused_cannotMintWhenPaused(uint256 amount00, uint256 amount01) public {
