@@ -179,16 +179,6 @@ contract ButtonswapFactory is IButtonswapFactory {
     /**
      * @inheritdoc IButtonswapFactory
      */
-    function setIsPausedSetter(address _isPausedSetter) external {
-        if (msg.sender != isPausedSetter) {
-            revert Forbidden();
-        }
-        isPausedSetter = _isPausedSetter;
-    }
-
-    /**
-     * @inheritdoc IButtonswapFactory
-     */
     function setIsPaused(address[] calldata pairs, bool isPausedNew) external {
         if (msg.sender != isPausedSetter) {
             revert Forbidden();
@@ -196,6 +186,16 @@ contract ButtonswapFactory is IButtonswapFactory {
         for (uint256 i = 0; i < pairs.length; i++) {
             IButtonswapPair(pairs[i]).setIsPaused(isPausedNew);
         }
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setIsPausedSetter(address _isPausedSetter) external {
+        if (msg.sender != isPausedSetter) {
+            revert Forbidden();
+        }
+        isPausedSetter = _isPausedSetter;
     }
 
     /**
