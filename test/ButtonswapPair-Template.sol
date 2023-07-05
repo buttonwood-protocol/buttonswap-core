@@ -4040,10 +4040,12 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
         vm.prank(address(vars.factory));
         vars.pair.setMaxVolatilityBps(newMaxVolatilityBps);
-        assertEq(vars.pair.maxVolatilityBps(), newMaxVolatilityBps, 'maxVolatilityBps value should match new one.');
+        assertEq(vars.pair.maxVolatilityBps(), newMaxVolatilityBps, "maxVolatilityBps value should match new one.");
     }
 
-    function test_setMaxVolatilityBps_CannotCallFromNonFactoryAddress(address caller, uint256 newMaxVolatilityBps) public {
+    function test_setMaxVolatilityBps_CannotCallFromNonFactoryAddress(address caller, uint256 newMaxVolatilityBps)
+        public
+    {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
@@ -4057,7 +4059,9 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.prank(caller);
         vm.expectRevert(Forbidden.selector);
         vars.pair.setMaxVolatilityBps(newMaxVolatilityBps);
-        assertEq(vars.pair.maxVolatilityBps(), initialMaxVolatilityBps, 'maxVolatilityBps values should match initial one.');
+        assertEq(
+            vars.pair.maxVolatilityBps(), initialMaxVolatilityBps, "maxVolatilityBps values should match initial one."
+        );
     }
 
     function test_setMinTimelockDuration(uint256 newMinTimelockDuration) public {
@@ -4069,10 +4073,14 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
         vm.prank(address(vars.factory));
         vars.pair.setMinTimelockDuration(newMinTimelockDuration);
-        assertEq(vars.pair.minTimelockDuration(), newMinTimelockDuration, 'minTimelockDuration value should match new one.');
+        assertEq(
+            vars.pair.minTimelockDuration(), newMinTimelockDuration, "minTimelockDuration value should match new one."
+        );
     }
 
-    function test_setMinTimelockDuration_CannotCallFromNonFactoryAddress(address caller, uint256 newMinTimelockDuration) public {
+    function test_setMinTimelockDuration_CannotCallFromNonFactoryAddress(address caller, uint256 newMinTimelockDuration)
+        public
+    {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
@@ -4086,7 +4094,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.prank(caller);
         vm.expectRevert(Forbidden.selector);
         vars.pair.setMinTimelockDuration(newMinTimelockDuration);
-        assertEq(vars.pair.minTimelockDuration(), initialMinTimelockDuration, 'minTimelockDuration values should match initial one.');
+        assertEq(
+            vars.pair.minTimelockDuration(),
+            initialMinTimelockDuration,
+            "minTimelockDuration values should match initial one."
+        );
     }
 
     function test_setMaxTimelockDuration(uint256 newMaxTimelockDuration) public {
@@ -4098,10 +4110,14 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
         vm.prank(address(vars.factory));
         vars.pair.setMaxTimelockDuration(newMaxTimelockDuration);
-        assertEq(vars.pair.maxTimelockDuration(), newMaxTimelockDuration, 'maxTimelockDuration value should match new one.');
+        assertEq(
+            vars.pair.maxTimelockDuration(), newMaxTimelockDuration, "maxTimelockDuration value should match new one."
+        );
     }
 
-    function test_setMaxTimelockDuration_CannotCallFromNonFactoryAddress(address caller, uint256 newMaxTimelockDuration) public {
+    function test_setMaxTimelockDuration_CannotCallFromNonFactoryAddress(address caller, uint256 newMaxTimelockDuration)
+        public
+    {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
@@ -4115,7 +4131,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.prank(caller);
         vm.expectRevert(Forbidden.selector);
         vars.pair.setMaxTimelockDuration(newMaxTimelockDuration);
-        assertEq(vars.pair.maxTimelockDuration(), initialMaxTimelockDuration, 'maxTimelockDuration values should match initial one.');
+        assertEq(
+            vars.pair.maxTimelockDuration(),
+            initialMaxTimelockDuration,
+            "maxTimelockDuration values should match initial one."
+        );
     }
 
     function test_setMaxSwappableReservoirLimitBps(uint256 newMaxSwappableReservoirLimitBps) public {
@@ -4127,10 +4147,17 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
         vm.prank(address(vars.factory));
         vars.pair.setMaxSwappableReservoirLimitBps(newMaxSwappableReservoirLimitBps);
-        assertEq(vars.pair.maxSwappableReservoirLimitBps(), newMaxSwappableReservoirLimitBps, 'maxSwappableReservoirLimitBps value should match new one.');
+        assertEq(
+            vars.pair.maxSwappableReservoirLimitBps(),
+            newMaxSwappableReservoirLimitBps,
+            "maxSwappableReservoirLimitBps value should match new one."
+        );
     }
 
-    function test_setMaxSwappableReservoirLimitBps_CannotCallFromNonFactoryAddress(address caller, uint256 newMaxSwappableReservoirLimitBps) public {
+    function test_setMaxSwappableReservoirLimitBps_CannotCallFromNonFactoryAddress(
+        address caller,
+        uint256 newMaxSwappableReservoirLimitBps
+    ) public {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
@@ -4144,7 +4171,11 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.prank(caller);
         vm.expectRevert(Forbidden.selector);
         vars.pair.setMaxSwappableReservoirLimitBps(newMaxSwappableReservoirLimitBps);
-        assertEq(vars.pair.maxSwappableReservoirLimitBps(), initialMaxSwappableReservoirLimitBps, 'maxSwappableReservoirLimitBps values should match initial one.');
+        assertEq(
+            vars.pair.maxSwappableReservoirLimitBps(),
+            initialMaxSwappableReservoirLimitBps,
+            "maxSwappableReservoirLimitBps values should match initial one."
+        );
     }
 
     function test_setSwappableReservoirGrowthWindow(uint256 newSwappableReservoirGrowthWindow) public {
@@ -4156,10 +4187,17 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
 
         vm.prank(address(vars.factory));
         vars.pair.setSwappableReservoirGrowthWindow(newSwappableReservoirGrowthWindow);
-        assertEq(vars.pair.swappableReservoirGrowthWindow(), newSwappableReservoirGrowthWindow, 'swappableReservoirGrowthWindow value should match new one.');
+        assertEq(
+            vars.pair.swappableReservoirGrowthWindow(),
+            newSwappableReservoirGrowthWindow,
+            "swappableReservoirGrowthWindow value should match new one."
+        );
     }
 
-    function test_setSwappableReservoirGrowthWindow_CannotCallFromNonFactoryAddress(address caller, uint256 newSwappableReservoirGrowthWindow) public {
+    function test_setSwappableReservoirGrowthWindow_CannotCallFromNonFactoryAddress(
+        address caller,
+        uint256 newSwappableReservoirGrowthWindow
+    ) public {
         // Setup
         TestVariables memory vars;
         vars.permissionSetter = userA;
@@ -4173,6 +4211,10 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.prank(caller);
         vm.expectRevert(Forbidden.selector);
         vars.pair.setSwappableReservoirGrowthWindow(newSwappableReservoirGrowthWindow);
-        assertEq(vars.pair.swappableReservoirGrowthWindow(), initialSwappableReservoirGrowthWindow, 'swappableReservoirGrowthWindow values should match initial one.');
+        assertEq(
+            vars.pair.swappableReservoirGrowthWindow(),
+            initialSwappableReservoirGrowthWindow,
+            "swappableReservoirGrowthWindow values should match initial one."
+        );
     }
 }

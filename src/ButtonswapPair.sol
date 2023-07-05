@@ -178,8 +178,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     }
 
     /**
-    * @dev Prevents operations from being executed if the caller is not the factory.
-    */
+     * @dev Prevents operations from being executed if the caller is not the factory.
+     */
     modifier onlyFactory() {
         if (msg.sender != factory) {
             revert Forbidden();
@@ -404,7 +404,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function setIsPaused(bool isPausedNew) onlyFactory external {
+    function setIsPaused(bool isPausedNew) external onlyFactory {
         isPaused = isPausedNew ? 1 : 0;
     }
 
@@ -751,36 +751,35 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
-    function setMaxVolatilityBps(uint256 _maxVolatilityBps) onlyFactory external {
+    function setMaxVolatilityBps(uint256 _maxVolatilityBps) external onlyFactory {
         maxVolatilityBps = _maxVolatilityBps;
     }
 
     /**
-    * @inheritdoc IButtonswapPair
-    */
-    function setMinTimelockDuration(uint256 _minTimelockDuration) onlyFactory external {
+     * @inheritdoc IButtonswapPair
+     */
+    function setMinTimelockDuration(uint256 _minTimelockDuration) external onlyFactory {
         minTimelockDuration = _minTimelockDuration;
     }
 
     /**
-    * @inheritdoc IButtonswapPair
-    */
-    function setMaxTimelockDuration(uint256 _maxTimelockDuration) onlyFactory external {
+     * @inheritdoc IButtonswapPair
+     */
+    function setMaxTimelockDuration(uint256 _maxTimelockDuration) external onlyFactory {
         maxTimelockDuration = _maxTimelockDuration;
     }
 
     /**
-    * @inheritdoc IButtonswapPair
-    */
-    function setMaxSwappableReservoirLimitBps(uint256 _maxSwappableReservoirLimitBps) onlyFactory external {
+     * @inheritdoc IButtonswapPair
+     */
+    function setMaxSwappableReservoirLimitBps(uint256 _maxSwappableReservoirLimitBps) external onlyFactory {
         maxSwappableReservoirLimitBps = _maxSwappableReservoirLimitBps;
     }
 
     /**
-    * @inheritdoc IButtonswapPair
-    */
-    function setSwappableReservoirGrowthWindow(uint256 _swappableReservoirGrowthWindow) onlyFactory external {
+     * @inheritdoc IButtonswapPair
+     */
+    function setSwappableReservoirGrowthWindow(uint256 _swappableReservoirGrowthWindow) external onlyFactory {
         swappableReservoirGrowthWindow = _swappableReservoirGrowthWindow;
     }
-
 }
