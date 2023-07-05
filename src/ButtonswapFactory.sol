@@ -36,11 +36,25 @@ contract ButtonswapFactory is IButtonswapFactory {
     bool public isCreationRestricted;
 
     /**
+     * @inheritdoc IButtonswapFactory
+     */
+    address public isCreationRestrictedSetter;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    address public isPausedSetter;
+
+    /**
      * @dev `feeTo` is not initialised during deployment, and must be set separately by a call to {setFeeTo}.
      * @param _feeToSetter The account that has the ability to set `feeToSetter` and `feeTo`
+     * @param _isCreationRestrictedSetter The account that has the ability to set `isCreationRestrictedSetter` and `isCreationRestricted`
+     * @param _isPausedSetter The account that has the ability to set `isPausedSetter` and `isPaused`
      */
-    constructor(address _feeToSetter) {
+    constructor(address _feeToSetter, address _isCreationRestrictedSetter, address _isPausedSetter) {
         feeToSetter = _feeToSetter;
+        isCreationRestrictedSetter = _isCreationRestrictedSetter;
+        isPausedSetter = _isPausedSetter;
     }
 
     /**
@@ -54,7 +68,7 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @inheritdoc IButtonswapFactory
      */
     function createPair(address tokenA, address tokenB) external returns (address pair) {
-        if (isCreationRestricted && msg.sender != feeToSetter) {
+        if (isCreationRestricted && msg.sender != isCreationRestrictedSetter) {
             revert Forbidden();
         }
         if (tokenA == tokenB) {
@@ -109,7 +123,7 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @inheritdoc IButtonswapFactory
      */
     function setIsCreationRestricted(bool _isCreationRestricted) external {
-        if (msg.sender != feeToSetter) {
+        if (msg.sender != isCreationRestrictedSetter) {
             revert Forbidden();
         }
         isCreationRestricted = _isCreationRestricted;
@@ -118,13 +132,33 @@ contract ButtonswapFactory is IButtonswapFactory {
     /**
      * @inheritdoc IButtonswapFactory
      */
+    function setIsCreationRestrictedSetter(address _isCreationRestrictedSetter) external {
+        if (msg.sender != isCreationRestrictedSetter) {
+            revert Forbidden();
+        }
+        isCreationRestrictedSetter = _isCreationRestrictedSetter;
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
     function setIsPaused(address[] calldata pairs, bool isPausedNew) external {
-        if (msg.sender != feeToSetter) {
+        if (msg.sender != isPausedSetter) {
             revert Forbidden();
         }
         for (uint256 i = 0; i < pairs.length; i++) {
             IButtonswapPair(pairs[i]).setIsPaused(isPausedNew);
         }
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setIsPausedSetter(address _isPausedSetter) external {
+        if (msg.sender != isPausedSetter) {
+            revert Forbidden();
+        }
+        isPausedSetter = _isPausedSetter;
     }
 
     function lastCreatedPairTokens() external view returns (address token0, address token1) {
