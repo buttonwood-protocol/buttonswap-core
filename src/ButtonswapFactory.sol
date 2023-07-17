@@ -183,7 +183,8 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != isPausedSetter) {
             revert Forbidden();
         }
-        for (uint256 i = 0; i < pairs.length; i++) {
+        uint256 length = pairs.length;
+        for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setIsPaused(isPausedNew);
         }
     }
@@ -235,7 +236,8 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
-        for (uint256 i = 0; i < pairs.length; i++) {
+        uint256 length = pairs.length;
+        for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setMaxVolatilityBps(newMaxVolatilityBps);
         }
     }
@@ -247,7 +249,8 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
-        for (uint256 i = 0; i < pairs.length; i++) {
+        uint256 length = pairs.length;
+        for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setMinTimelockDuration(newMinTimelockDuration);
         }
     }
@@ -259,7 +262,8 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
-        for (uint256 i = 0; i < pairs.length; i++) {
+        uint256 length = pairs.length;
+        for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setMaxTimelockDuration(newMaxTimelockDuration);
         }
     }
@@ -273,7 +277,8 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
-        for (uint256 i = 0; i < pairs.length; i++) {
+        uint256 length = pairs.length;
+        for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setMaxSwappableReservoirLimitBps(newMaxSwappableReservoirLimitBps);
         }
     }
@@ -287,7 +292,8 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
-        for (uint256 i = 0; i < pairs.length; i++) {
+        uint256 length = pairs.length;
+        for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setSwappableReservoirGrowthWindow(newSwappableReservoirGrowthWindow);
         }
     }
