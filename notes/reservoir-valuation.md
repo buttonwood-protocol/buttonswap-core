@@ -8,9 +8,9 @@ We outline the strategies used to prevent and mitigate this risk.
 ## Price Stability
 In order to calculate a "stable" price, our approach is to store a modified TWAP(Time Weighted Average Price). TWAP's typically use a weighted moving average approach where each observation is weighted by the amount of time since the last observation (https://en.wikipedia.org/wiki/Time-weighted_average_price):
 
-```math
+$$
 P_{TWAP} = \frac{\sum_{j} P_{j} \cdot T_{j}}{\sum_{j} T_{j}}
-```
+$$
 
 where:
 - $P_{TWAP}$ is Time Weighted Average Price
@@ -22,26 +22,28 @@ The negatives to this approach are that it requires a sliding window of previous
 
 ### Our Approach
 
-Our approach is to use a similar time weighted moving average, however instead of weighing by $T_{j}$, we will weigh by scalars $W_{j}$. These are the same values except if the observation happens outside of the last 24 hours, then $W_{j}=0$ (for cases where $T_{j}$ overlaps with the cutoff, it is scaled down to fit inside the window). In essence, we will be averaging over the entire time window, but expiring observations that are over 24 hours old. Therefore for any number of $W_{j}$, their total sum will always equal 24 hours. This allows us to rewrite our modified TWAP in an approximate recursive fashion:
+Our approach is to use a similar time weighted moving average, however instead of weighing by $T_{j}$, we will weigh by scalars $W_{j}$. These are the same values except if the observation happens outside of the `movingAverageWindow`, the last $D=\texttt{24 hours}$, then $W_{j}=0$ (for cases where $T_{j}$ overlaps with the cutoff, it is scaled down to fit inside the window). In essence, we will be averaging over the entire time window, but expiring observations that are older than $D$. Therefore for any number of $W_{j}$, their total sum will always equal $D=\texttt{24 hours}$. This allows us to rewrite our modified TWAP in an approximate recursive fashion:
 
-```math
+$$
 S_{j} = \frac{\sum_{i \le j} P_{i} \cdot W_{i}}{\sum_{i \le j} W_{i}}
-```
-```math
+$$
+
+$$
 S_{j} \approx \frac{P_{j} \cdot W_{j} + S_{j-1} \cdot \left((\sum_{i \le j} W_{i}) - W_{j}\right)}{\sum_{i \le j} W_{i}}
-```
-```math
-S_{j} \approx \frac{P_{j} \cdot W_{j} + S_{j-1} \cdot \left((24 hrs) - W_{j}\right)}{24 hrs}
-```
-```math
+$$
+
+$$
+S_{j} \approx \frac{P_{j} \cdot W_{j} + S_{j-1} \cdot \left(D - W_{j}\right)}{D}
+$$
+
+$$
 S_{j} \approx \alpha_{j} \cdot P_{j} + (1 - \alpha) S_{j-1}
-```
+$$
 
 where:
 - $S_{j}$ is the moving average at time of measurement $j$
-- $\alpha_{j} = \frac{W_{j}}{24 hrs}$ is the relative weight of the current observation over the last 24 hours at time of measurment $j$
+- $\alpha_{j} = \frac{W_{j}}{D} = \frac{W_{j}}{24 hrs}$ is the relative weight of the current observation over the last 24 hours at time of measurment $j$
 
-TODO: FILL IN IMPLEMENTATION DETAILS (i.e, only need to store 3 values and rest is accessible from block, also how price is stored)
 
 ## Risk Mitigation
 
