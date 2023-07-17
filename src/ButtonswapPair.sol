@@ -252,10 +252,11 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         pure
         returns (uint256 closestBound)
     {
-        if ((poolALower * _poolBLast) + (_poolBLast / 2) < _poolALast * poolB) {
+        if ((2 * poolALower * _poolBLast) + _poolBLast < 2 * _poolALast * poolB) {
             closestBound = poolALower + 1;
+        } else {
+            closestBound = poolALower;
         }
-        closestBound = poolALower;
     }
 
     /**
