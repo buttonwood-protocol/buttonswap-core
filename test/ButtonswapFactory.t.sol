@@ -639,6 +639,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
 
     function test_setDefaultParameters(
         address initialParamSetter,
+        uint32 newDefaultMovingAverageWindow,
         uint16 newDefaultMaxVolatilityBps,
         uint32 newDefaultMinTimelockDuration,
         uint32 newDefaultMaxTimelockDuration,
@@ -653,6 +654,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
 
         vm.prank(initialParamSetter);
         buttonswapFactory.setDefaultParameters(
+            newDefaultMovingAverageWindow,
             newDefaultMaxVolatilityBps,
             newDefaultMinTimelockDuration,
             newDefaultMaxTimelockDuration,
@@ -670,6 +672,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
     function test_setDefaultParameters_CannotCallWhenNotParamSetter(
         address initialParamSetter,
         address caller,
+        uint32 newDefaultMovingAverageWindow,
         uint16 newDefaultMaxVolatilityBps,
         uint32 newDefaultMinTimelockDuration,
         uint32 newDefaultMaxTimelockDuration,
@@ -680,6 +683,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         ButtonswapFactory buttonswapFactory =
             new ButtonswapFactory(address(0), address(0), address(0), initialParamSetter);
 
+        uint256 initialDefaultMovingAverageWindow = buttonswapFactory.defaultMovingAverageWindow();
         uint256 initialDefaultMaxVolatilityBps = buttonswapFactory.defaultMaxVolatilityBps();
         uint256 initialDefaultMinTimelockDuration = buttonswapFactory.defaultMinTimelockDuration();
         uint256 initialDefaultMaxTimelockDuration = buttonswapFactory.defaultMaxTimelockDuration();
@@ -690,6 +694,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         vm.startPrank(caller);
         vm.expectRevert(Forbidden.selector);
         buttonswapFactory.setDefaultParameters(
+            newDefaultMovingAverageWindow,
             newDefaultMaxVolatilityBps,
             newDefaultMinTimelockDuration,
             newDefaultMaxTimelockDuration,
@@ -699,6 +704,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         vm.stopPrank();
 
         // Confirm initial parameters are still set
+        assertEq(buttonswapFactory.defaultMovingAverageWindow(), initialDefaultMovingAverageWindow);
         assertEq(buttonswapFactory.defaultMaxVolatilityBps(), initialDefaultMaxVolatilityBps);
         assertEq(buttonswapFactory.defaultMinTimelockDuration(), initialDefaultMinTimelockDuration);
         assertEq(buttonswapFactory.defaultMaxTimelockDuration(), initialDefaultMaxTimelockDuration);
@@ -965,6 +971,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address initialParamSetter,
         address tokenA,
         address tokenB,
+        uint32 newDefaultMovingAverageWindow,
         uint16 newDefaultMaxVolatilityBps,
         uint32 newDefaultMinTimelockDuration,
         uint32 newDefaultMaxTimelockDuration,
@@ -983,6 +990,7 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         // Setting up the new defaults
         vm.prank(initialParamSetter);
         buttonswapFactory.setDefaultParameters(
+            newDefaultMovingAverageWindow,
             newDefaultMaxVolatilityBps,
             newDefaultMinTimelockDuration,
             newDefaultMaxTimelockDuration,
@@ -996,6 +1004,11 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         // Confirming the new pair has the correct input values
         assertEq(IButtonswapPair(pairAddress).token0(), expectedToken0, "token0 should be expectedToken0");
         assertEq(IButtonswapPair(pairAddress).token1(), expectedToken1, "token1 should be expectedToken1");
+        assertEq(
+            IButtonswapPair(pairAddress).movingAverageWindow(),
+            newDefaultMovingAverageWindow,
+            "movingAverageWindow should be newDefaultMovingAverageWindow"
+        );
         assertEq(
             IButtonswapPair(pairAddress).maxVolatilityBps(),
             newDefaultMaxVolatilityBps,

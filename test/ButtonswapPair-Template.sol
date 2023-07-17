@@ -3348,7 +3348,6 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Amounts must be non-zero, and must exceed minimum liquidity
         vm.assume(mintAmount00 > 1000);
         vm.assume(mintAmount01 > 1000);
-        vm.assume(warpTime < 24 hours);
 
         uint256 startTime = block.timestamp;
 
@@ -3380,6 +3379,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.mint(vars.swapper1, vars.amount0In);
         vars.token1.mint(vars.swapper1, vars.amount1In);
 
+        vm.assume(warpTime < vars.pair.movingAverageWindow());
+
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.token0.approve(address(vars.pair), mintAmount00);
@@ -3409,21 +3410,22 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // movingAveragePrice0 is interpolated between previous and new value
         assertEq(
             vars.pair.movingAveragePrice0(),
-            ((startingPrice * (24 hours - warpTime)) + (newPrice * warpTime)) / 24 hours,
-            "post-swap 0<t<24hours"
+            ((startingPrice * (vars.pair.movingAverageWindow() - warpTime)) + (newPrice * warpTime))
+                / vars.pair.movingAverageWindow(),
+            "post-swap 0<t<movingAverageWindow"
         );
 
         // Move time forward
-        vm.warp(startTime + 24 hours);
+        vm.warp(startTime + vars.pair.movingAverageWindow());
 
-        // movingAveragePrice0 is fully new price at 24 hours
-        assertEq(vars.pair.movingAveragePrice0(), newPrice, "post-swap t=24hours");
+        // movingAveragePrice0 is fully new price at movingAverageWindow
+        assertEq(vars.pair.movingAveragePrice0(), newPrice, "post-swap t=movingAverageWindow");
 
         // Move time forward
-        vm.warp(startTime + 48 hours);
+        vm.warp(startTime + vars.pair.movingAverageWindow() + 1);
 
-        // movingAveragePrice0 remains fully new price beyond 24 hours
-        assertEq(vars.pair.movingAveragePrice0(), newPrice, "post-swap t>24hours");
+        // movingAveragePrice0 remains fully new price beyond movingAverageWindow
+        assertEq(vars.pair.movingAveragePrice0(), newPrice, "post-swap t>movingAverageWindow");
     }
 
     function test_timelock_DelayWithinRange(
@@ -3485,8 +3487,16 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.stopPrank();
 
         // Confirm new state is as expected
-        assertGe(vars.pair.singleSidedTimelockDeadline() - timestampStart, 24 seconds, "delay greater than min delay");
-        assertLe(vars.pair.singleSidedTimelockDeadline() - timestampStart, 24 hours, "delay less than max delay");
+        assertGe(
+            vars.pair.singleSidedTimelockDeadline() - timestampStart,
+            vars.pair.minTimelockDuration(),
+            "delay greater than min delay"
+        );
+        assertLe(
+            vars.pair.singleSidedTimelockDeadline() - timestampStart,
+            vars.pair.maxTimelockDuration(),
+            "delay less than max delay"
+        );
     }
 
     function test_timelock_DeadlineUpdatesCorrectly(
@@ -3815,8 +3825,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(reservoir0New == 0);
 
             // Predict the next deadline
-            expectedSwappableReservoirLimitReachesMaxDeadline =
-                block.timestamp + ((24 hours * swappedReservoirAmount1) / swappableReservoirLimit);
+            expectedSwappableReservoirLimitReachesMaxDeadline = block.timestamp
+                + ((vars.pair.swappableReservoirGrowthWindow() * swappedReservoirAmount1) / swappableReservoirLimit);
             swappedReservoirAmount = swappedReservoirAmount1;
         } else {
             // Mint the tokens
@@ -3839,8 +3849,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(reservoir1New == 0);
 
             // Predict the next deadline
-            expectedSwappableReservoirLimitReachesMaxDeadline =
-                block.timestamp + ((24 hours * swappedReservoirAmount0) / swappableReservoirLimit);
+            expectedSwappableReservoirLimitReachesMaxDeadline = block.timestamp
+                + ((vars.pair.swappableReservoirGrowthWindow() * swappedReservoirAmount0) / swappableReservoirLimit);
             swappedReservoirAmount = swappedReservoirAmount0;
         }
         // Ignore cases where no new liquidity is created

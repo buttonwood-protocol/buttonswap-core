@@ -18,6 +18,19 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     function MINIMUM_LIQUIDITY() external pure returns (uint256 MINIMUM_LIQUIDITY);
 
     /**
+     * @notice The duration for which the moving average is calculated for.
+     * @return _movingAverageWindow The value of movingAverageWindow
+     */
+    function movingAverageWindow() external view returns (uint32 _movingAverageWindow);
+
+    /**
+     * @notice Updates the movingAverageWindow parameter of the pair.
+     * This can only be called by the Factory address.
+     * @param _movingAverageWindow The new value for movingAverageWindow
+     */
+    function setMovingAverageWindow(uint32 _movingAverageWindow) external;
+
+    /**
      * @notice Numerator (over 10_000) of the threshold when price volatility triggers maximum single-sided timelock duration.
      * @return _maxVolatilityBps The value of maxVolatilityBps
      */
@@ -26,7 +39,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the maxVolatilityBps parameter of the pair.
      * This can only be called by the Factory address.
-     * @param  _maxVolatilityBps The new value for maxVolatilityBps
+     * @param _maxVolatilityBps The new value for maxVolatilityBps
      */
     function setMaxVolatilityBps(uint16 _maxVolatilityBps) external;
 
@@ -39,7 +52,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the minTimelockDuration parameter of the pair.
      * This can only be called by the Factory address.
-     * @param  _minTimelockDuration The new value for minTimelockDuration
+     * @param _minTimelockDuration The new value for minTimelockDuration
      */
     function setMinTimelockDuration(uint32 _minTimelockDuration) external;
 
@@ -52,7 +65,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the maxTimelockDuration parameter of the pair.
      * This can only be called by the Factory address.
-     * @param  _maxTimelockDuration The new value for maxTimelockDuration
+     * @param _maxTimelockDuration The new value for maxTimelockDuration
      */
     function setMaxTimelockDuration(uint32 _maxTimelockDuration) external;
 
@@ -66,7 +79,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the maxSwappableReservoirLimitBps parameter of the pair.
      * This can only be called by the Factory address.
-     * @param  _maxSwappableReservoirLimitBps The new value for maxSwappableReservoirLimitBps
+     * @param _maxSwappableReservoirLimitBps The new value for maxSwappableReservoirLimitBps
      */
     function setMaxSwappableReservoirLimitBps(uint16 _maxSwappableReservoirLimitBps) external;
 
@@ -79,7 +92,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the swappableReservoirGrowthWindow parameter of the pair.
      * This can only be called by the Factory address.
-     * @param  _swappableReservoirGrowthWindow The new value for swappableReservoirGrowthWindow
+     * @param _swappableReservoirGrowthWindow The new value for swappableReservoirGrowthWindow
      */
     function setSwappableReservoirGrowthWindow(uint32 _swappableReservoirGrowthWindow) external;
 
@@ -126,8 +139,8 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
 
     /**
      * @notice The timestamp for when the single-sided timelock concludes.
-     * The timelock is initiated based on price volatility of swaps over the last 24 hours, and can be extended by new
-     *   swaps if they are sufficiently volatile.
+     * The timelock is initiated based on price volatility of swaps over the last `movingAverageWindow`, and can be
+     *   extended by new swaps if they are sufficiently volatile.
      * The timelock protects against attempts to manipulate the price that is used to valuate the reservoir tokens during
      *   single-sided operations.
      * It also guards against general legitimate volatility, as it is preferable to defer single-sided operations until
