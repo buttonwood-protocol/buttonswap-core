@@ -168,11 +168,13 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      * If `feeTo` is not defined, `balanceOf(address(this))` gets burned and the LP tokens all grow in value.
      */
     modifier sendOrRefundFee() {
-        address feeTo = IButtonswapFactory(factory).feeTo();
-        if (feeTo != address(0)) {
-            _transfer(address(this), feeTo, balanceOf[address(this)]);
-        } else {
-            _burn(address(this), balanceOf[address(this)]);
+        if (balanceOf[address(this)] > 0) {
+            address feeTo = IButtonswapFactory(factory).feeTo();
+            if (feeTo != address(0)) {
+                _transfer(address(this), feeTo, balanceOf[address(this)]);
+            } else {
+                _burn(address(this), balanceOf[address(this)]);
+            }
         }
         _;
     }
