@@ -323,13 +323,15 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             priceDifference = _movingAveragePrice0 - newPrice0;
         }
         // priceDifference / ((_movingAveragePrice0 * maxVolatilityBps)/BPS)
+        uint32 _minTimelockDuration = minTimelockDuration;
+        uint32 _maxTimelockDuration = maxTimelockDuration;
         uint256 timelock = Math.min(
-            minTimelockDuration
+            _minTimelockDuration
                 + (
-                    (priceDifference * BPS * (maxTimelockDuration - minTimelockDuration))
+                    (priceDifference * BPS * (_maxTimelockDuration - _minTimelockDuration))
                         / (_movingAveragePrice0 * maxVolatilityBps)
                 ),
-            maxTimelockDuration
+            _maxTimelockDuration
         );
         uint120 timelockDeadline = uint120(block.timestamp + timelock);
         if (timelockDeadline > singleSidedTimelockDeadline) {
@@ -350,10 +352,11 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         uint256 _swappableReservoirLimitReachesMaxDeadline = swappableReservoirLimitReachesMaxDeadline;
         if (_swappableReservoirLimitReachesMaxDeadline > block.timestamp) {
             // If the current deadline is still active then calculate the progress towards reaching it
+            uint32 _swappableReservoirGrowthWindow = swappableReservoirGrowthWindow;
             uint256 progress =
-                swappableReservoirGrowthWindow - (_swappableReservoirLimitReachesMaxDeadline - block.timestamp);
+                _swappableReservoirGrowthWindow - (_swappableReservoirLimitReachesMaxDeadline - block.timestamp);
             // The greater the progress, the closer to the max limit we get
-            swappableReservoir = (maxSwappableReservoirLimit * progress) / swappableReservoirGrowthWindow;
+            swappableReservoir = (maxSwappableReservoirLimit * progress) / _swappableReservoirGrowthWindow;
         } else {
             // If the current deadline has expired then the full limit is available
             swappableReservoir = maxSwappableReservoirLimit;
@@ -456,9 +459,10 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         } else if (timeElapsed >= movingAverageWindow) {
             _movingAveragePrice0 = currentPrice0;
         } else {
+            uint32 _movingAverageWindow = movingAverageWindow;
             _movingAveragePrice0 = (
-                (movingAveragePrice0Last * (movingAverageWindow - timeElapsed)) + (currentPrice0 * timeElapsed)
-            ) / movingAverageWindow;
+                (movingAveragePrice0Last * (_movingAverageWindow - timeElapsed)) + (currentPrice0 * timeElapsed)
+            ) / _movingAverageWindow;
         }
     }
 
@@ -490,8 +494,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             pool1Last = uint112(amountIn1);
             // Initialize timestamp so first price update is accurate
             blockTimestampLast = uint32(block.timestamp % 2 ** 32);
-            // Initialize moving average
-            movingAveragePrice0Last = uint256(UQ112x112.encode(pool1Last).uqdiv(pool0Last));
+            // Initialize moving average to price from initial amounts
+            movingAveragePrice0Last = uint256(UQ112x112.encode(uint112(amountIn1)).uqdiv(uint112(amountIn0)));
         } else {
             // Don't need to check that amountIn{0,1} are in the right ratio because the least generous ratio is used
             //   to determine the liquidityOut value, meaning any tokens that exceed that ratio are donated.
