@@ -4023,6 +4023,43 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(vars.pair.balanceOf(vars.minter1), 0, "Minter1 should have no LP tokens left");
     }
 
+    function test_setMovingAverageWindow(uint32 newMovingAverageWindow) public {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+
+        vm.prank(address(vars.factory));
+        vars.pair.setMovingAverageWindow(newMovingAverageWindow);
+        assertEq(
+            vars.pair.movingAverageWindow(), newMovingAverageWindow, "movingAverageWindow value should match new one."
+        );
+    }
+
+    function test_setMovingAverageWindow_CannotCallFromNonFactoryAddress(address caller, uint32 newMovingAverageWindow)
+        public
+    {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        uint32 initialMovingAverageWindow = vars.pair.movingAverageWindow();
+
+        // Ensure caller is not the factory
+        vm.assume(caller != address(vars.factory));
+
+        vm.prank(caller);
+        vm.expectRevert(Forbidden.selector);
+        vars.pair.setMovingAverageWindow(newMovingAverageWindow);
+        assertEq(
+            vars.pair.movingAverageWindow(),
+            initialMovingAverageWindow,
+            "movingAverageWindow values should match initial one."
+        );
+    }
+
     function test_setMaxVolatilityBps(uint16 newMaxVolatilityBps) public {
         // Setup
         TestVariables memory vars;
