@@ -1624,10 +1624,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(vars.pair.totalSupply(), expectedTotalSupply);
     }
 
-    function test_burn_CannotCallWithInsufficientLiquidityBurned(
-        uint256 mintAmount0,
-        uint256 mintAmount1
-    ) public {
+    function test_burn_CannotCallWithInsufficientLiquidityBurned(uint256 mintAmount0, uint256 mintAmount1) public {
         // Make sure the amounts aren't liable to overflow 2**112
         vm.assume(mintAmount0 < (2 ** 112) / 2);
         vm.assume(mintAmount1 < (2 ** 112) / 2);
@@ -3333,7 +3330,6 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // Amounts must be non-zero, and must exceed minimum liquidity
         vm.assume(mintAmount00 > 1000);
         vm.assume(mintAmount01 > 1000);
-        vm.assume(warpTime < 24 hours);
 
         uint256 startTime = block.timestamp;
 
@@ -3365,6 +3361,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.token0.mint(vars.swapper1, vars.amount0In);
         vars.token1.mint(vars.swapper1, vars.amount1In);
 
+        vm.assume(warpTime < vars.pair.movingAverageWindow());
+
         // Mint initial liquidity
         vm.startPrank(vars.minter1);
         vars.token0.approve(address(vars.pair), mintAmount00);
@@ -3394,21 +3392,22 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         // movingAveragePrice0 is interpolated between previous and new value
         assertEq(
             vars.pair.movingAveragePrice0(),
-            ((startingPrice * (24 hours - warpTime)) + (newPrice * warpTime)) / 24 hours,
-            "post-swap 0<t<24hours"
+            ((startingPrice * (vars.pair.movingAverageWindow() - warpTime)) + (newPrice * warpTime))
+                / vars.pair.movingAverageWindow(),
+            "post-swap 0<t<movingAverageWindow"
         );
 
         // Move time forward
-        vm.warp(startTime + 24 hours);
+        vm.warp(startTime + vars.pair.movingAverageWindow());
 
-        // movingAveragePrice0 is fully new price at 24 hours
-        assertEq(vars.pair.movingAveragePrice0(), newPrice, "post-swap t=24hours");
+        // movingAveragePrice0 is fully new price at movingAverageWindow
+        assertEq(vars.pair.movingAveragePrice0(), newPrice, "post-swap t=movingAverageWindow");
 
         // Move time forward
-        vm.warp(startTime + 48 hours);
+        vm.warp(startTime + vars.pair.movingAverageWindow() + 1);
 
-        // movingAveragePrice0 remains fully new price beyond 24 hours
-        assertEq(vars.pair.movingAveragePrice0(), newPrice, "post-swap t>24hours");
+        // movingAveragePrice0 remains fully new price beyond movingAverageWindow
+        assertEq(vars.pair.movingAveragePrice0(), newPrice, "post-swap t>movingAverageWindow");
     }
 
     function test_timelock_DelayWithinRange(
@@ -3470,8 +3469,16 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.stopPrank();
 
         // Confirm new state is as expected
-        assertGe(vars.pair.singleSidedTimelockDeadline() - timestampStart, 24 seconds, "delay greater than min delay");
-        assertLe(vars.pair.singleSidedTimelockDeadline() - timestampStart, 24 hours, "delay less than max delay");
+        assertGe(
+            vars.pair.singleSidedTimelockDeadline() - timestampStart,
+            vars.pair.minTimelockDuration(),
+            "delay greater than min delay"
+        );
+        assertLe(
+            vars.pair.singleSidedTimelockDeadline() - timestampStart,
+            vars.pair.maxTimelockDuration(),
+            "delay less than max delay"
+        );
     }
 
     function test_timelock_DeadlineUpdatesCorrectly(
@@ -3800,8 +3807,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(reservoir0New == 0);
 
             // Predict the next deadline
-            expectedSwappableReservoirLimitReachesMaxDeadline =
-                block.timestamp + ((24 hours * swappedReservoirAmount1) / swappableReservoirLimit);
+            expectedSwappableReservoirLimitReachesMaxDeadline = block.timestamp
+                + ((vars.pair.swappableReservoirGrowthWindow() * swappedReservoirAmount1) / swappableReservoirLimit);
             swappedReservoirAmount = swappedReservoirAmount1;
         } else {
             // Mint the tokens
@@ -3824,8 +3831,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
             vm.assume(reservoir1New == 0);
 
             // Predict the next deadline
-            expectedSwappableReservoirLimitReachesMaxDeadline =
-                block.timestamp + ((24 hours * swappedReservoirAmount0) / swappableReservoirLimit);
+            expectedSwappableReservoirLimitReachesMaxDeadline = block.timestamp
+                + ((vars.pair.swappableReservoirGrowthWindow() * swappedReservoirAmount0) / swappableReservoirLimit);
             swappedReservoirAmount = swappedReservoirAmount0;
         }
         // Ignore cases where no new liquidity is created
@@ -4014,6 +4021,43 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.stopPrank();
 
         assertEq(vars.pair.balanceOf(vars.minter1), 0, "Minter1 should have no LP tokens left");
+    }
+
+    function test_setMovingAverageWindow(uint32 newMovingAverageWindow) public {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+
+        vm.prank(address(vars.factory));
+        vars.pair.setMovingAverageWindow(newMovingAverageWindow);
+        assertEq(
+            vars.pair.movingAverageWindow(), newMovingAverageWindow, "movingAverageWindow value should match new one."
+        );
+    }
+
+    function test_setMovingAverageWindow_CannotCallFromNonFactoryAddress(address caller, uint32 newMovingAverageWindow)
+        public
+    {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        uint32 initialMovingAverageWindow = vars.pair.movingAverageWindow();
+
+        // Ensure caller is not the factory
+        vm.assume(caller != address(vars.factory));
+
+        vm.prank(caller);
+        vm.expectRevert(Forbidden.selector);
+        vars.pair.setMovingAverageWindow(newMovingAverageWindow);
+        assertEq(
+            vars.pair.movingAverageWindow(),
+            initialMovingAverageWindow,
+            "movingAverageWindow values should match initial one."
+        );
     }
 
     function test_setMaxVolatilityBps(uint16 newMaxVolatilityBps) public {

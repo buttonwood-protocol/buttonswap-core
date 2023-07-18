@@ -35,7 +35,7 @@ library PairMath {
         uint256 tokenAToSwap =
             (mintAmountA * totalB) / (Math.mulDiv(movingAveragePriceA, (totalA + mintAmountA), 2 ** 112) + totalB);
         // Here we don't risk undesired overflow because if `tokenAToSwap * movingAveragePriceA` exceeded 2^256 then it
-        //   would necessarily mean `swappedReservoirAmountB` exceeded 2^112, which would result in breaking the poolX unit112 limits.
+        //   would necessarily mean `swappedReservoirAmountB` exceeded 2^112, which would result in breaking the poolX uint112 limits.
         swappedReservoirAmountB = (tokenAToSwap * movingAveragePriceA) / 2 ** 112;
         // Update totals to account for the fixed price swap
         totalA += tokenAToSwap;
@@ -116,7 +116,7 @@ library PairMath {
         amountOutB = amountOutB + swappedReservoirAmountB;
     }
 
-    /// @dev @dev Refer to [fee-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/fee-math.md) for more detail.
+    /// @dev Refer to [fee-math.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/fee-math.md) for more detail.
     function getProtocolFeeLiquidityMinted(uint256 totalLiquidity, uint256 kLast, uint256 k)
         internal
         pure

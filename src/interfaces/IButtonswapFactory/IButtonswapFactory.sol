@@ -129,6 +129,12 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function setParamSetter(address _paramSetter) external;
 
     /**
+     * @notice Returns the default value of `movingAverageWindow` used for new pairs.
+     * @return _defaultMovingAverageWindow The `defaultMovingAverageWindow` value
+     */
+    function defaultMovingAverageWindow() external view returns (uint32 _defaultMovingAverageWindow);
+
+    /**
      * @notice Returns the default value of `maxVolatilityBps` used for new pairs.
      * @return _defaultMaxVolatilityBps The `defaultMaxVolatilityBps` value
      */
@@ -167,6 +173,7 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     /**
      * @notice Updates the default parameters used for new pairs.
      * This can only be called by the `paramSetter` address.
+     * @param _defaultMovingAverageWindow The new defaultMovingAverageWindow
      * @param _defaultMaxVolatilityBps The new defaultMaxVolatilityBps
      * @param _defaultMinTimelockDuration The new defaultMinTimelockDuration
      * @param _defaultMaxTimelockDuration The new defaultMaxTimelockDuration
@@ -174,12 +181,21 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @param _defaultSwappableReservoirGrowthWindow The new defaultSwappableReservoirGrowthWindow
      */
     function setDefaultParameters(
+        uint32 _defaultMovingAverageWindow,
         uint16 _defaultMaxVolatilityBps,
         uint32 _defaultMinTimelockDuration,
         uint32 _defaultMaxTimelockDuration,
         uint16 _defaultMaxSwappableReservoirLimitBps,
         uint32 _defaultSwappableReservoirGrowthWindow
     ) external;
+
+    /**
+     * @notice Updates the `movingAverageWindow` value of given Pairs.
+     * This can only be called by the `paramSetter` address.
+     * @param pairs A list of addresses for the pairs that should be updated
+     * @param newMovingAverageWindow The new `movingAverageWindow` value
+     */
+    function setMovingAverageWindow(address[] calldata pairs, uint32 newMovingAverageWindow) external;
 
     /**
      * @notice Updates the `maxVolatilityBps` value of given Pairs.
@@ -227,6 +243,7 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
      * @notice Returns the last token pair created and the parameters used.
      * @return token0 The first token address
      * @return token1 The second token address
+     * @return movingAverageWindow The moving average window
      * @return maxVolatilityBps The max volatility bps
      * @return minTimelockDuration The minimum time lock duration
      * @return maxTimelockDuration The maximum time lock duration
@@ -238,6 +255,7 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
         returns (
             address token0,
             address token1,
+            uint32 movingAverageWindow,
             uint16 maxVolatilityBps,
             uint32 minTimelockDuration,
             uint32 maxTimelockDuration,

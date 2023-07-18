@@ -38,6 +38,11 @@ contract ButtonswapFactory is IButtonswapFactory {
     /**
      * @inheritdoc IButtonswapFactory
      */
+    uint32 public defaultMovingAverageWindow = 24 hours;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
     uint16 public defaultMaxVolatilityBps = 700;
 
     /**
@@ -213,6 +218,7 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @inheritdoc IButtonswapFactory
      */
     function setDefaultParameters(
+        uint32 _defaultMovingAverageWindow,
         uint16 _defaultMaxVolatilityBps,
         uint32 _defaultMinTimelockDuration,
         uint32 _defaultMaxTimelockDuration,
@@ -222,11 +228,25 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
+        defaultMovingAverageWindow = _defaultMovingAverageWindow;
         defaultMaxVolatilityBps = _defaultMaxVolatilityBps;
         defaultMinTimelockDuration = _defaultMinTimelockDuration;
         defaultMaxTimelockDuration = _defaultMaxTimelockDuration;
         defaultMaxSwappableReservoirLimitBps = _defaultMaxSwappableReservoirLimitBps;
         defaultSwappableReservoirGrowthWindow = _defaultSwappableReservoirGrowthWindow;
+    }
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    function setMovingAverageWindow(address[] calldata pairs, uint32 newMovingAverageWindow) external {
+        if (msg.sender != paramSetter) {
+            revert Forbidden();
+        }
+        uint256 length = pairs.length;
+        for (uint256 i; i < length; ++i) {
+            IButtonswapPair(pairs[i]).setMovingAverageWindow(newMovingAverageWindow);
+        }
     }
 
     /**
@@ -307,6 +327,7 @@ contract ButtonswapFactory is IButtonswapFactory {
         returns (
             address token0,
             address token1,
+            uint32 movingAverageWindow,
             uint16 maxVolatilityBps,
             uint32 minTimelockDuration,
             uint32 maxTimelockDuration,
@@ -316,6 +337,7 @@ contract ButtonswapFactory is IButtonswapFactory {
     {
         token0 = lastToken0;
         token1 = lastToken1;
+        movingAverageWindow = defaultMovingAverageWindow;
         maxVolatilityBps = defaultMaxVolatilityBps;
         minTimelockDuration = defaultMinTimelockDuration;
         maxTimelockDuration = defaultMaxTimelockDuration;

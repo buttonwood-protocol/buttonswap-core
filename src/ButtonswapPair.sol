@@ -40,6 +40,11 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapPair
      */
+    uint32 public movingAverageWindow;
+
+    /**
+     * @inheritdoc IButtonswapPair
+     */
     uint16 public maxVolatilityBps;
 
     /**
@@ -194,6 +199,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         (
             token0,
             token1,
+            movingAverageWindow,
             maxVolatilityBps,
             minTimelockDuration,
             maxTimelockDuration,
@@ -449,11 +455,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         uint256 currentPrice0 = uint256(UQ112x112.encode(pool1Last).uqdiv(pool0Last));
         if (timeElapsed == 0) {
             _movingAveragePrice0 = movingAveragePrice0Last;
-        } else if (timeElapsed >= 24 hours) {
+        } else if (timeElapsed >= movingAverageWindow) {
             _movingAveragePrice0 = currentPrice0;
         } else {
-            _movingAveragePrice0 =
-                ((movingAveragePrice0Last * (24 hours - timeElapsed)) + (currentPrice0 * timeElapsed)) / 24 hours;
+            _movingAveragePrice0 = (
+                (movingAveragePrice0Last * (movingAverageWindow - timeElapsed)) + (currentPrice0 * timeElapsed)
+            ) / movingAverageWindow;
         }
     }
 
@@ -756,6 +763,13 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             pool1Last = uint112(pool1New);
         }
         emit Swap(msg.sender, amountIn0, amountIn1, amountOut0, amountOut1, to);
+    }
+
+    /**
+     * @inheritdoc IButtonswapPair
+     */
+    function setMovingAverageWindow(uint32 _movingAverageWindow) external onlyFactory {
+        movingAverageWindow = _movingAverageWindow;
     }
 
     /**
