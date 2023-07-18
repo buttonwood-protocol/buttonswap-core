@@ -7,7 +7,7 @@ The movingAveragePrice (of `token0`) is implemented in the code by storing two a
 
 And utilizing two existing pair variables:
 - `uint112 pool0Last`: The balance of pool0 at `blockTimestampLast`
-- `uint112 pool0Last`: The balance of pool1 at `blockTimestampLast`
+- `uint112 pool1Last`: The balance of pool1 at `blockTimestampLast`
 
 All four of these values are updated on each swap.
 
