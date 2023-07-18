@@ -1,28 +1,22 @@
 # Swappable Reservoir Limit Math
 
 ## Variables
-- `uint16 public maxSwappableReservoirLimitBps`: The bps of the corresponding pool balance which can be exchanged from the reservoir in a given timeframe
-- `uint120 public swappableReservoirLimitReachesMaxDeadline`: The current deadline by which the max relative amount of reservoir tokens can be exchanged
-- `uint32 public swappableReservoirGrowthWindow`: How much time it takes for the swappable reservoir value to grow from nothing to its maximum value.
+- `uint16 maxSwappableReservoirLimitBps`: The corresponding pool balance which can be exchanged from the reservoir in a given timeframe, denoted in basis points
+- `uint120 swappableReservoirLimitReachesMaxDeadline`: The point in time at which the max relative amount of reservoir tokens can be exchanged, denoted as a unix timestamp
+- `uint32 swappableReservoirGrowthWindow`: How much time it takes for the swappable reservoir value to grow from 0 to its maximum value, denoted in seconds
 
 ## Behavior
-
-Before the reservoir is exchanged, we check if `block.timestamp` has passed the `swappableReservoirLimitReachesMaxDeadline`. If so, then maxSwappableReservoirLimit is allowed to be exchanged:
-
+First we calculate the maximum swappable reservoir amount ever allowed to be exchanged, `maxSwappableReservoirLimit`:
 $$
-maxSwappableReservoirLimit = poolA \cdot \frac{maxSwappableReservoirLimitBps}{10000}
+M = poolA \cdot \frac{maxSwappableReservoirLimitBps}{10000}
 $$
 
-Otherwise, we calculate how much progress is made towards reaching it:
+Then we scale $M$ by how close the current `block.timestamp` is to the `swappableReservoirLimitReachesMaxDeadline`. We denote the `swappableReservoirGrowthWindow` by $W$.
 
 $$
-progress = swappableReservoirGrowthWindow -
-\\
-(swappableReservoirLimitReachesMaxDeadline - block.timestamp)
+t_{diff} = swappableReservoirLimitReachesMaxDeadline - block.timestamp
 $$
 
-Then, we scale `maxSwappableReservoirLimit` by the progress relative to the entire `swappableReservoirGrowthWindow`:
-
 $$
-swappableReservoir = maxSwappableReservoirLimit \cdot \frac{progress}{swappableReservoirGrowthWindow}
+swappableReservoir = \begin{cases} M & t_{diff} \le 0 \\ M \cdot \frac{W - t_{diff}}{W} & \text{otherwise} \end{cases}
 $$

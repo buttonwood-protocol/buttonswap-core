@@ -1,14 +1,14 @@
-# Time Lock Math
+# Timelock Math
 
 ## Variables:
-- `uint16 public maxVolatilityBps`: Maximum BPS that the current pool price can deviate from `movingAveragePrice0`
-- `uint32 public minTimelockDuration`: The minimum timelock duration for any swap
-- `uint32 public maxTimelockDuration`: The maximum timelock duration for any swap
-- `uint120 public singleSidedTimelockDeadline`: The current timelock deadline timestamp
+- `uint16 maxVolatilityBps`: Maximum amount that the current pool price can deviate from `movingAveragePrice0`, denoted in basis points
+- `uint32 minTimelockDuration`: The minimum timelock duration after a swap
+- `uint32 maxTimelockDuration`: The maximum timelock duration after a swap
+- `uint120 singleSidedTimelockDeadline`: The current point in time at which the timelock deactivates
 
 ## Behavior
 
-On every swap, a price delta is calculated from the current movingAveragePrice0. The price delta relative to movingAveragePrice is then used to scale how much to add to the timelock.
+On every swap, a price delta is calculated from the current movingAveragePrice0. The price delta relative to movingAveragePrice is then used to scale how much to add to the timelock, denoted as $\Delta T$ below.
 
 $$
 \Delta Price = |newPrice - movingAveragePrice|

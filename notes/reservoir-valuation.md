@@ -14,7 +14,7 @@ $$
 
 where:
 - $P_{TWAP}$ is Time Weighted Average Price
-- $P_{j}$ is the price of security at a time of measurement $j$
+    - $P_{j}$ is the price of asset at a time of measurement $j$
 - $T_{j}$ is change of time since previous price measurement $j$
 - $j$ is each individual measurement that takes place over the defined period of time.
 
@@ -22,7 +22,7 @@ The negatives to this approach are that it requires a sliding window of previous
 
 ### Our Approach
 
-Our approach is to use a similar time weighted moving average, however instead of weighing by $T_{j}$, we will weigh by scalars $W_{j}$. These are the same values except if the observation happens outside of the `movingAverageWindow`, the last $D=\texttt{24 hours}$, then $W_{j}=0$ (for cases where $T_{j}$ overlaps with the cutoff, it is scaled down to fit inside the window). In essence, we will be averaging over the entire time window, but expiring observations that are older than $D$. Therefore for any number of $W_{j}$, their total sum will always equal $D=\texttt{24 hours}$. This allows us to rewrite our modified TWAP in an approximate recursive fashion:
+Our approach is to use a similar time weighted moving average, however instead of weighing by $T_{j}$, we will weigh by scalars $W_{j}$. These are the same values except if the observation happens outside of $D$, the `movingAverageWindow` (default value is 24 hours), then $W_{j}=0$ (for cases where $T_{j}$ overlaps with the cutoff, it is scaled down to fit inside the window). In essence, we will be averaging over the entire time window, but expiring observations that are older than $D$. Therefore for any number of $W_{j}$, their total sum will always equal $D$. This allows us to rewrite our modified TWAP in an approximate recursive fashion:
 
 $$
 S_{j} = \frac{\sum_{i \le j} P_{i} \cdot W_{i}}{\sum_{i \le j} W_{i}}
@@ -37,12 +37,12 @@ S_{j} \approx \frac{P_{j} \cdot W_{j} + S_{j-1} \cdot \left(D - W_{j}\right)}{D}
 $$
 
 $$
-S_{j} \approx \alpha_{j} \cdot P_{j} + (1 - \alpha) S_{j-1}
+S_{j} \approx \alpha_{j} \cdot P_{j} + (1 - \alpha_{j}) \cdot S_{j-1}
 $$
 
 where:
 - $S_{j}$ is the moving average at time of measurement $j$
-- $\alpha_{j} = \frac{W_{j}}{D} = \frac{W_{j}}{24 hrs}$ is the relative weight of the current observation over the last 24 hours at time of measurment $j$
+- $\alpha_{j} = \frac{W_{j}}{D}$ is the relative weight of the current observation over the last $D$ interval at time of measurment $j$
 
 
 ## Risk Mitigation
