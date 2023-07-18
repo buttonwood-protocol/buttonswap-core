@@ -35,7 +35,7 @@ $$
 
 $$
 swappableReservoir = \begin{cases}
-A_{L} \cdot \frac{W - \Delta t}{W} + \frac{p_{0L}}{p_{1L}} \cdot \frac{\Delta t}{W} & \Delta t \gt W
+A_{L} \cdot \frac{W - \Delta t}{W} + \frac{p_{0L}}{p_{1L}} \cdot \frac{\Delta t}{W} & \Delta t \le W
 \\
 \frac{p_{0L}}{p_{1L}} & otherwise
 \end{cases}
