@@ -130,7 +130,6 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
 
     /**
      * @notice Returns the default value of `movingAverageWindow` used for new pairs.
-     * @notice Returns the default value of `movingAverageWindow` used for new pairs.
      * @return _defaultMovingAverageWindow The `defaultMovingAverageWindow` value
      */
     function defaultMovingAverageWindow() external view returns (uint32 _defaultMovingAverageWindow);
