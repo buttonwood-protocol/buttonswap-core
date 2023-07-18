@@ -19,5 +19,9 @@ t_{diff} = swappableReservoirLimitReachesMaxDeadline - block.timestamp
 $$
 
 $$
-swappableReservoir = \begin{cases} M & t_{diff} \le 0 \\ M \cdot \frac{W - t_{diff}}{W} & \text{otherwise} \end{cases}
+swappableReservoir = \begin{cases}
+M & t_{diff} \le 0
+\\
+M \cdot \frac{W - t_{diff}}{W} & \text{otherwise}
+\end{cases}
 $$

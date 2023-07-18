@@ -67,7 +67,7 @@ If the new timestamp exceeds the current stored value then update it to the new 
 This ensures that the TWAP is fairly stable before being used, giving users the opportunity to trade against it if it's thought to not be representative of market value.
 This has the effect of reducing the impact of the TWAP lagging behind live price.
 
-### Chunking
+### Swappable Reservoir Limit
 
 This is a mechanism that limits how much of the reservoir can be used in a single sided operation.
 In an extreme scenario we can imagine the reservoir being larger than the active liquidity.

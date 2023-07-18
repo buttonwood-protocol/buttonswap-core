@@ -35,10 +35,8 @@ $$
 
 $$
 swappableReservoir = \begin{cases}
-A_{L} & t = t_{L}
+A_{L} \cdot \frac{W - \Delta t}{W} + \frac{p_{0L}}{p_{1L}} \cdot \frac{\Delta t}{W} & \Delta t \gt W
 \\
-\frac{p_{0L}}{p_{1L}} & t - t_{L} \ge W
-\\
-A_{L} \cdot \frac{W - \Delta t}{W} + \frac{p_{0L}}{p_{1L}} \cdot \frac{\Delta t}{W} & \text{otherwise}
+\frac{p_{0L}}{p_{1L}} & otherwise
 \end{cases}
 $$
