@@ -14,6 +14,7 @@ All four of these values are updated on each swap.
 ### Q112x112 Format
 
 Since `movingAveragePrice0Last` is in Q112x112 format, that means:
+
 $$
 \texttt{Price of token0 in terms of token1} = \frac{movingAveragePrice0Last}{2^{112}}
 $$
