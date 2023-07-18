@@ -173,20 +173,20 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     /**
      * @notice Updates the default parameters used for new pairs.
      * This can only be called by the `paramSetter` address.
-     * @param _defaultMovingAverageWindow The new defaultMovingAverageWindow
-     * @param _defaultMaxVolatilityBps The new defaultMaxVolatilityBps
-     * @param _defaultMinTimelockDuration The new defaultMinTimelockDuration
-     * @param _defaultMaxTimelockDuration The new defaultMaxTimelockDuration
-     * @param _defaultMaxSwappableReservoirLimitBps The new defaultMaxSwappableReservoirLimitBps
-     * @param _defaultSwappableReservoirGrowthWindow The new defaultSwappableReservoirGrowthWindow
+     * @param newDefaultMovingAverageWindow The new defaultMovingAverageWindow
+     * @param newDefaultMaxVolatilityBps The new defaultMaxVolatilityBps
+     * @param newDefaultMinTimelockDuration The new defaultMinTimelockDuration
+     * @param newDefaultMaxTimelockDuration The new defaultMaxTimelockDuration
+     * @param newDefaultMaxSwappableReservoirLimitBps The new defaultMaxSwappableReservoirLimitBps
+     * @param newDefaultSwappableReservoirGrowthWindow The new defaultSwappableReservoirGrowthWindow
      */
     function setDefaultParameters(
-        uint32 _defaultMovingAverageWindow,
-        uint16 _defaultMaxVolatilityBps,
-        uint32 _defaultMinTimelockDuration,
-        uint32 _defaultMaxTimelockDuration,
-        uint16 _defaultMaxSwappableReservoirLimitBps,
-        uint32 _defaultSwappableReservoirGrowthWindow
+        uint32 newDefaultMovingAverageWindow,
+        uint16 newDefaultMaxVolatilityBps,
+        uint32 newDefaultMinTimelockDuration,
+        uint32 newDefaultMaxTimelockDuration,
+        uint16 newDefaultMaxSwappableReservoirLimitBps,
+        uint32 newDefaultSwappableReservoirGrowthWindow
     ) external;
 
     /**
