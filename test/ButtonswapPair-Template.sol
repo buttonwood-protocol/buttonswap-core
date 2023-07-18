@@ -1624,10 +1624,7 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(vars.pair.totalSupply(), expectedTotalSupply);
     }
 
-    function test_burn_CannotCallWithInsufficientLiquidityBurned(
-        uint256 mintAmount0,
-        uint256 mintAmount1
-    ) public {
+    function test_burn_CannotCallWithInsufficientLiquidityBurned(uint256 mintAmount0, uint256 mintAmount1) public {
         // Make sure the amounts aren't liable to overflow 2**112
         vm.assume(mintAmount0 < (2 ** 112) / 2);
         vm.assume(mintAmount1 < (2 ** 112) / 2);
