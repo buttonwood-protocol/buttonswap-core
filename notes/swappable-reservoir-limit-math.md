@@ -7,6 +7,7 @@
 
 ## Behavior
 First we calculate the maximum swappable reservoir amount ever allowed to be exchanged, `maxSwappableReservoirLimit`:
+
 $$
 M = poolA \cdot \frac{maxSwappableReservoirLimitBps}{10000}
 $$

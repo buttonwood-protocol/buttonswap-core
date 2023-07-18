@@ -13,9 +13,11 @@ On every swap, a price delta is calculated from the current movingAveragePrice0.
 $$
 \Delta Price = |newPrice - movingAveragePrice|
 $$
+
 $$
 TimelockRange = (maxTimeLockDuration - minTimeLockDuration)
 $$
+
 $$
 \Delta T = \frac{\Delta Price}{movingAveragePrice \cdot maxVolatilityPercent} \cdot TimelockRange
 $$
