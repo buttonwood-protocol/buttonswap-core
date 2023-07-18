@@ -58,7 +58,7 @@ contract ButtonswapFactory is IButtonswapFactory {
     /**
      * @inheritdoc IButtonswapFactory
      */
-    uint16 public defaultMaxSwappableReservoirLimitBps = 1000;
+    uint16 public defaultMaxSwappableReservoirLimitBps = 500;
 
     /**
      * @inheritdoc IButtonswapFactory
