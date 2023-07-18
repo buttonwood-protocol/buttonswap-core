@@ -26,9 +26,9 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the movingAverageWindow parameter of the pair.
      * This can only be called by the Factory address.
-     * @param _movingAverageWindow The new value for movingAverageWindow
+     * @param newMovingAverageWindow The new value for movingAverageWindow
      */
-    function setMovingAverageWindow(uint32 _movingAverageWindow) external;
+    function setMovingAverageWindow(uint32 newMovingAverageWindow) external;
 
     /**
      * @notice Numerator (over 10_000) of the threshold when price volatility triggers maximum single-sided timelock duration.
@@ -39,9 +39,9 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the maxVolatilityBps parameter of the pair.
      * This can only be called by the Factory address.
-     * @param _maxVolatilityBps The new value for maxVolatilityBps
+     * @param newMaxVolatilityBps The new value for maxVolatilityBps
      */
-    function setMaxVolatilityBps(uint16 _maxVolatilityBps) external;
+    function setMaxVolatilityBps(uint16 newMaxVolatilityBps) external;
 
     /**
      * @notice How long the minimum singled-sided timelock lasts for.
@@ -52,9 +52,9 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the minTimelockDuration parameter of the pair.
      * This can only be called by the Factory address.
-     * @param _minTimelockDuration The new value for minTimelockDuration
+     * @param newMinTimelockDuration The new value for minTimelockDuration
      */
-    function setMinTimelockDuration(uint32 _minTimelockDuration) external;
+    function setMinTimelockDuration(uint32 newMinTimelockDuration) external;
 
     /**
      * @notice How long the maximum singled-sided timelock lasts for.
@@ -65,9 +65,9 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the maxTimelockDuration parameter of the pair.
      * This can only be called by the Factory address.
-     * @param _maxTimelockDuration The new value for maxTimelockDuration
+     * @param newMaxTimelockDuration The new value for maxTimelockDuration
      */
-    function setMaxTimelockDuration(uint32 _maxTimelockDuration) external;
+    function setMaxTimelockDuration(uint32 newMaxTimelockDuration) external;
 
     /**
      * @notice Numerator (over 10_000) of the fraction of the pool balance that acts as the maximum limit on how much of the reservoir
@@ -79,9 +79,9 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the maxSwappableReservoirLimitBps parameter of the pair.
      * This can only be called by the Factory address.
-     * @param _maxSwappableReservoirLimitBps The new value for maxSwappableReservoirLimitBps
+     * @param newMaxSwappableReservoirLimitBps The new value for maxSwappableReservoirLimitBps
      */
-    function setMaxSwappableReservoirLimitBps(uint16 _maxSwappableReservoirLimitBps) external;
+    function setMaxSwappableReservoirLimitBps(uint16 newMaxSwappableReservoirLimitBps) external;
 
     /**
      * @notice How much time it takes for the swappable reservoir value to grow from nothing to its maximum value.
@@ -92,9 +92,9 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the swappableReservoirGrowthWindow parameter of the pair.
      * This can only be called by the Factory address.
-     * @param _swappableReservoirGrowthWindow The new value for swappableReservoirGrowthWindow
+     * @param newSwappableReservoirGrowthWindow The new value for swappableReservoirGrowthWindow
      */
-    function setSwappableReservoirGrowthWindow(uint32 _swappableReservoirGrowthWindow) external;
+    function setSwappableReservoirGrowthWindow(uint32 newSwappableReservoirGrowthWindow) external;
 
     /**
      * @notice The address of the {ButtonswapFactory} instance used to create this Pair.

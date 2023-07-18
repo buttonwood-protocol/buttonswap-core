@@ -4032,6 +4032,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
 
         vm.prank(address(vars.factory));
+        vm.expectEmit(true, true, true, true);
+        emit MovingAverageWindowUpdated(newMovingAverageWindow);
         vars.pair.setMovingAverageWindow(newMovingAverageWindow);
         assertEq(
             vars.pair.movingAverageWindow(), newMovingAverageWindow, "movingAverageWindow value should match new one."
@@ -4069,6 +4071,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
 
         vm.prank(address(vars.factory));
+        vm.expectEmit(true, true, true, true);
+        emit MaxVolatilityBpsUpdated(newMaxVolatilityBps);
         vars.pair.setMaxVolatilityBps(newMaxVolatilityBps);
         assertEq(vars.pair.maxVolatilityBps(), newMaxVolatilityBps, "maxVolatilityBps value should match new one.");
     }
@@ -4102,6 +4106,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
 
         vm.prank(address(vars.factory));
+        vm.expectEmit(true, true, true, true);
+        emit MinTimelockDurationUpdated(newMinTimelockDuration);
         vars.pair.setMinTimelockDuration(newMinTimelockDuration);
         assertEq(
             vars.pair.minTimelockDuration(), newMinTimelockDuration, "minTimelockDuration value should match new one."
@@ -4139,6 +4145,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
 
         vm.prank(address(vars.factory));
+        vm.expectEmit(true, true, true, true);
+        emit MaxTimelockDurationUpdated(newMaxTimelockDuration);
         vars.pair.setMaxTimelockDuration(newMaxTimelockDuration);
         assertEq(
             vars.pair.maxTimelockDuration(), newMaxTimelockDuration, "maxTimelockDuration value should match new one."
@@ -4176,6 +4184,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
 
         vm.prank(address(vars.factory));
+        vm.expectEmit(true, true, true, true);
+        emit MaxSwappableReservoirLimitBpsUpdated(newMaxSwappableReservoirLimitBps);
         vars.pair.setMaxSwappableReservoirLimitBps(newMaxSwappableReservoirLimitBps);
         assertEq(
             vars.pair.maxSwappableReservoirLimitBps(),
@@ -4216,6 +4226,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
 
         vm.prank(address(vars.factory));
+        vm.expectEmit(true, true, true, true);
+        emit SwappableReservoirGrowthWindowUpdated(newSwappableReservoirGrowthWindow);
         vars.pair.setSwappableReservoirGrowthWindow(newSwappableReservoirGrowthWindow);
         assertEq(
             vars.pair.swappableReservoirGrowthWindow(),

@@ -653,6 +653,16 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter, initialParamSetter);
 
         vm.prank(initialParamSetter);
+        vm.expectEmit(true, true, true, true);
+        emit DefaultParametersUpdated(
+            initialParamSetter,
+            newDefaultMovingAverageWindow,
+            newDefaultMaxVolatilityBps,
+            newDefaultMinTimelockDuration,
+            newDefaultMaxTimelockDuration,
+            newDefaultMaxSwappableReservoirLimitBps,
+            newDefaultSwappableReservoirGrowthWindow
+        );
         buttonswapFactory.setDefaultParameters(
             newDefaultMovingAverageWindow,
             newDefaultMaxVolatilityBps,

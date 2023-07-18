@@ -43,4 +43,40 @@ interface IButtonswapPairEvents is IButtonswapERC20Events {
         uint256 amount1Out,
         address indexed to
     );
+
+    /**
+     * @notice Emitted when the movingAverageWindow parameter for the pair has been updated.
+     * @param newMovingAverageWindow The new movingAverageWindow value
+     */
+    event MovingAverageWindowUpdated(uint32 newMovingAverageWindow);
+
+    /**
+     * @notice Emitted when the maxVolatilityBps parameter for the pair has been updated.
+     * @param newMaxVolatilityBps The new maxVolatilityBps value
+     */
+    event MaxVolatilityBpsUpdated(uint16 newMaxVolatilityBps);
+
+    /**
+     * @notice Emitted when the minTimelockDuration parameter for the pair has been updated.
+     * @param newMinTimelockDuration The new minTimelockDuration value
+     */
+    event MinTimelockDurationUpdated(uint32 newMinTimelockDuration);
+
+    /**
+     * @notice Emitted when the maxTimelockDuration parameter for the pair has been updated.
+     * @param newMaxTimelockDuration The new maxTimelockDuration value
+     */
+    event MaxTimelockDurationUpdated(uint32 newMaxTimelockDuration);
+
+    /**
+     * @notice Emitted when the maxSwappableReservoirLimitBps parameter for the pair has been updated.
+     * @param newMaxSwappableReservoirLimitBps The new maxSwappableReservoirLimitBps value
+     */
+    event MaxSwappableReservoirLimitBpsUpdated(uint16 newMaxSwappableReservoirLimitBps);
+
+    /**
+     * @notice Emitted when the swappableReservoirGrowthWindow parameter for the pair has been updated.
+     * @param newSwappableReservoirGrowthWindow The new swappableReservoirGrowthWindow value
+     */
+    event SwappableReservoirGrowthWindowUpdated(uint32 newSwappableReservoirGrowthWindow);
 }
