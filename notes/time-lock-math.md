@@ -22,4 +22,8 @@ $$
 \Delta T = \frac{\Delta Price}{movingAveragePrice \cdot maxVolatilityPercent} \cdot TimelockRange
 $$
 
-If $block.timestamp + \Delta T$ exceeds the current timelockDeadline, it replaces it. Otherwise, the same previous deadline holds.
+If $block.timestamp + \Delta T$ exceeds the current timelockDeadline, it replaces it. Otherwise, the same previous deadline holds:
+
+$$
+timelockDeadline = max(timelockDeadline, currentTimestamp + \Delta T)
+$$
