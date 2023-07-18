@@ -218,22 +218,31 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @inheritdoc IButtonswapFactory
      */
     function setDefaultParameters(
-        uint32 _defaultMovingAverageWindow,
-        uint16 _defaultMaxVolatilityBps,
-        uint32 _defaultMinTimelockDuration,
-        uint32 _defaultMaxTimelockDuration,
-        uint16 _defaultMaxSwappableReservoirLimitBps,
-        uint32 _defaultSwappableReservoirGrowthWindow
+        uint32 newDefaultMovingAverageWindow,
+        uint16 newDefaultMaxVolatilityBps,
+        uint32 newDefaultMinTimelockDuration,
+        uint32 newDefaultMaxTimelockDuration,
+        uint16 newDefaultMaxSwappableReservoirLimitBps,
+        uint32 newDefaultSwappableReservoirGrowthWindow
     ) external {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
-        defaultMovingAverageWindow = _defaultMovingAverageWindow;
-        defaultMaxVolatilityBps = _defaultMaxVolatilityBps;
-        defaultMinTimelockDuration = _defaultMinTimelockDuration;
-        defaultMaxTimelockDuration = _defaultMaxTimelockDuration;
-        defaultMaxSwappableReservoirLimitBps = _defaultMaxSwappableReservoirLimitBps;
-        defaultSwappableReservoirGrowthWindow = _defaultSwappableReservoirGrowthWindow;
+        defaultMovingAverageWindow = newDefaultMovingAverageWindow;
+        defaultMaxVolatilityBps = newDefaultMaxVolatilityBps;
+        defaultMinTimelockDuration = newDefaultMinTimelockDuration;
+        defaultMaxTimelockDuration = newDefaultMaxTimelockDuration;
+        defaultMaxSwappableReservoirLimitBps = newDefaultMaxSwappableReservoirLimitBps;
+        defaultSwappableReservoirGrowthWindow = newDefaultSwappableReservoirGrowthWindow;
+        emit DefaultParametersUpdated(
+            paramSetter,
+            newDefaultMovingAverageWindow,
+            newDefaultMaxVolatilityBps,
+            newDefaultMinTimelockDuration,
+            newDefaultMaxTimelockDuration,
+            newDefaultMaxSwappableReservoirLimitBps,
+            newDefaultSwappableReservoirGrowthWindow
+        );
     }
 
     /**
