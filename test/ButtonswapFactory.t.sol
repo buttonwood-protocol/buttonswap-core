@@ -714,6 +714,57 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         );
     }
 
+    function test_setMovingAverageWindow(
+        address initialParamSetter,
+        address tokenA,
+        address tokenB,
+        uint32 newMovingAverageWindow
+    ) public {
+        address initialFeeToSetter = address(0);
+        address initialIsCreationRestrictedSetter = address(0);
+        address initialIsPausedSetter = address(0);
+
+        vm.assume(tokenA != tokenB && tokenA != address(0) && tokenB != address(0));
+        ButtonswapFactory buttonswapFactory =
+        new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter, initialParamSetter);
+        address pairAddress = buttonswapFactory.createPair(tokenA, tokenB);
+        address[] memory pairAddresses = new address[](1);
+        pairAddresses[0] = pairAddress;
+
+        vm.startPrank(initialParamSetter);
+        buttonswapFactory.setMovingAverageWindow(pairAddresses, newMovingAverageWindow);
+        assertEq(
+            IButtonswapPair(pairAddress).movingAverageWindow(),
+            newMovingAverageWindow,
+            "movingAverageWindow should have updated"
+        );
+        vm.stopPrank();
+    }
+
+    function test_setMovingAverageWindow_CannotCallIfNotParamSetter(
+        address initialParamSetter,
+        address setMovingAverageCaller,
+        address tokenA,
+        address tokenB,
+        uint32 newMovingAverageWindow
+    ) public {
+        vm.assume(setMovingAverageCaller != initialParamSetter);
+        address initialFeeToSetter = address(0);
+        address initialIsCreationRestrictedSetter = address(0);
+        address initialIsPausedSetter = address(0);
+
+        vm.assume(tokenA != tokenB && tokenA != address(0) && tokenB != address(0));
+        ButtonswapFactory buttonswapFactory =
+        new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter, initialParamSetter);
+        address pairAddress = buttonswapFactory.createPair(tokenA, tokenB);
+        address[] memory pairAddresses = new address[](1);
+        pairAddresses[0] = pairAddress;
+
+        vm.prank(setMovingAverageCaller);
+        vm.expectRevert(Forbidden.selector);
+        buttonswapFactory.setMovingAverageWindow(pairAddresses, newMovingAverageWindow);
+    }
+
     function test_setMaxVolatilityBps(
         address initialParamSetter,
         address tokenA,

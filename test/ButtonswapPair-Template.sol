@@ -1624,15 +1624,10 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         assertEq(vars.pair.totalSupply(), expectedTotalSupply);
     }
 
-    function test_burn_CannotCallWithInsufficientLiquidityBurned(
-        uint256 mintAmount0,
-        uint256 mintAmount1,
-        uint256 burnAmount
-    ) public {
+    function test_burn_CannotCallWithInsufficientLiquidityBurned(uint256 mintAmount0, uint256 mintAmount1) public {
         // Make sure the amounts aren't liable to overflow 2**112
         vm.assume(mintAmount0 < (2 ** 112) / 2);
         vm.assume(mintAmount1 < (2 ** 112) / 2);
-        vm.assume(burnAmount < (2 ** 112) / 2);
         // Amounts must be non-zero, and must exceed minimum liquidity
         vm.assume(mintAmount0 > 1000);
         vm.assume(mintAmount1 > 1000);
@@ -1658,23 +1653,10 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vars.pair.mint(mintAmount0, mintAmount1, vars.minter1);
         vm.stopPrank();
 
-        // burnAmount must not exceed amount of liquidity tokens minter has
-        vm.assume(burnAmount <= vars.pair.balanceOf(vars.minter1));
-        // Calculate expected values to assert against
-        (vars.pool0, vars.pool1, vars.reservoir0, vars.reservoir1,) = vars.pair.getLiquidityBalances();
-        (uint256 expectedAmount0, uint256 expectedAmount1) = PairMath.getDualSidedBurnOutputAmounts(
-            vars.pair.totalSupply(),
-            burnAmount,
-            vars.token0.balanceOf(address(vars.pair)),
-            vars.token1.balanceOf(address(vars.pair))
-        );
-        // Target edge cases where one or both expected amounts are zero
-        vm.assume(expectedAmount0 == 0 || expectedAmount1 == 0);
-
         // Attempt burn
         vm.startPrank(vars.minter1);
         vm.expectRevert(InsufficientLiquidityBurned.selector);
-        vars.pair.burn(burnAmount, vars.receiver);
+        vars.pair.burn(0, vars.receiver);
         vm.stopPrank();
     }
 
@@ -4039,6 +4021,43 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.stopPrank();
 
         assertEq(vars.pair.balanceOf(vars.minter1), 0, "Minter1 should have no LP tokens left");
+    }
+
+    function test_setMovingAverageWindow(uint32 newMovingAverageWindow) public {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+
+        vm.prank(address(vars.factory));
+        vars.pair.setMovingAverageWindow(newMovingAverageWindow);
+        assertEq(
+            vars.pair.movingAverageWindow(), newMovingAverageWindow, "movingAverageWindow value should match new one."
+        );
+    }
+
+    function test_setMovingAverageWindow_CannotCallFromNonFactoryAddress(address caller, uint32 newMovingAverageWindow)
+        public
+    {
+        // Setup
+        TestVariables memory vars;
+        vars.permissionSetter = userA;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.createPair(address(tokenA), address(tokenB)));
+        uint32 initialMovingAverageWindow = vars.pair.movingAverageWindow();
+
+        // Ensure caller is not the factory
+        vm.assume(caller != address(vars.factory));
+
+        vm.prank(caller);
+        vm.expectRevert(Forbidden.selector);
+        vars.pair.setMovingAverageWindow(newMovingAverageWindow);
+        assertEq(
+            vars.pair.movingAverageWindow(),
+            initialMovingAverageWindow,
+            "movingAverageWindow values should match initial one."
+        );
     }
 
     function test_setMaxVolatilityBps(uint16 newMaxVolatilityBps) public {
