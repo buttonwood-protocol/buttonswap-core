@@ -593,15 +593,15 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         sendOrRefundFee
         returns (uint256 amountOut0, uint256 amountOut1)
     {
+        if (liquidityIn == 0) {
+            revert InsufficientLiquidityBurned();
+        }
         uint256 _totalSupply = totalSupply;
         uint256 total0 = IERC20(token0).balanceOf(address(this));
         uint256 total1 = IERC20(token1).balanceOf(address(this));
 
         (amountOut0, amountOut1) = PairMath.getDualSidedBurnOutputAmounts(_totalSupply, liquidityIn, total0, total1);
 
-        if (amountOut0 == 0 || amountOut1 == 0) {
-            revert InsufficientLiquidityBurned();
-        }
         _burn(msg.sender, liquidityIn);
         SafeERC20.safeTransfer(IERC20(token0), to, amountOut0);
         SafeERC20.safeTransfer(IERC20(token1), to, amountOut1);
