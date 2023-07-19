@@ -790,6 +790,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      * @inheritdoc IButtonswapPair
      */
     function setMinTimelockDuration(uint32 newMinTimelockDuration) external onlyFactory {
+        singleSidedTimelockDeadline =
+            uint120(Math.max(block.timestamp + uint256(minTimelockDuration), uint256(singleSidedTimelockDeadline)));
         minTimelockDuration = newMinTimelockDuration;
         emit MinTimelockDurationUpdated(newMinTimelockDuration);
     }
@@ -798,6 +800,8 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      * @inheritdoc IButtonswapPair
      */
     function setMaxTimelockDuration(uint32 newMaxTimelockDuration) external onlyFactory {
+        singleSidedTimelockDeadline =
+            uint120(Math.min(block.timestamp + uint256(newMaxTimelockDuration), uint256(singleSidedTimelockDeadline)));
         maxTimelockDuration = newMaxTimelockDuration;
         emit MaxTimelockDurationUpdated(newMaxTimelockDuration);
     }
@@ -814,6 +818,17 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      * @inheritdoc IButtonswapPair
      */
     function setSwappableReservoirGrowthWindow(uint32 newSwappableReservoirGrowthWindow) external onlyFactory {
+        uint256 oldSwappableReservoirLimitReachesMaxDeadline = uint256(swappableReservoirLimitReachesMaxDeadline);
+        if (oldSwappableReservoirLimitReachesMaxDeadline > block.timestamp) {
+            swappableReservoirLimitReachesMaxDeadline = uint120(
+                block.timestamp
+                    + (
+                        uint256(newSwappableReservoirGrowthWindow)
+                            * ((oldSwappableReservoirLimitReachesMaxDeadline - block.timestamp))
+                            / uint256(swappableReservoirGrowthWindow)
+                    )
+            );
+        }
         swappableReservoirGrowthWindow = newSwappableReservoirGrowthWindow;
         emit SwappableReservoirGrowthWindowUpdated(newSwappableReservoirGrowthWindow);
     }

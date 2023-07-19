@@ -26,6 +26,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the movingAverageWindow parameter of the pair.
      * This can only be called by the Factory address.
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#movingaveragewindow) for more detail.
      * @param newMovingAverageWindow The new value for movingAverageWindow
      */
     function setMovingAverageWindow(uint32 newMovingAverageWindow) external;
@@ -39,6 +40,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the maxVolatilityBps parameter of the pair.
      * This can only be called by the Factory address.
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#maxvolatilitybps) for more detail.
      * @param newMaxVolatilityBps The new value for maxVolatilityBps
      */
     function setMaxVolatilityBps(uint16 newMaxVolatilityBps) external;
@@ -52,6 +54,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the minTimelockDuration parameter of the pair.
      * This can only be called by the Factory address.
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#mintimelockduration) for more detail.
      * @param newMinTimelockDuration The new value for minTimelockDuration
      */
     function setMinTimelockDuration(uint32 newMinTimelockDuration) external;
@@ -65,6 +68,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the maxTimelockDuration parameter of the pair.
      * This can only be called by the Factory address.
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#maxtimelockduration) for more detail.
      * @param newMaxTimelockDuration The new value for maxTimelockDuration
      */
     function setMaxTimelockDuration(uint32 newMaxTimelockDuration) external;
@@ -79,6 +83,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the maxSwappableReservoirLimitBps parameter of the pair.
      * This can only be called by the Factory address.
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#maxswappablereservoirlimitbps) for more detail.
      * @param newMaxSwappableReservoirLimitBps The new value for maxSwappableReservoirLimitBps
      */
     function setMaxSwappableReservoirLimitBps(uint16 newMaxSwappableReservoirLimitBps) external;
@@ -92,6 +97,7 @@ interface IButtonswapPair is IButtonswapPairErrors, IButtonswapPairEvents, IButt
     /**
      * @notice Updates the swappableReservoirGrowthWindow parameter of the pair.
      * This can only be called by the Factory address.
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#swappablereservoirgrowthwindow) for more detail.
      * @param newSwappableReservoirGrowthWindow The new value for swappableReservoirGrowthWindow
      */
     function setSwappableReservoirGrowthWindow(uint32 newSwappableReservoirGrowthWindow) external;

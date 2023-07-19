@@ -8,6 +8,10 @@ library Math {
         z = x < y ? x : y;
     }
 
+    function max(uint256 x, uint256 y) internal pure returns (uint256 z) {
+        z = x > y ? x : y;
+    }
+
     // Borrowed implementation from solmate
     // https://github.com/transmissions11/solmate/blob/2001af43aedb46fdc2335d2a7714fb2dae7cfcd1/src/utils/FixedPointMathLib.sol#L164
     function sqrt(uint256 x) internal pure returns (uint256 z) {
