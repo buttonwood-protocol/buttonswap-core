@@ -24,10 +24,16 @@ jobs:
         with:
           version: nightly
 
-      - name: Run Forge build
+      - name: Production contracts are within size limits
         run: |
           forge --version
-          forge build --sizes
+          forge build --sizes --skip */test/** --skip */script/**
+        id: build
+
+      - name: All contracts build successfully
+        run: |
+          forge --version
+          forge build
         id: build
 
       - name: Run Forge tests (excluding known issues)
