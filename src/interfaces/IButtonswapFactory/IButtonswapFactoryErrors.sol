@@ -21,4 +21,9 @@ interface IButtonswapFactoryErrors {
      * @notice User does not have permission for the attempted operation
      */
     error Forbidden();
+
+    /**
+     * @notice There was an attempt to update a parameter to an invalid value
+     */
+    error InvalidParameter();
 }

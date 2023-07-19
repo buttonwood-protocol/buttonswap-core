@@ -36,6 +36,16 @@ contract ButtonswapFactory is IButtonswapFactory {
     address public paramSetter;
 
     /**
+     * @dev The upper limit on what duration parameters can be set to.
+     */
+    uint32 public constant MAX_DURATION_BOUND = 12 weeks;
+
+    /**
+     * @dev The upper limit on what BPS denominated parameters can be set to.
+     */
+    uint16 public constant MAX_BPS_BOUND = 10_000;
+
+    /**
      * @inheritdoc IButtonswapFactory
      */
     uint32 public defaultMovingAverageWindow = 24 hours;
@@ -215,6 +225,60 @@ contract ButtonswapFactory is IButtonswapFactory {
     }
 
     /**
+     * @dev `movingAverageWindow` must be in interval [0, MAX_DURATION_BOUND]
+     */
+    function _validateNewMovingAverageWindow(uint32 newMovingAverageWindow) internal pure {
+        if (newMovingAverageWindow > MAX_DURATION_BOUND) {
+            revert InvalidParameter();
+        }
+    }
+
+    /**
+     * @dev `maxVolatilityBps` must be in interval [0, MAX_BPS_BOUND]
+     */
+    function _validateNewMaxVolatilityBps(uint16 newMaxVolatilityBps) internal pure {
+        if (newMaxVolatilityBps > MAX_BPS_BOUND) {
+            revert InvalidParameter();
+        }
+    }
+
+    /**
+     * @dev `minTimelockDuration` must be in interval [0, MAX_DURATION_BOUND]
+     */
+    function _validateNewMinTimelockDuration(uint32 newMinTimelockDuration) internal pure {
+        if (newMinTimelockDuration > MAX_DURATION_BOUND) {
+            revert InvalidParameter();
+        }
+    }
+
+    /**
+     * @dev `maxTimelockDuration` must be in interval [0, MAX_DURATION_BOUND]
+     */
+    function _validateNewMaxTimelockDuration(uint32 newMaxTimelockDuration) internal pure {
+        if (newMaxTimelockDuration > MAX_DURATION_BOUND) {
+            revert InvalidParameter();
+        }
+    }
+
+    /**
+     * @dev `maxSwappableReservoirLimitBps` must be in interval [0, MAX_BPS_BOUND]
+     */
+    function _validateNewMaxSwappableReservoirLimitBps(uint32 newMaxSwappableReservoirLimitBps) internal pure {
+        if (newMaxSwappableReservoirLimitBps > MAX_BPS_BOUND) {
+            revert InvalidParameter();
+        }
+    }
+
+    /**
+     * @dev `swappableReservoirGrowthWindow` must be in interval [0, MAX_DURATION_BOUND]
+     */
+    function _validateNewSwappableReservoirGrowthWindow(uint32 newSwappableReservoirGrowthWindow) internal pure {
+        if (newSwappableReservoirGrowthWindow > MAX_DURATION_BOUND) {
+            revert InvalidParameter();
+        }
+    }
+
+    /**
      * @inheritdoc IButtonswapFactory
      */
     function setDefaultParameters(
@@ -228,6 +292,12 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
+        _validateNewMovingAverageWindow(newDefaultMovingAverageWindow);
+        _validateNewMaxVolatilityBps(newDefaultMaxVolatilityBps);
+        _validateNewMinTimelockDuration(newDefaultMinTimelockDuration);
+        _validateNewMaxTimelockDuration(newDefaultMaxTimelockDuration);
+        _validateNewMaxSwappableReservoirLimitBps(newDefaultMaxSwappableReservoirLimitBps);
+        _validateNewSwappableReservoirGrowthWindow(newDefaultSwappableReservoirGrowthWindow);
         defaultMovingAverageWindow = newDefaultMovingAverageWindow;
         defaultMaxVolatilityBps = newDefaultMaxVolatilityBps;
         defaultMinTimelockDuration = newDefaultMinTimelockDuration;
@@ -252,6 +322,7 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
+        _validateNewMovingAverageWindow(newMovingAverageWindow);
         uint256 length = pairs.length;
         for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setMovingAverageWindow(newMovingAverageWindow);
@@ -265,6 +336,7 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
+        _validateNewMaxVolatilityBps(newMaxVolatilityBps);
         uint256 length = pairs.length;
         for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setMaxVolatilityBps(newMaxVolatilityBps);
@@ -278,6 +350,7 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
+        _validateNewMinTimelockDuration(newMinTimelockDuration);
         uint256 length = pairs.length;
         for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setMinTimelockDuration(newMinTimelockDuration);
@@ -291,6 +364,7 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
+        _validateNewMaxTimelockDuration(newMaxTimelockDuration);
         uint256 length = pairs.length;
         for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setMaxTimelockDuration(newMaxTimelockDuration);
@@ -306,6 +380,7 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
+        _validateNewMaxSwappableReservoirLimitBps(newMaxSwappableReservoirLimitBps);
         uint256 length = pairs.length;
         for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setMaxSwappableReservoirLimitBps(newMaxSwappableReservoirLimitBps);
@@ -321,6 +396,7 @@ contract ButtonswapFactory is IButtonswapFactory {
         if (msg.sender != paramSetter) {
             revert Forbidden();
         }
+        _validateNewSwappableReservoirGrowthWindow(newSwappableReservoirGrowthWindow);
         uint256 length = pairs.length;
         for (uint256 i; i < length; ++i) {
             IButtonswapPair(pairs[i]).setSwappableReservoirGrowthWindow(newSwappableReservoirGrowthWindow);
