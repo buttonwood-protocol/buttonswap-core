@@ -652,8 +652,13 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         ButtonswapFactory buttonswapFactory =
         new ButtonswapFactory(initialFeeToSetter, initialIsCreationRestrictedSetter, initialIsPausedSetter, initialParamSetter);
 
-        newDefaultMovingAverageWindow =
-            uint32(bound(newDefaultMovingAverageWindow, 0, buttonswapFactory.MAX_DURATION_BOUND()));
+        newDefaultMovingAverageWindow = uint32(
+            bound(
+                newDefaultMovingAverageWindow,
+                buttonswapFactory.MIN_MOVING_AVERAGE_WINDOW_BOUND(),
+                buttonswapFactory.MAX_DURATION_BOUND()
+            )
+        );
         newDefaultMaxVolatilityBps = uint16(bound(newDefaultMaxVolatilityBps, 0, buttonswapFactory.MAX_BPS_BOUND()));
         newDefaultMinTimelockDuration =
             uint32(bound(newDefaultMinTimelockDuration, 0, buttonswapFactory.MAX_DURATION_BOUND()));
@@ -661,8 +666,13 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
             uint32(bound(newDefaultMaxTimelockDuration, 0, buttonswapFactory.MAX_DURATION_BOUND()));
         newDefaultMaxSwappableReservoirLimitBps =
             uint16(bound(newDefaultMaxSwappableReservoirLimitBps, 0, buttonswapFactory.MAX_BPS_BOUND()));
-        newDefaultSwappableReservoirGrowthWindow =
-            uint32(bound(newDefaultSwappableReservoirGrowthWindow, 0, buttonswapFactory.MAX_DURATION_BOUND()));
+        newDefaultSwappableReservoirGrowthWindow = uint32(
+            bound(
+                newDefaultSwappableReservoirGrowthWindow,
+                buttonswapFactory.MIN_SWAPPABLE_RESERVOIR_GROWTH_WINDOW_BOUND(),
+                buttonswapFactory.MAX_DURATION_BOUND()
+            )
+        );
 
         vm.prank(initialParamSetter);
         vm.expectEmit(true, true, true, true);
@@ -753,7 +763,13 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address[] memory pairAddresses = new address[](1);
         pairAddresses[0] = pairAddress;
 
-        newMovingAverageWindow = uint32(bound(newMovingAverageWindow, 0, buttonswapFactory.MAX_DURATION_BOUND()));
+        newMovingAverageWindow = uint32(
+            bound(
+                newMovingAverageWindow,
+                buttonswapFactory.MIN_MOVING_AVERAGE_WINDOW_BOUND(),
+                buttonswapFactory.MAX_DURATION_BOUND()
+            )
+        );
 
         vm.startPrank(initialParamSetter);
         buttonswapFactory.setMovingAverageWindow(pairAddresses, newMovingAverageWindow);
@@ -782,7 +798,10 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address[] memory pairAddresses = new address[](1);
         pairAddresses[0] = pairAddress;
 
-        vm.assume(newMovingAverageWindow > buttonswapFactory.MAX_DURATION_BOUND());
+        vm.assume(
+            newMovingAverageWindow < buttonswapFactory.MIN_MOVING_AVERAGE_WINDOW_BOUND()
+                || newMovingAverageWindow > buttonswapFactory.MAX_DURATION_BOUND()
+        );
 
         vm.prank(initialParamSetter);
         vm.expectRevert(InvalidParameter.selector);
@@ -1137,8 +1156,13 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address[] memory pairAddresses = new address[](1);
         pairAddresses[0] = pairAddress;
 
-        newSwappableReservoirGrowthWindow =
-            uint32(bound(newSwappableReservoirGrowthWindow, 0, buttonswapFactory.MAX_DURATION_BOUND()));
+        newSwappableReservoirGrowthWindow = uint32(
+            bound(
+                newSwappableReservoirGrowthWindow,
+                buttonswapFactory.MIN_SWAPPABLE_RESERVOIR_GROWTH_WINDOW_BOUND(),
+                buttonswapFactory.MAX_DURATION_BOUND()
+            )
+        );
 
         vm.startPrank(initialParamSetter);
         buttonswapFactory.setSwappableReservoirGrowthWindow(pairAddresses, newSwappableReservoirGrowthWindow);
@@ -1167,7 +1191,10 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address[] memory pairAddresses = new address[](1);
         pairAddresses[0] = pairAddress;
 
-        vm.assume(newSwappableReservoirGrowthWindow > buttonswapFactory.MAX_DURATION_BOUND());
+        vm.assume(
+            newSwappableReservoirGrowthWindow < buttonswapFactory.MIN_SWAPPABLE_RESERVOIR_GROWTH_WINDOW_BOUND()
+                || newSwappableReservoirGrowthWindow > buttonswapFactory.MAX_DURATION_BOUND()
+        );
 
         vm.prank(initialParamSetter);
         vm.expectRevert(InvalidParameter.selector);
@@ -1218,8 +1245,13 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         ButtonswapFactory buttonswapFactory =
             new ButtonswapFactory(address(0), address(0), address(0), initialParamSetter);
 
-        newDefaultMovingAverageWindow =
-            uint32(bound(newDefaultMovingAverageWindow, 0, buttonswapFactory.MAX_DURATION_BOUND()));
+        newDefaultMovingAverageWindow = uint32(
+            bound(
+                newDefaultMovingAverageWindow,
+                buttonswapFactory.MIN_MOVING_AVERAGE_WINDOW_BOUND(),
+                buttonswapFactory.MAX_DURATION_BOUND()
+            )
+        );
         newDefaultMaxVolatilityBps = uint16(bound(newDefaultMaxVolatilityBps, 0, buttonswapFactory.MAX_BPS_BOUND()));
         newDefaultMinTimelockDuration =
             uint32(bound(newDefaultMinTimelockDuration, 0, buttonswapFactory.MAX_DURATION_BOUND()));
@@ -1227,8 +1259,13 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
             uint32(bound(newDefaultMaxTimelockDuration, 0, buttonswapFactory.MAX_DURATION_BOUND()));
         newDefaultMaxSwappableReservoirLimitBps =
             uint16(bound(newDefaultMaxSwappableReservoirLimitBps, 0, buttonswapFactory.MAX_BPS_BOUND()));
-        newDefaultSwappableReservoirGrowthWindow =
-            uint32(bound(newDefaultSwappableReservoirGrowthWindow, 0, buttonswapFactory.MAX_DURATION_BOUND()));
+        newDefaultSwappableReservoirGrowthWindow = uint32(
+            bound(
+                newDefaultSwappableReservoirGrowthWindow,
+                buttonswapFactory.MIN_SWAPPABLE_RESERVOIR_GROWTH_WINDOW_BOUND(),
+                buttonswapFactory.MAX_DURATION_BOUND()
+            )
+        );
 
         // Setting up the new defaults
         vm.prank(initialParamSetter);

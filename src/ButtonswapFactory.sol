@@ -46,6 +46,16 @@ contract ButtonswapFactory is IButtonswapFactory {
     uint16 public constant MAX_BPS_BOUND = 10_000;
 
     /**
+     * @dev The lower limit on what the `movingAverageWindow` can be set to.
+     */
+    uint32 public constant MIN_MOVING_AVERAGE_WINDOW_BOUND = 1 seconds;
+
+    /**
+     * @dev The lower limit on what the `swappableReservoirGrowthWindow` can be set to.
+     */
+    uint32 public constant MIN_SWAPPABLE_RESERVOIR_GROWTH_WINDOW_BOUND = 1 seconds;
+
+    /**
      * @inheritdoc IButtonswapFactory
      */
     uint32 public defaultMovingAverageWindow = 24 hours;
@@ -225,16 +235,18 @@ contract ButtonswapFactory is IButtonswapFactory {
     }
 
     /**
-     * @dev `movingAverageWindow` must be in interval [0, MAX_DURATION_BOUND]
+     * @dev `movingAverageWindow` must be in interval [MIN_MOVING_AVERAGE_WINDOW_BOUND, MAX_DURATION_BOUND]
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#movingaveragewindow) for more detail.
      */
     function _validateNewMovingAverageWindow(uint32 newMovingAverageWindow) internal pure {
-        if (newMovingAverageWindow > MAX_DURATION_BOUND) {
+        if (newMovingAverageWindow < MIN_MOVING_AVERAGE_WINDOW_BOUND || newMovingAverageWindow > MAX_DURATION_BOUND) {
             revert InvalidParameter();
         }
     }
 
     /**
      * @dev `maxVolatilityBps` must be in interval [0, MAX_BPS_BOUND]
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#maxvolatilitybps) for more detail.
      */
     function _validateNewMaxVolatilityBps(uint16 newMaxVolatilityBps) internal pure {
         if (newMaxVolatilityBps > MAX_BPS_BOUND) {
@@ -244,6 +256,7 @@ contract ButtonswapFactory is IButtonswapFactory {
 
     /**
      * @dev `minTimelockDuration` must be in interval [0, MAX_DURATION_BOUND]
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#mintimelockduration) for more detail.
      */
     function _validateNewMinTimelockDuration(uint32 newMinTimelockDuration) internal pure {
         if (newMinTimelockDuration > MAX_DURATION_BOUND) {
@@ -253,6 +266,7 @@ contract ButtonswapFactory is IButtonswapFactory {
 
     /**
      * @dev `maxTimelockDuration` must be in interval [0, MAX_DURATION_BOUND]
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#maxtimelockduration) for more detail.
      */
     function _validateNewMaxTimelockDuration(uint32 newMaxTimelockDuration) internal pure {
         if (newMaxTimelockDuration > MAX_DURATION_BOUND) {
@@ -262,6 +276,7 @@ contract ButtonswapFactory is IButtonswapFactory {
 
     /**
      * @dev `maxSwappableReservoirLimitBps` must be in interval [0, MAX_BPS_BOUND]
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#maxswappablereservoirlimitbps) for more detail.
      */
     function _validateNewMaxSwappableReservoirLimitBps(uint32 newMaxSwappableReservoirLimitBps) internal pure {
         if (newMaxSwappableReservoirLimitBps > MAX_BPS_BOUND) {
@@ -270,10 +285,14 @@ contract ButtonswapFactory is IButtonswapFactory {
     }
 
     /**
-     * @dev `swappableReservoirGrowthWindow` must be in interval [0, MAX_DURATION_BOUND]
+     * @dev `swappableReservoirGrowthWindow` must be in interval [MIN_SWAPPABLE_RESERVOIR_GROWTH_WINDOW_BOUND, MAX_DURATION_BOUND]
+     * Refer to [parameters.md](https://github.com/buttonwood-protocol/buttonswap-core/blob/main/notes/parameters.md#swappablereservoirgrowthwindow) for more detail.
      */
     function _validateNewSwappableReservoirGrowthWindow(uint32 newSwappableReservoirGrowthWindow) internal pure {
-        if (newSwappableReservoirGrowthWindow > MAX_DURATION_BOUND) {
+        if (
+            newSwappableReservoirGrowthWindow < MIN_SWAPPABLE_RESERVOIR_GROWTH_WINDOW_BOUND
+                || newSwappableReservoirGrowthWindow > MAX_DURATION_BOUND
+        ) {
             revert InvalidParameter();
         }
     }
