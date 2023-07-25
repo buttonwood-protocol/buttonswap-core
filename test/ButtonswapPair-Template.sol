@@ -3895,12 +3895,21 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         address[] memory pairAddresses = new address[](1);
         pairAddresses[0] = address(vars.pair);
 
-        // Change the factory paused state
+        // Have the factory call isPaused on the pair
         vm.prank(vars.permissionSetter);
         vars.factory.setIsPaused(pairAddresses, isPausedNew);
 
         // Confirm that the pair's pause state is correct
         assertEq(vars.pair.getIsPaused(), isPausedNew, "Pair pause state should match");
+
+        // If the pair was unpaused, confirm that the pair's single-sided Timelock has been set to the max timelock duration
+        if (!isPausedNew) {
+            assertEq(
+                vars.pair.singleSidedTimelockDeadline(),
+                uint120(block.timestamp + vars.pair.maxTimelockDuration()),
+                "Pair singleSidedTimelockDeadline should be max duration from current timestamp"
+            );
+        }
     }
 
     function test_setIsPaused_CannotCallFromNonFactoryAddress(bool isPausedNew, address caller) public {
