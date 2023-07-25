@@ -25,11 +25,11 @@ The ButtonswapFactory keeps an internal `isPausedSetter` address. Only the `isPa
 There are a number of risks associated with pausing/unpausing a pair.
 
 ### Pausing
-- If the pause is front-ran, the pool price and the movingAveragePrice can be skewed
-  - If the time between pausing and unpausing exceeds the pair's `movingAverageWindow`, this will effectively set the `movingAveragePrice` to pool price after the last recorded swap.
-  - **Note:** This comes with significant risk any potential attack would require they also be the first swap after unpausing
 - Rebases will still occur while the pair is paused. This can potentially create larger reservoirs than under normal conditions
 
+#### Note:
+
+In a hypothetical attack, an attacker may attempt to front run the pause in order to skew the pool price and the movingAveragePrice. This would be done with the intention of back running the unpause in order to extract value by utilizing the mispriced reservoirs. Not only does this attack expose the attacker to significant risk, it can not come to fruition since reservoir interactions will be blocked by the timelock following an unpausing. Additionally, LPs always maintain the ability to withdraw liquidity during the pause.
 
 ### Unpausing
 - The market price can deviate from the current price in the pool while the pool is paused. This can create immediate arbitrage opportunity when the pair is unpaused.
