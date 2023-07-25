@@ -425,7 +425,12 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
      * @inheritdoc IButtonswapPair
      */
     function setIsPaused(bool isPausedNew) external onlyFactory {
-        isPaused = isPausedNew ? 1 : 0;
+        if (isPausedNew) {
+            isPaused = 1;
+        } else {
+            singleSidedTimelockDeadline += uint120(block.timestamp + maxTimelockDuration);
+            isPaused = 0;
+        }
     }
 
     /**
