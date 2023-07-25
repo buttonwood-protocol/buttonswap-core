@@ -8,7 +8,7 @@ Pausing prevents all mints, reservoir-interactions, and swaps from executing on 
 In addition to the above, unpausing resets the `singleSidedTimelock` to the maximum duration from the current timestamp.
 
 $$
-singleSidedTimelockDeadline = (block.timestamp + maxTimelockDuration).
+singleSidedTimelockDeadline = currentTimestamp + maxTimelockDuration
 $$
 
 
