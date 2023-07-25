@@ -428,7 +428,7 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
         if (isPausedNew) {
             isPaused = 1;
         } else {
-            singleSidedTimelockDeadline += uint120(block.timestamp + maxTimelockDuration);
+            singleSidedTimelockDeadline = uint120(block.timestamp + maxTimelockDuration);
             isPaused = 0;
         }
     }
