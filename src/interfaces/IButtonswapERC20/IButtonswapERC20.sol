@@ -7,15 +7,15 @@ import {IButtonswapERC20Events} from "./IButtonswapERC20Events.sol";
 interface IButtonswapERC20 is IButtonswapERC20Errors, IButtonswapERC20Events {
     /**
      * @notice Returns the name of the token.
-     * @return name The token name
+     * @return _name The token name
      */
-    function name() external pure returns (string memory name);
+    function name() external view returns (string memory _name);
 
     /**
      * @notice Returns the symbol of the token, usually a shorter version of the name.
-     * @return symbol The token symbol
+     * @return _symbol The token symbol
      */
-    function symbol() external pure returns (string memory symbol);
+    function symbol() external view returns (string memory _symbol);
 
     /**
      * @notice Returns the number of decimals used to get its user representation.

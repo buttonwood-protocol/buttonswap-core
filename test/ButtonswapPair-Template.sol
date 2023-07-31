@@ -97,6 +97,20 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         vm.warp(100 days);
     }
 
+    function test_name() public {
+        TestVariables memory vars;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.mockCreatePair(address(tokenA), address(tokenB)));
+        assertEq(vars.pair.name(), "Test Name");
+    }
+
+    function test_symbol() public {
+        TestVariables memory vars;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.mockCreatePair(address(tokenA), address(tokenB)));
+        assertEq(vars.pair.symbol(), "TEST");
+    }
+
     function test_getLiquidityBalances_ReturnsZeroBeforeFirstMint(bytes32 factorySalt) public {
         MockButtonswapFactory factory = new MockButtonswapFactory{salt: factorySalt}(userA);
         ButtonswapPair pair = ButtonswapPair(factory.mockCreatePair(address(tokenA), address(tokenB)));

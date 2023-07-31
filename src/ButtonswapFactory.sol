@@ -36,6 +36,16 @@ contract ButtonswapFactory is IButtonswapFactory {
     address public paramSetter;
 
     /**
+     * @inheritdoc IButtonswapFactory
+     */
+    string public tokenName;
+
+    /**
+     * @inheritdoc IButtonswapFactory
+     */
+    string public tokenSymbol;
+
+    /**
      * @dev The upper limit on what duration parameters can be set to.
      */
     uint32 public constant MAX_DURATION_BOUND = 12 weeks;
@@ -106,17 +116,23 @@ contract ButtonswapFactory is IButtonswapFactory {
      * @param _isCreationRestrictedSetter The account that has the ability to set `isCreationRestrictedSetter` and `isCreationRestricted`
      * @param _isPausedSetter The account that has the ability to set `isPausedSetter` and `isPaused`
      * @param _paramSetter The account that has the ability to set `paramSetter`, default parameters, and current parameters on existing pairs
+     * @param _tokenName The name of the ERC20 liquidity token
+     * @param _tokenSymbol The symbol of the ERC20 liquidity token
      */
     constructor(
         address _feeToSetter,
         address _isCreationRestrictedSetter,
         address _isPausedSetter,
-        address _paramSetter
+        address _paramSetter,
+        string memory _tokenName,
+        string memory _tokenSymbol
     ) {
         feeToSetter = _feeToSetter;
         isCreationRestrictedSetter = _isCreationRestrictedSetter;
         isPausedSetter = _isPausedSetter;
         paramSetter = _paramSetter;
+        tokenName = _tokenName;
+        tokenSymbol = _tokenSymbol;
     }
 
     /**

@@ -20,6 +20,18 @@ interface IButtonswapFactory is IButtonswapFactoryErrors, IButtonswapFactoryEven
     function feeToSetter() external view returns (address _feeToSetter);
 
     /**
+     * @notice The name of the ERC20 liquidity token.
+     * @return _tokenName The `tokenName`
+     */
+    function tokenName() external view returns (string memory _tokenName);
+
+    /**
+     * @notice The symbol of the ERC20 liquidity token.
+     * @return _tokenSymbol The `tokenSymbol`
+     */
+    function tokenSymbol() external view returns (string memory _tokenSymbol);
+
+    /**
      * @notice Returns the current state of restricted creation.
      * If true, then no new pairs, only feeToSetter can create new pairs
      * @return _isCreationRestricted The `isCreationRestricted` state
