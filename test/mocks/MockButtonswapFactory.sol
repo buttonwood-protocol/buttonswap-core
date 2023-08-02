@@ -8,7 +8,7 @@ import {MockButtonswapPair} from "./MockButtonswapPair.sol";
 contract MockButtonswapFactory is ButtonswapFactory {
     // Simplified constructor for testing
     constructor(address _permissionSetter)
-        ButtonswapFactory(_permissionSetter, _permissionSetter, _permissionSetter, _permissionSetter)
+        ButtonswapFactory(_permissionSetter, _permissionSetter, _permissionSetter, _permissionSetter, "Test Name", "TEST")
     {}
 
     function mockCreatePair(address tokenA, address tokenB) external returns (address pair) {

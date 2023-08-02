@@ -7,16 +7,6 @@ contract ButtonswapERC20 is IButtonswapERC20 {
     /**
      * @inheritdoc IButtonswapERC20
      */
-    string public constant name = "Buttonswap";
-
-    /**
-     * @inheritdoc IButtonswapERC20
-     */
-    string public constant symbol = "BTNSWP";
-
-    /**
-     * @inheritdoc IButtonswapERC20
-     */
     uint8 public constant decimals = 18;
 
     /**
@@ -60,7 +50,7 @@ contract ButtonswapERC20 is IButtonswapERC20 {
         DOMAIN_SEPARATOR = keccak256(
             abi.encode(
                 keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-                keccak256(bytes(name)),
+                keccak256(bytes("Buttonswap")),
                 keccak256(bytes("1")),
                 chainId,
                 address(this)
@@ -119,6 +109,20 @@ contract ButtonswapERC20 is IButtonswapERC20 {
         balanceOf[from] = balanceOf[from] - value;
         balanceOf[to] = balanceOf[to] + value;
         emit Transfer(from, to, value);
+    }
+
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
+    function name() external view virtual override returns (string memory _name) {
+        _name = "Buttonswap";
+    }
+
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
+    function symbol() external view virtual override returns (string memory _symbol) {
+        _symbol = "BTNSWP";
     }
 
     /**

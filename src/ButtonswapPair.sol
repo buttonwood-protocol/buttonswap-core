@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import {IButtonswapPair} from "./interfaces/IButtonswapPair/IButtonswapPair.sol";
+import {IButtonswapERC20} from "./interfaces/IButtonswapERC20/IButtonswapERC20.sol";
 import {ButtonswapERC20} from "./ButtonswapERC20.sol";
 import {Math} from "./libraries/Math.sol";
 import {PairMath} from "./libraries/PairMath.sol";
@@ -206,6 +207,20 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             maxSwappableReservoirLimitBps,
             swappableReservoirGrowthWindow
         ) = IButtonswapFactory(factory).lastCreatedTokensAndParameters();
+    }
+
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
+    function name() external view override(ButtonswapERC20, IButtonswapERC20) returns (string memory _name) {
+        _name = IButtonswapFactory(factory).tokenName();
+    }
+
+    /**
+     * @inheritdoc IButtonswapERC20
+     */
+    function symbol() external view override(ButtonswapERC20, IButtonswapERC20) returns (string memory _symbol) {
+        _symbol = IButtonswapFactory(factory).tokenSymbol();
     }
 
     /**
