@@ -15,11 +15,17 @@ $$
 $$
 
 $$
-TimelockRange = (maxTimeLockDuration - minTimeLockDuration)
+TimelockRange = (maxTimelockDuration - minTimelockDuration)
 $$
 
 $$
-\Delta T = \frac{\Delta Price}{movingAveragePrice \cdot maxVolatilityPercent} \cdot TimelockRange
+\Delta T = \frac{\Delta Price}{movingAveragePrice \cdot maxVolatilityPercent} \cdot TimelockRange + minTimelockDuration
+$$
+
+$\Delta T$ is then capped at the maximum timelock duration.
+
+$$
+\Delta T = min(\Delta T, maxTimelockDuration)
 $$
 
 If $block.timestamp + \Delta T$ exceeds the current timelockDeadline, it replaces it. Otherwise, the same previous deadline holds:
