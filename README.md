@@ -11,7 +11,7 @@ Buttonswap also supports single-sided operations for shifting the liquidity from
 Refer to the documents in [/notes](/notes) for detailed explanations of the mechanics.
 
 ## Audit
-Refer to [/notes/statemind_2023-08-11.pdf](statemind_2023-08-11.pdf) for the official audit report conducted by State Mind.
+Refer to [statemind_2023-08-11.pdf](/notes/statemind_2023-08-11.pdf) for the official audit report conducted by State Mind.
 
 ## Testing
 
