@@ -10,6 +10,9 @@ Buttonswap also supports single-sided operations for shifting the liquidity from
 ## Notes
 Refer to the documents in [/notes](/notes) for detailed explanations of the mechanics.
 
+## Audit
+Refer to [/notes/statemind_2023-08-11.pdf](statemind_2023-08-11.pdf) for the official audit report conducted by State Mind.
+
 ## Testing
 
 The unit tests contained within `/test/known-issues/` are excluded from being run during pull request, but included during merge to main.
