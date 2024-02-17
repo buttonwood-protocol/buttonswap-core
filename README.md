@@ -21,7 +21,7 @@ If the underlying issue for the test has been fixed, the test should be migrated
 
 ## Deploying
 
-Deploy the contract using the appropriate script as follows:
+First edit the `Deploy.s.sol` script to configure the constructor arguments as required. Then use the script as follows:
 ```
 forge script script/Deploy.s.sol --broadcast --rpc-url sepolia --verify --watch
 ```
