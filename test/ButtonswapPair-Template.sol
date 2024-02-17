@@ -3,12 +3,14 @@ pragma solidity ^0.8.13;
 
 import {Test, stdError} from "buttonswap-core_forge-std/Test.sol";
 import {IButtonswapPairEvents, IButtonswapPairErrors} from "../src/interfaces/IButtonswapPair/IButtonswapPair.sol";
+import {YieldMode} from "../src/interfaces/IBlastERC20Rebasing.sol";
 import {ButtonswapPair} from "../src/ButtonswapPair.sol";
 import {Math} from "../src/libraries/Math.sol";
 import {PairMath} from "../src/libraries/PairMath.sol";
 import {MockERC20} from "buttonswap-core_mock-contracts/MockERC20.sol";
 import {ICommonMockRebasingERC20} from
     "buttonswap-core_mock-contracts/interfaces/ICommonMockRebasingERC20/ICommonMockRebasingERC20.sol";
+import {MockBlastERC20Rebasing} from "./mocks/MockBlastERC20Rebasing.sol";
 import {MockButtonswapFactory} from "./mocks/MockButtonswapFactory.sol";
 import {MockButtonswapPair} from "./mocks/MockButtonswapPair.sol";
 import {Utils} from "./utils/Utils.sol";
@@ -85,6 +87,8 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
     }
 
     function setUp() public {
+        deployCodeTo("MockBlastERC20Rebasing.sol", 0x4200000000000000000000000000000000000022);
+        deployCodeTo("MockBlastERC20Rebasing.sol", 0x4200000000000000000000000000000000000023);
         tokenA = getTokenA();
         tokenA.initialize();
         tokenB = getTokenB();
@@ -95,6 +99,16 @@ abstract contract ButtonswapPairTest is Test, IButtonswapPairEvents, IButtonswap
         rebasingTokenB.initialize();
         // Catch errors that might be missed if block.timestamp is small
         vm.warp(100 days);
+    }
+
+    function test_blast() public {
+        TestVariables memory vars;
+        vars.factory = new MockButtonswapFactory(vars.permissionSetter);
+        vars.pair = ButtonswapPair(vars.factory.mockCreatePair(address(tokenA), address(tokenB)));
+        MockBlastERC20Rebasing WETH = MockBlastERC20Rebasing(0x4200000000000000000000000000000000000023);
+        MockBlastERC20Rebasing USDB = MockBlastERC20Rebasing(0x4200000000000000000000000000000000000022);
+        assertEq(uint256(WETH.mockMode()), uint256(YieldMode.AUTOMATIC));
+        assertEq(uint256(USDB.mockMode()), uint256(YieldMode.AUTOMATIC));
     }
 
     function test_name() public {

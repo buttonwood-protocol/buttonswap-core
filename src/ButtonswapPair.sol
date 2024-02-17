@@ -10,6 +10,7 @@ import {UQ112x112} from "./libraries/UQ112x112.sol";
 import {IERC20} from "buttonswap-core_@openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "buttonswap-core_@openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import {IButtonswapFactory} from "./interfaces/IButtonswapFactory/IButtonswapFactory.sol";
+import {IBlastERC20Rebasing, YieldMode} from "./interfaces/IBlastERC20Rebasing.sol";
 
 contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
     using UQ112x112 for uint224;
@@ -207,6 +208,11 @@ contract ButtonswapPair is IButtonswapPair, ButtonswapERC20 {
             maxSwappableReservoirLimitBps,
             swappableReservoirGrowthWindow
         ) = IButtonswapFactory(factory).lastCreatedTokensAndParameters();
+        // TODO: these addresses will be need updating for Blast mainnet
+        // WETH
+        IBlastERC20Rebasing(0x4200000000000000000000000000000000000023).configure(YieldMode.AUTOMATIC);
+        // USDB
+        IBlastERC20Rebasing(0x4200000000000000000000000000000000000022).configure(YieldMode.AUTOMATIC);
     }
 
     /**

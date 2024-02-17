@@ -18,6 +18,13 @@ contract ButtonswapFactoryTest is Test, IButtonswapFactoryEvents, IButtonswapFac
         address _1;
     }
 
+    function setUp() public {
+        deployCodeTo("MockBlastERC20Rebasing.sol", 0x4200000000000000000000000000000000000022);
+        deployCodeTo("MockBlastERC20Rebasing.sol", 0x4200000000000000000000000000000000000023);
+        // Catch errors that might be missed if block.timestamp is small
+        vm.warp(100 days);
+    }
+
     function getTokens(address tokenA, address tokenB) internal pure returns (Tokens memory) {
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         Tokens memory tokens;
