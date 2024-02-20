@@ -1,7 +1,7 @@
 name: Test on Push to Main
 on:
   push:
-    branches: [main]
+    branches: [main, blast]
 
 env:
   FOUNDRY_PROFILE: ci
