@@ -13,7 +13,7 @@ bytecodeHash = "none"
 runs = 256
 
 [etherscan]
-  arbitrum_one = { key = "${API_KEY_ARBISCAN}" }
+  arbitrum = { key = "${API_KEY_ARBISCAN}" }
   avalanche = { key = "${API_KEY_SNOWTRACE" }
   blast_sepolia = { key = "verifyContract", url = "https://api.routescan.io/v2/network/testnet/evm/168587773/etherscan"}
   bnb_smart_chain = { key = "${API_KEY_BSCSCAN}" }
@@ -25,7 +25,7 @@ runs = 256
   sepolia = { key = "${API_KEY_ETHERSCAN}" }
 
 [rpc_endpoints]
-  arbitrum_one = "https://arbitrum-mainnet.infura.io/v3/${API_KEY_INFURA}"
+  arbitrum = "https://arbitrum-mainnet.infura.io/v3/${API_KEY_INFURA}"
   avalanche = "https://avalanche-mainnet.infura.io/v3/${API_KEY_INFURA}"
   blast_sepolia = "https://sepolia.blast.io"
   bnb_smart_chain = "https://bsc-dataseed.binance.org"
